@@ -86,6 +86,14 @@ async def init_db() -> None:
     except Exception as e:
         logger.warning(f"Achievement seed failed: {e}")
 
+    # Seed default admin
+    try:
+        from app.api.routers.auth import seed_default_admin
+
+        await seed_default_admin()
+    except Exception as e:
+        logger.warning(f"Default admin seed failed: {e}")
+
 
 async def close_db() -> None:
     await Tortoise.close_connections()
@@ -184,11 +192,24 @@ def create_app() -> FastAPI:
         redoc_url=None,
     )
 
-    from app.api.routers import admin, health, webhook, ws
+    from app.api.routers import (
+        admin,
+        health,
+        webhook,
+        ws,
+    )
+    from app.api.routers import (
+        auth as auth_router,
+    )
+    from app.api.routers import (
+        group as group_router,
+    )
 
     app.include_router(health.router, tags=["health"])
     app.include_router(webhook.router, prefix="/webhook", tags=["webhook"])
+    app.include_router(auth_router.router, prefix="/api", tags=["auth"])
     app.include_router(admin.router, prefix="/api", tags=["admin"])
+    app.include_router(group_router.router, prefix="/api", tags=["group"])
     app.include_router(ws.router, prefix="/ws", tags=["websocket"])
 
     # CORS for frontend dev server

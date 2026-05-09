@@ -1,0 +1,148 @@
+.webapp-shell {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.webapp-section {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  border: 1px solid #2a2a45;
+}
+
+.webapp-section h3 {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  color: var(--accent);
+}
+
+.webapp-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #2a2a45;
+}
+
+.webapp-row:last-child {
+  border-bottom: none;
+}
+
+.webapp-row label {
+  font-size: 0.95rem;
+  color: var(--fg);
+}
+
+.webapp-row .row-hint {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 0.2rem;
+}
+
+.toggle {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: #2a2a45;
+  border-radius: 26px;
+  transition: 0.2s;
+}
+
+.toggle-slider::before {
+  content: "";
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  top: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: 0.2s;
+}
+
+.toggle input:checked + .toggle-slider {
+  background: var(--accent);
+}
+
+.toggle input:checked + .toggle-slider::before {
+  transform: translateX(22px);
+}
+
+.webapp-input {
+  background: #1a1a2e;
+  border: 1px solid #2a2a45;
+  color: var(--fg);
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  width: 80px;
+  text-align: center;
+}
+
+.webapp-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.webapp-tab {
+  padding: 0.5rem 0.75rem;
+  background: var(--card);
+  border: 1px solid #2a2a45;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  cursor: pointer;
+  color: var(--fg);
+}
+
+.webapp-tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.webapp-save-btn {
+  position: sticky;
+  bottom: 1rem;
+  width: 100%;
+  padding: 0.85rem;
+  background: var(--accent);
+  border: none;
+  color: white;
+  font-weight: 600;
+  border-radius: 12px;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-top: 1rem;
+}
+
+.webapp-save-btn:disabled {
+  opacity: 0.5;
+}
+
+.webapp-loading {
+  text-align: center;
+  padding: 3rem;
+  color: var(--muted);
+}
