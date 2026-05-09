@@ -1,0 +1,88 @@
+:root {
+  --bg: #1a1a2e;
+  --fg: #e8e8e8;
+  --accent: #e94560;
+  --muted: #a0a0a0;
+  --card: #262640;
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  min-height: 100vh;
+}
+
+.home {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+.home h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.home p code {
+  background: var(--card);
+  padding: 0.2em 0.5em;
+  border-radius: 6px;
+  color: var(--accent);
+}
+
+.home nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 2rem 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.home nav a {
+  display: block;
+  padding: 1rem 1.25rem;
+  background: var(--card);
+  color: var(--fg);
+  text-decoration: none;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  transition:
+    border-color 0.15s,
+    transform 0.15s;
+}
+
+.home nav a:hover {
+  border-color: var(--accent);
+  transform: translateX(4px);
+}
+
+.health-check {
+  padding: 1rem;
+  background: var(--card);
+  border-radius: 12px;
+  font-family:
+    "JetBrains Mono",
+    "Cascadia Code",
+    monospace;
+  font-size: 0.875rem;
+}
+
+.health-check .status-ok {
+  color: #4ade80;
+}
+
+.health-check .status-fail {
+  color: var(--accent);
+}
