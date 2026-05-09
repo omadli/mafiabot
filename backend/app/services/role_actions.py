@@ -36,7 +36,18 @@ async def _send_prompt_to_player(
         return
 
     targets = role.valid_targets(state, actor)
-    if not targets:
+    if not targets and actor.role != "arsonist":
+        return
+
+    # Special: Arsonist — uses its own keyboard with "Oxirgi tun" button
+    if actor.role == "arsonist":
+        from app.bot.handlers.private.special_actions import build_arsonist_keyboard
+
+        keyboard = build_arsonist_keyboard(state, _)
+        try:
+            await bot.send_message(actor.user_id, _("night-prompt-arsonist"), reply_markup=keyboard)
+        except TelegramForbiddenError:
+            logger.warning(f"Cannot DM user {actor.user_id} (bot blocked)")
         return
 
     # Build keyboard with target buttons

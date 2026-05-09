@@ -152,6 +152,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     else:
         polling_task = await _start_polling_task(bot_instance, dp_instance)
 
+    # Set bot commands menu (private + group scopes)
+    from app.bot.handlers.common.help import setup_bot_commands
+
+    await setup_bot_commands(bot_instance)
+
     # Start scheduler (cron: stats rollup)
     from app.workers.scheduler import shutdown_scheduler, start_scheduler
 

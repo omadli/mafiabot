@@ -75,10 +75,7 @@ async def broadcast_night_actions(bot: Bot, state: GameState) -> None:
 
 
 async def broadcast_night_results(bot: Bot, state: GameState, outcome: NightOutcome) -> None:
-    """Send day-start messages: deaths, shields, no-deaths.
-
-    Also DMs each dead player with last-words prompt (if game not finished).
-    """
+    """Send day-start messages: deaths, shields, transformations, special role events."""
     from app.core.win_conditions import check_winner
     from app.services.last_words import request_last_words
 
@@ -90,6 +87,43 @@ async def broadcast_night_results(bot: Bot, state: GameState, outcome: NightOutc
     if check_winner(state) is None:
         for user_id in outcome.deaths:
             await request_last_words(bot, state, user_id, hanged=False)
+
+    # Werewolf transformations (oshkor)
+    for trans in outcome.transformations:
+        await asyncio.sleep(1.5)
+        target_player = state.get_player(trans.user_id)
+        if target_player is None:
+            continue
+        key = f"transform-werewolf-to-{trans.new_role}"
+        text = _(
+            key,
+            mention=player_mention(trans.user_id, target_player.first_name),
+        )
+        await _safe_send(bot, state.chat_id, text)
+
+    # Kamikaze take-with-me
+    for take in outcome.kamikaze_takes:
+        await asyncio.sleep(1.5)
+        kp = state.get_player(take.kamikaze_id)
+        vp = state.get_player(take.victim_id)
+        if kp is None or vp is None:
+            continue
+        text = _(
+            "kamikaze-took-victim",
+            kamikaze=player_mention(take.kamikaze_id, kp.first_name),
+            victim=player_mention(take.victim_id, vp.first_name),
+        )
+        await _safe_send(bot, state.chat_id, text)
+
+    # Snitch reveals (oshkor xabarlar)
+    for reveal in outcome.snitch_reveals:
+        await asyncio.sleep(1.5)
+        text = _(
+            "snitch-reveal-broadcast",
+            target=player_mention(reveal.target_id, reveal.target_name),
+            role=role_emoji_name(reveal.revealed_role, locale),
+        )
+        await _safe_send(bot, state.chat_id, text)
 
     # Deaths
     if outcome.deaths:

@@ -145,6 +145,22 @@ class PhaseManager:
 
             await send_role_feedback(bot, state, outcome)
 
+            # Mage reactive prompts
+            if outcome.pending_mage_reactions:
+                from app.bot.handlers.private.special_actions import (
+                    send_mage_reaction_prompt,
+                )
+
+                locale = state.settings.get("language", "uz")
+                for mage_react in outcome.pending_mage_reactions:
+                    await send_mage_reaction_prompt(
+                        bot,
+                        mage_react.actor_id,
+                        mage_react.attacker_role,
+                        mage_react.attacker_id,
+                        locale,
+                    )
+
             # Move to day
             state.phase = Phase.DAY
             state.phase_ends_at = int(time.time()) + timings.get("day", 45)
@@ -161,13 +177,122 @@ class PhaseManager:
 
             await track_phase_inactivity(bot, state, Phase.VOTING)
 
-            # Tally votes
-            await cls._tally_votes(state)
-            # Move to next night
+            # Find leader (most votes)
+            leader_id = cls._find_vote_leader(state)
+            if leader_id is None or leader_id == 0:
+                # Skip / no consensus → straight to next night
+                state.current_round().hanged = None
+                state.current_votes = {}
+                state.round_num += 1
+                state.phase = Phase.NIGHT
+                state.phase_ends_at = int(time.time()) + timings.get("night", 60)
+                return
+
+            # Move to HANGING_CONFIRM phase (👍/👎)
+            state.current_round().__dict__["pending_hang_target"] = leader_id
+            state.phase = Phase.HANGING_CONFIRM
+            state.phase_ends_at = int(time.time()) + timings.get("hanging_confirm", 15)
+            return
+
+        if state.phase == Phase.HANGING_CONFIRM:
+            # Tally yes/no, execute or skip
+            await cls._tally_hanging_confirm(state)
+
+            # If Kamikaze was hanged → trigger choice prompt
+            kamikaze_id = state.current_round().__dict__.get("kamikaze_pending_choice")
+            if kamikaze_id:
+                from app.bot.handlers.private.special_actions import send_kamikaze_choice
+
+                await send_kamikaze_choice(bot, state, kamikaze_id)
+
             state.round_num += 1
             state.phase = Phase.NIGHT
             state.phase_ends_at = int(time.time()) + timings.get("night", 60)
             return
+
+    @classmethod
+    def _find_vote_leader(cls, state: GameState) -> int | None:
+        """Find the user_id with most votes (Mayor 2x). None if no votes; 0 if "Hech kim" leads."""
+        from app.core.roles import get_role
+
+        if not state.current_votes:
+            return None
+
+        tally: dict[int, int] = {}
+        for vote in state.current_votes.values():
+            voter = state.get_player(vote.voter_id)
+            weight = vote.weight
+            if voter is not None:
+                role = get_role(voter.role)
+                weight = getattr(role, "vote_weight", 1)
+            tally[vote.target_id] = tally.get(vote.target_id, 0) + weight
+
+        if not tally:
+            return None
+        max_votes = max(tally.values())
+        leaders = [uid for uid, v in tally.items() if v == max_votes]
+        if len(leaders) > 1:
+            return None  # tie → no hanging
+        return leaders[0]
+
+    @classmethod
+    async def _tally_hanging_confirm(cls, state: GameState) -> None:
+        """Process 👍/👎 votes. If yes > no → hang."""
+        from app.core.state import DeathReason
+
+        confirm_data = state.current_round().__dict__.get("hanging_confirm", {})
+        target_id = state.current_round().__dict__.get("pending_hang_target")
+        if not target_id:
+            state.current_votes = {}
+            return
+
+        target = state.get_player(target_id)
+        if target is None or not target.alive:
+            state.current_votes = {}
+            return
+
+        yes_total = sum(confirm_data.get("yes", {}).values())
+        no_total = sum(confirm_data.get("no", {}).values())
+
+        # If no confirmation votes at all — auto-confirm (fall through)
+        if not confirm_data or (yes_total == 0 and no_total == 0):
+            yes_total = 1  # default "yes"
+
+        if no_total >= yes_total:
+            # Cancelled
+            logger.info(f"Hanging cancelled by 👎 (yes={yes_total}, no={no_total})")
+            state.current_round().hanged = None
+            state.current_votes = {}
+            return
+
+        # Vote shield
+        if "vote_shield" in target.items_active:
+            target.items_active.remove("vote_shield")
+            logger.info(f"Player {target_id} saved by vote_shield")
+            state.current_round().hanged = None
+            state.current_votes = {}
+            return
+
+        # Lawyer hanging protection
+        lawyer_protected: list[int] = state.current_round().__dict__.get("lawyer_protected", [])
+        if target_id in lawyer_protected:
+            logger.info(f"Player {target_id} saved by Lawyer (hanging protection)")
+            state.current_round().hanged = None
+            state.current_votes = {}
+            return
+
+        # Death
+        target.alive = False
+        target.died_at_round = state.round_num
+        target.died_at_phase = Phase.VOTING
+        target.died_reason = DeathReason.VOTED_OUT
+        state.current_round().hanged = target_id
+
+        if target.role == "kamikaze":
+            state.current_round().__dict__["kamikaze_pending_choice"] = target.user_id
+
+        logger.info(f"Player {target_id} voted out (role={target.role})")
+        state.current_votes = {}
 
     @classmethod
     async def _tally_votes(cls, state: GameState) -> None:

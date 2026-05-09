@@ -6,14 +6,17 @@ from loguru import logger
 
 def setup_routers(dp: Dispatcher) -> None:
     """Register all bot routers."""
+    from app.bot.handlers.common import help as common_help
     from app.bot.handlers.group import game as group_game
     from app.bot.handlers.group import giveaway as group_giveaway
     from app.bot.handlers.group import onboarding as group_onboarding
     from app.bot.handlers.group import stats as group_stats
+    from app.bot.handlers.group import voting as group_voting
     from app.bot.handlers.private import inventory as private_inventory
     from app.bot.handlers.private import last_words as private_last_words
     from app.bot.handlers.private import payment as private_payment
     from app.bot.handlers.private import role_actions as private_role_actions
+    from app.bot.handlers.private import special_actions as private_special
     from app.bot.handlers.private import start as private_start
 
     # Middlewares
@@ -24,12 +27,15 @@ def setup_routers(dp: Dispatcher) -> None:
     dp.update.outer_middleware(I18nMiddleware())
 
     # Routers (order matters: more specific first)
+    dp.include_router(common_help.router)  # /help, /rules — chat-agnostic
     dp.include_router(group_onboarding.router)
     dp.include_router(group_stats.router)
     dp.include_router(group_giveaway.router)
+    dp.include_router(group_voting.router)
     dp.include_router(group_game.router)
     dp.include_router(private_inventory.router)
     dp.include_router(private_payment.router)
+    dp.include_router(private_special.router)  # mage/arsonist/kamikaze
     dp.include_router(private_role_actions.router)
     dp.include_router(private_start.router)
     dp.include_router(private_last_words.router)  # last — catch-all text

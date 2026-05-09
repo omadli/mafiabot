@@ -294,21 +294,23 @@ async def _refresh_registration_message(bot: Bot, state, _: Translator) -> None:
 
 async def _on_phase_change(bot: Bot, state) -> None:
     """Hook called by PhaseManager after each phase transition."""
+    from app.bot.handlers.group.voting import announce_hanging_confirm, announce_voting
     from app.services.role_actions import send_night_prompts
 
     if state.phase == Phase.NIGHT:
         await broadcast_phase_change(bot, state)
-        # Send private prompts to all night-action roles
         await send_night_prompts(bot, state)
     elif state.phase == Phase.DAY:
-        # Resolve already happened — show results
-        # Note: ActionResolver was called during phase advance; we need
-        # the outcome. Re-run with current_actions empty would be wrong;
-        # so we call broadcast_night_results based on round log.
         await _broadcast_results_from_log(bot, state)
         await broadcast_phase_change(bot, state)
     elif state.phase == Phase.VOTING:
         await broadcast_phase_change(bot, state)
+        await announce_voting(bot, state)
+    elif state.phase == Phase.HANGING_CONFIRM:
+        # Get pending hang target from round log
+        target_id = state.current_round().__dict__.get("pending_hang_target")
+        if target_id:
+            await announce_hanging_confirm(bot, state, target_id)
     elif state.phase in (Phase.FINISHED, Phase.CANCELLED):
         await broadcast_game_end(bot, state)
 

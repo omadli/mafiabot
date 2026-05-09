@@ -543,3 +543,137 @@ btn-claim-diamond = 💎 Olmos olish
 giveaway-clicked-ok = ✅ Bosildi!
 
 giveaway-already-clicked-or-finished = ❌ Allaqachon bosgansiz yoki tugadi
+
+
+# ===========================================================
+# OVOZ BERISH UI (inline tugmali)
+# ===========================================================
+
+voting-prompt = 🗳 Ovoz berish vaqti! Tirik o'yinchilar: { $count }. Pastdagi tugma orqali ovoz bering:
+
+vote-skip-button = ❌ Hech kim
+
+vote-cannot-self = ❌ O'zingizga ovoz berolmaysiz
+
+vote-recorded-toast = ✅ Sizning ovozingiz: { $target }
+
+vote-skipped-toast = ✅ "Hech kim" tanladingiz
+
+
+# ===========================================================
+# OSISH TASDIQLASH
+# ===========================================================
+
+hanging-confirm-prompt =
+    ⚖️ { $target } ni osishni tasdiqlaymi?
+    👍 = ha, 👎 = yo'q
+
+hanging-yes = 👍 Ha, osmoq kerak
+
+hanging-no = 👎 Yo'q
+
+hanging-confirm-expired = ❌ Tasdiqlash vaqti tugagan
+
+
+# ===========================================================
+# SEHRGAR REAKTIV XABARLARI (o'yinchiga shaxsiy)
+# ===========================================================
+
+mage-attacked = 🧙 Sizga { $attacker_role } hujum qildi.\nKechirasizmi yoki o'ldirasizmi?
+
+mage-forgive = 💚 Kechirish
+
+mage-kill = 💀 O'ldirish
+
+mage-forgive-confirm = Kechirildi
+
+mage-forgive-confirm-text = 💚 Siz kechirdingiz. U tirik qoldi.
+
+mage-kill-confirm = O'ldirildi
+
+mage-kill-confirm-text = 💀 { $target } o'ldirildi (sizning lanatingiz)
+
+
+# ===========================================================
+# G'AZABKOR (ARSONIST) XABARLARI
+# ===========================================================
+
+arsonist-final-night-button = 🔥 Oxirgi tun!
+
+arsonist-queued = 🧟 { $target } ro'yxatga qo'shildi
+
+arsonist-final-confirm = 💥 Oxirgi tun aktivlashdi! Barcha tanlaganlaringiz o'ladi.
+
+
+# ===========================================================
+# AFSUNGAR (KAMIKAZE) XABARLARI
+# ===========================================================
+
+kamikaze-choose-victim = 🧞 Sizni osishdi! O'zingiz bilan birga kim bilan ketmoqchisiz?
+
+kamikaze-took-victim = 🔥 { $kamikaze } o'lganida { $victim } ni o'zi bilan jahannamga olib ketdi!
+
+kamikaze-took-confirm = Tanlandi
+
+kamikaze-took-confirm-text = 🧞 Siz { $target } ni o'zingiz bilan olib ketdingiz.
+
+
+# ===========================================================
+# BO'RI TRANSFORMATSIYA XABARLARI (guruhga)
+# ===========================================================
+
+transform-werewolf-to-mafia = 🐺 { $mention } yangi qiyofada paydo bo'ldi: bundan buyon 🤵🏼 Mafiya sifatida o'ynaydi!
+
+transform-werewolf-to-sergeant = 🐺 { $mention } yangi qiyofada paydo bo'ldi: bundan buyon 👮🏻‍♂ Serjant sifatida tinch aholiga xizmat qiladi!
+
+
+# ===========================================================
+# SOTQIN OSHKOR XABARI (guruhga)
+# ===========================================================
+
+snitch-reveal-broadcast = 📢 Sotqin xabari: { $target } ning roli — { $role } ekan!
+
+
+# ===========================================================
+# YORDAM VA QOIDALAR
+# ===========================================================
+
+help-private =
+    ❓ Yordam (private chat):
+
+    /start — botni ishga tushirish
+    /profile — sizning profil
+    /inventory — qurollar/himoyalar
+    /stats — statistika
+    /global_top — global reyting
+    /rules — qoidalar
+
+    Guruhlarda /game bilan o'yin boshlang.
+
+help-group =
+    ❓ Guruh buyruqlari:
+
+    /game [bounty] — yangi o'yin
+    /leave — chiqib ketish
+    /vote @user — ovoz
+    /give amount [reply] — olmos hadya
+    /stats /top /group_stats /profile — statistika
+    /extend N — vaqtni uzaytirish
+    /stop — bekor qilish (admin)
+    /rules — qoidalar
+
+rules-summary =
+    📖 Mafia Baku Black — qoidalar:
+
+    Shahar ikki tomonga bo'linadi: tinch aholi va mafiya.
+    Har kecha mafiya bitta odamni o'ldiradi. Kunduz aholi
+    ovoz berib birini osadi. Komissar Kattani yovuzlarni
+    fosh etadi, Doktor qurbonlarni himoyalaydi.
+
+    Singleton rollar (Qotil, Bo'ri, Sehrgar va boshqalar)
+    yakka holda o'z g'alaba shartlari bilan o'ynaydi.
+
+    G'alaba: mafiyani yo'q qilsang — tinch aholi g'olib.
+    Tinch aholi sonini tenglashtirsang — mafiya g'olib.
+
+    /game bilan boshlang. Omad!

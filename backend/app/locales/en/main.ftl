@@ -543,3 +543,138 @@ btn-claim-diamond = 💎 Claim diamonds
 giveaway-clicked-ok = ✅ Claimed!
 
 giveaway-already-clicked-or-finished = ❌ You have already clicked or the giveaway has ended
+
+
+# ===========================================================
+# VOTING UI (inline buttons)
+# ===========================================================
+
+voting-prompt = 🗳 Time to vote! Living players: { $count }. Cast your vote using the button below:
+
+vote-skip-button = ❌ Nobody
+
+vote-cannot-self = ❌ You cannot vote for yourself
+
+vote-recorded-toast = ✅ Your vote: { $target }
+
+vote-skipped-toast = ✅ You chose "Nobody"
+
+
+# ===========================================================
+# HANGING CONFIRMATION
+# ===========================================================
+
+hanging-confirm-prompt =
+    ⚖️ Confirm hanging { $target }?
+    👍 = yes, 👎 = no
+
+hanging-yes = 👍 Yes, hang them
+
+hanging-no = 👎 No
+
+hanging-confirm-expired = ❌ Confirmation window has expired
+
+
+# ===========================================================
+# MAGE REACTIVE MESSAGES (private to player)
+# ===========================================================
+
+mage-attacked = 🧙 { $attacker_role } has attacked you.\nDo you forgive them or kill them?
+
+mage-forgive = 💚 Forgive
+
+mage-kill = 💀 Kill
+
+mage-forgive-confirm = Forgiven
+
+mage-forgive-confirm-text = 💚 You forgave them. They live.
+
+mage-kill-confirm = Killed
+
+mage-kill-confirm-text = 💀 { $target } has been killed (by your curse)
+
+
+# ===========================================================
+# ARSONIST (BERSERKER) MESSAGES
+# ===========================================================
+
+arsonist-final-night-button = 🔥 Final Night!
+
+arsonist-queued = 🧟 { $target } added to the list
+
+arsonist-final-confirm = 💥 Final night activated! Everyone you marked will die.
+
+
+# ===========================================================
+# KAMIKAZE MESSAGES
+# ===========================================================
+
+kamikaze-choose-victim = 🧞 You have been hanged! Who do you take with you to the grave?
+
+kamikaze-took-victim = 🔥 As { $kamikaze } died, they dragged { $victim } straight to hell!
+
+kamikaze-took-confirm = Chosen
+
+kamikaze-took-confirm-text = 🧞 You took { $target } with you.
+
+
+# ===========================================================
+# WEREWOLF TRANSFORMATION MESSAGES (sent to group)
+# ===========================================================
+
+transform-werewolf-to-mafia = 🐺 { $mention } has emerged in a new form: from now on they play as 🤵🏼 Mafia!
+
+transform-werewolf-to-sergeant = 🐺 { $mention } has emerged in a new form: from now on they serve the civilians as 👮🏻‍♂ Sergeant!
+
+
+# ===========================================================
+# SNITCH REVEAL BROADCAST (sent to group)
+# ===========================================================
+
+snitch-reveal-broadcast = 📢 Snitch report: { $target }'s role is — { $role }!
+
+
+# ===========================================================
+# HELP AND RULES
+# ===========================================================
+
+help-private =
+    ❓ Help (private chat):
+
+    /start — launch the bot
+    /profile — your profile
+    /inventory — weapons/shields
+    /stats — statistics
+    /global_top — global rankings
+    /rules — game rules
+
+    Use /game in a group chat to start a game.
+
+help-group =
+    ❓ Group commands:
+
+    /game [bounty] — start a new game
+    /leave — leave the game
+    /vote @user — cast a vote
+    /give amount [reply] — gift diamonds
+    /stats /top /group_stats /profile — statistics
+    /extend N — extend registration time
+    /stop — cancel game (admins only)
+    /rules — game rules
+
+rules-summary =
+    📖 Mafia Baku Black — rules:
+
+    The city is split into two sides: civilians and mafia.
+    Each night the mafia silently eliminates one player. Each
+    day the town debates and votes to hang a suspect.
+    Commissioner Cattani hunts the wicked; the Doctor saves
+    the doomed.
+
+    Singleton roles (Maniac, Werewolf, Mage and others)
+    play alone under their own win conditions.
+
+    Victory: wipe out the mafia — civilians win.
+    Match or outnumber the civilians — mafia wins.
+
+    Start with /game. Good luck!
