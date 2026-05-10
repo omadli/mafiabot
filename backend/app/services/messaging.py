@@ -88,30 +88,34 @@ async def broadcast_night_results(bot: Bot, state: GameState, outcome: NightOutc
         for user_id in outcome.deaths:
             await request_last_words(bot, state, user_id, hanged=False)
 
-    # Werewolf transformations (oshkor)
+    # Werewolf transformations (anonim — Bo'rining ismi YASHIRILADI, faqat yangi roli oshkor)
     for trans in outcome.transformations:
         await asyncio.sleep(1.5)
         target_player = state.get_player(trans.user_id)
         if target_player is None:
             continue
         key = f"transform-werewolf-to-{trans.new_role}"
-        text = _(
-            key,
-            mention=player_mention(trans.user_id, target_player.first_name),
-        )
+        # No `mention` param — keeps werewolf identity hidden (gameplay UX)
+        text = _(key)
         await _safe_send(bot, state.chat_id, text)
 
-    # Kamikaze take-with-me
+    # Kamikaze take-with-me (anonimiy + jabrlanuvchi roli oshkor qilinadi)
     for take in outcome.kamikaze_takes:
         await asyncio.sleep(1.5)
         kp = state.get_player(take.kamikaze_id)
         vp = state.get_player(take.victim_id)
         if kp is None or vp is None:
             continue
+        victim_role_label = role_emoji_name(vp.role, locale) if show_role_on_death else "?"
+        # role-specific emoji + name (split on first space if combined)
+        role_parts = victim_role_label.split(" ", 1)
+        victim_role_emoji = role_parts[0] if role_parts else "❓"
+        victim_role_name = role_parts[1] if len(role_parts) > 1 else vp.role
         text = _(
             "kamikaze-took-victim",
-            kamikaze=player_mention(take.kamikaze_id, kp.first_name),
             victim=player_mention(take.victim_id, vp.first_name),
+            victim_role_emoji=victim_role_emoji,
+            victim_role=victim_role_name,
         )
         await _safe_send(bot, state.chat_id, text)
 
@@ -125,34 +129,36 @@ async def broadcast_night_results(bot: Bot, state: GameState, outcome: NightOutc
         )
         await _safe_send(bot, state.chat_id, text)
 
-    # Deaths
+    # Deaths — har biri ALOHIDA xabar, orasida pauza (reference: @MafiaAzBot)
     if outcome.deaths:
-        if len(outcome.deaths) == 1:
-            user_id = outcome.deaths[0]
+        first = True
+        for user_id in outcome.deaths:
+            if not first:
+                await asyncio.sleep(1.2)
+            first = False
+
             target = state.get_player(user_id)
-            if target is not None:
-                role_label = role_emoji_name(target.role, locale) if show_role_on_death else "?"
-                killer_role = _killer_role_label(state, outcome, target.user_id, locale)
+            if target is None:
+                continue
+
+            # Arsonist self-burn — special public-reveal message
+            if _is_arsonist_self_kill(state, target):
                 text = _(
-                    "night-result-killed-single",
-                    role_emoji_name=role_label,
-                    mention=player_mention(target.user_id, target.first_name),
-                    killer_role_emoji_name=killer_role,
+                    "arsonist-self-burn",
+                    name=player_mention(target.user_id, target.first_name),
                 )
                 await _safe_send(bot, state.chat_id, text)
-        else:
-            # Multiple deaths — list
-            lines: list[str] = []
-            for user_id in outcome.deaths:
-                target = state.get_player(user_id)
-                if target is None:
-                    continue
-                role_label = role_emoji_name(target.role, locale) if show_role_on_death else "?"
-                killer_role = _killer_role_label(state, outcome, target.user_id, locale)
-                lines.append(
-                    f"• {role_label} {player_mention(target.user_id, target.first_name)} — {killer_role}"
-                )
-            await _safe_send(bot, state.chat_id, "🌅\n" + "\n".join(lines))
+                continue
+
+            role_label = role_emoji_name(target.role, locale) if show_role_on_death else "?"
+            killer_role = _killer_role_label(state, outcome, target.user_id, locale)
+            text = _(
+                "night-result-killed-single",
+                role_emoji_name=role_label,
+                mention=player_mention(target.user_id, target.first_name),
+                killer_role_emoji_name=killer_role,
+            )
+            await _safe_send(bot, state.chat_id, text)
     else:
         await _safe_send(bot, state.chat_id, _("night-result-no-deaths"))
 
@@ -163,11 +169,29 @@ async def broadcast_night_results(bot: Bot, state: GameState, outcome: NightOutc
 
 
 def _killer_role_label(state: GameState, outcome: NightOutcome, target_id: int, locale: str) -> str:
-    """Find which role killed the target — based on actions."""
+    """Find which role killed the target — based on actions.
+
+    Detective/Don/Killer with `used_item == "rifle"` are still labeled by their
+    actor role (e.g. Detective with rifle → killer_role = "Komissar katani").
+    """
     for action in state.current_round().night_actions:
-        if action.action_type == "kill" and action.target_id == target_id:
+        if action.action_type in ("kill", "final_night") and action.target_id == target_id:
             return role_emoji_name(action.role, locale)
     return "?"
+
+
+def _is_arsonist_self_kill(state: GameState, target) -> bool:
+    """True if target is an Arsonist who self-burned via final_night action."""
+    if target.role != "arsonist":
+        return False
+    for action in state.current_round().night_actions:
+        if (
+            action.action_type == "final_night"
+            and action.role == "arsonist"
+            and action.actor_id == target.user_id
+        ):
+            return True
+    return False
 
 
 def _strip_emojis(text: str) -> str:
@@ -231,22 +255,59 @@ async def broadcast_phase_change(bot: Bot, state: GameState) -> None:
 
 
 async def broadcast_game_end(bot: Bot, state: GameState) -> None:
-    """Announce winner."""
+    """Announce game over with winners/losers split + duration.
+
+    Mirrors @MafiaAzBot reference format:
+        O'yin tugadi!
+
+        G'oliblar:
+        1. <name> - <role_emoji> <role_name>
+        ...
+
+        Qolgan o'yinchilar:
+        9. <name> - <role_emoji> <role_name>
+        ...
+
+        O'yin: 15 minut davom etdi
+    """
+    from app.core.win_conditions import winner_user_ids
+
     locale = state.settings.get("language", "uz")
     _ = get_translator(locale)
     if state.winner_team is None:
         await _safe_send(bot, state.chat_id, _("game-cancelled"))
         return
 
-    team_key = f"team-{state.winner_team.value}"
-    text = _("game-end-winner", team=_(team_key))
+    # Determine individual winners (team + qualifying singletons)
+    winners_ids = set(winner_user_ids(state, state.winner_team))
 
-    # Reveal all roles
-    role_lines: list[str] = []
-    for p in sorted(state.players, key=lambda x: x.join_order):
-        emoji_role = role_emoji_name(p.role, locale)
-        status = "💀" if not p.alive else "✅"
-        role_lines.append(f"{status} {emoji_role} — {player_mention(p.user_id, p.first_name)}")
-    text += "\n\n" + "\n".join(role_lines)
+    sorted_players = sorted(state.players, key=lambda x: x.join_order)
+    winners = [p for p in sorted_players if p.user_id in winners_ids]
+    losers = [p for p in sorted_players if p.user_id not in winners_ids]
 
-    await _safe_send(bot, state.chat_id, text)
+    sections: list[str] = [_("game-end-header")]
+
+    if winners:
+        winner_lines = [
+            f"{p.join_order}. {player_mention(p.user_id, p.first_name)} - {role_emoji_name(p.role, locale)}"
+            for p in winners
+        ]
+        sections.append(_("game-end-winners-section") + "\n" + "\n".join(winner_lines))
+
+    if losers:
+        loser_lines = [
+            f"{p.join_order}. {player_mention(p.user_id, p.first_name)} - {role_emoji_name(p.role, locale)}"
+            for p in losers
+        ]
+        sections.append(_("game-end-losers-section") + "\n" + "\n".join(loser_lines))
+
+    # Duration in minutes
+    if state.started_at and state.finished_at:
+        duration_min = max(1, (state.finished_at - state.started_at) // 60)
+        sections.append(_("game-end-duration", minutes=duration_min))
+
+    text = "\n\n".join(sections)
+    try:
+        await bot.send_message(state.chat_id, text, parse_mode="HTML")
+    except Exception as e:
+        logger.warning(f"send_message (game-end) failed: {e}")

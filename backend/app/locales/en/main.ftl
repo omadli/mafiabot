@@ -133,9 +133,9 @@ role-snitch = 🤓 Snitch
 
 night-action-msg-don = 🤵🏻 The Don has chosen his next prey...
 
-night-action-msg-detective-check = 🕵🏼 Commissioner Cattani went out to hunt the wicked...
+night-action-msg-detective-check = 🕵🏻‍♂ Detective Cattani went hunting for evildoers...
 
-night-action-msg-detective-shoot = 🕵🏼 Commissioner Cattani loaded his pistol...
+night-action-msg-detective-shoot = 🕵🏻‍♂ Detective Cattani loaded their pistol...
 
 night-action-msg-doctor = 👨🏻‍⚕ The Doctor set off on his evening rounds...
 
@@ -170,8 +170,8 @@ last-words-prompt-killed-night =
     You may speak your last words:
 
 last-words-broadcast =
-    Before dying, someone heard { $mention } cry out:
-    { $message }
+    Someone heard { $role_emoji } { $role_name } { $mention } scream before death:
+    <i>{ $message }</i>
 
 
 # ===========================================================
@@ -327,13 +327,13 @@ click-to-join-private = Opens in private chat with the bot...
 # NIGHT ATMOSPHERIC MESSAGES — NEW ROLES
 # ===========================================================
 
-night-action-msg-lawyer = 👨‍💼 The Lawyer slipped out to protect his client...
+night-action-msg-lawyer = 👨‍💼 Lawyer is searching for whom to protect among the Mafia...
 
 night-action-msg-journalist = 👩🏼‍💻 The Journalist is investigating under cover of night...
 
 night-action-msg-killer = 🥷 The Ninja has begun his bloody work...
 
-night-action-msg-maniac = 🔪 The Maniac is sharpening his blade...
+night-action-msg-maniac = 🔪 Maniac hid among the bushes and drew the knife from its sheath...
 
 night-action-msg-werewolf = 🐺 The Werewolf howled into the dark night...
 
@@ -341,7 +341,7 @@ night-action-msg-arsonist = 🧟 The Berserker has marked his next victim...
 
 night-action-msg-crook = 🤹 The Crook is planning to wear a new face tonight...
 
-night-action-msg-snitch = 🤓 The Snitch darted into the streets hunting for secrets...
+night-action-msg-snitch = 🤓 Snitch began searching to gather information...
 
 night-action-msg-kamikaze = 🧞‍♂️ The Kamikaze is summoning his mystical powers...
 
@@ -526,7 +526,7 @@ give-insufficient = ❌ Not enough diamonds (you have 💎 { $have }, need 💎 
 
 give-target-not-found = ❌ User not found
 
-give-direct-success = 💎 { $sender } → { $receiver }: gifted { $amount } diamonds!
+give-direct-success = { $sender } 💎 { $amount } gifted to { $receiver }!
 
 give-creating = 💎 Creating giveaway...
 
@@ -586,7 +586,10 @@ hanging-result-with-role = <b>{ $name }</b> was hanged at the day meeting! They 
 
 hanging-result = <b>{ $name }</b> was hanged at the day meeting!
 
-hanging-cancelled = 👎 Not enough votes — no one will be hanged today.
+hanging-cancelled =
+    <b>Voting results:</b>
+    People couldn't agree ({ $yes } 👍 | { $no } 👎)...
+    Due to disagreement, no one was hanged...
 
 
 # ===========================================================
@@ -625,7 +628,9 @@ arsonist-final-confirm = 💥 Final night activated! Everyone you marked will di
 
 kamikaze-choose-victim = 🧞 You have been hanged! Who do you take with you to the grave?
 
-kamikaze-took-victim = 🔥 As { $kamikaze } died, they dragged { $victim } straight to hell!
+kamikaze-took-victim =
+    🧞 Kamikaze took { $victim } to hell with them..
+    They were { $victim_role_emoji } { $victim_role }.
 
 kamikaze-took-confirm = Chosen
 
@@ -636,9 +641,9 @@ kamikaze-took-confirm-text = 🧞 You took { $target } with you.
 # WEREWOLF TRANSFORMATION MESSAGES (sent to group)
 # ===========================================================
 
-transform-werewolf-to-mafia = 🐺 { $mention } has emerged in a new form: from now on they play as 🤵🏼 Mafia!
+transform-werewolf-to-mafia = 🐺 Werewolf transformed into 🤵🏼 Mafia!
 
-transform-werewolf-to-sergeant = 🐺 { $mention } has emerged in a new form: from now on they serve the civilians as 👮🏻‍♂ Sergeant!
+transform-werewolf-to-sergeant = 🐺 Werewolf transformed into 👮🏻‍♂ Sergeant!
 
 
 # ===========================================================
@@ -729,3 +734,24 @@ atmosphere-saved = ✅ Media saved for slot <b>{ $slot }</b>.
 atmosphere-clear-help = 🧹 <code>/clearatmosphere &lt;slot&gt;</code> — clear slot. Available: { $slots }
 
 atmosphere-cleared = ✅ <b>{ $slot }</b> cleared.
+
+
+# ===========================================================
+# NEW KEYS (adds)
+# ===========================================================
+
+leave-broadcast-with-role =
+    { $mention } couldn't bear the evils of this city and took their own life.
+    They were { $role_emoji } { $role_name }.
+
+crook-stole-vote-dm = 🎭 The Crook deceived you and stole your voting right for today's vote.
+
+arsonist-self-burn = <b>{ $name }</b> (🧟 Arsonist) killed themselves!
+
+game-end-header = <b>Game over!</b>
+
+game-end-winners-section = <b>Winners:</b>
+
+game-end-losers-section = <b>Other players:</b>
+
+game-end-duration = <i>Game lasted { $minutes } minutes</i>

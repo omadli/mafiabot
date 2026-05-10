@@ -9,7 +9,7 @@ from app.core.state import DeathReason, GameState, Phase
 from app.db.models import User
 from app.services import game_service
 from app.services.i18n_service import get_translator
-from app.services.messaging import _safe_send, player_mention
+from app.services.messaging import _safe_send, player_mention, role_emoji_name
 
 
 async def track_phase_inactivity(bot: Bot, state: GameState, ended_phase: Phase) -> None:
@@ -53,10 +53,12 @@ async def track_phase_inactivity(bot: Bot, state: GameState, ended_phase: Phase)
 
     # Kick AFK players
     for user_id in to_kick:
-        await _kick_afk_player(bot, state, user_id, xp_penalty, _)
+        await _kick_afk_player(bot, state, user_id, xp_penalty, _, locale)
 
 
-async def _kick_afk_player(bot: Bot, state: GameState, user_id: int, xp_penalty: int, _) -> None:
+async def _kick_afk_player(
+    bot: Bot, state: GameState, user_id: int, xp_penalty: int, _, locale: str = "uz"
+) -> None:
     player = state.get_player(user_id)
     if player is None or not player.alive:
         return
@@ -75,6 +77,21 @@ async def _kick_afk_player(bot: Bot, state: GameState, user_id: int, xp_penalty:
 
     await game_service.set_user_active_game(user_id, None)
 
-    text = _("afk-kicked", mention=player_mention(user_id, player.first_name))
+    # Reference parity (@MafiaAzBot): leave message reveals role
+    show_role_on_death = state.settings.get("display", {}).get("show_role_on_death", True)
+    mention = player_mention(user_id, player.first_name)
+    if show_role_on_death and player.role:
+        role_label = role_emoji_name(player.role, locale)
+        role_parts = role_label.split(" ", 1)
+        role_emoji = role_parts[0] if role_parts else "❓"
+        role_name = role_parts[1] if len(role_parts) > 1 else player.role
+        text = _(
+            "leave-broadcast-with-role",
+            mention=mention,
+            role_emoji=role_emoji,
+            role_name=role_name,
+        )
+    else:
+        text = _("afk-kicked", mention=mention)
     await _safe_send(bot, state.chat_id, text)
     logger.info(f"AFK kicked user {user_id} from game {state.id}")

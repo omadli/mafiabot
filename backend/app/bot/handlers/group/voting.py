@@ -14,7 +14,7 @@ from app.core.state import GameState, Phase, Vote
 from app.db.models import User
 from app.services import game_service
 from app.services.i18n_service import Translator, get_translator
-from app.services.messaging import _safe_send, player_mention
+from app.services.messaging import _safe_send, player_mention, role_emoji_name
 
 router = Router(name="group_voting")
 
@@ -93,6 +93,7 @@ async def callback_vote_cast(query: CallbackQuery, user: User, _: Translator) ->
 
     # Crook (Aferist) proxy vote — uses target_user's name from previous night
     voter_id = user.id
+    crook_proxy_victim_id: int | None = None  # for DM notification
     if voter.role == "crook":
         proxy_target_id = voter.extra.get("proxy_target")
         if proxy_target_id is not None:
@@ -100,13 +101,32 @@ async def callback_vote_cast(query: CallbackQuery, user: User, _: Translator) ->
             if proxy_target is not None and proxy_target.alive:
                 # Cast vote AS proxy_target (their name appears, but it's Crook's choice)
                 voter_id = proxy_target_id
+                crook_proxy_victim_id = proxy_target_id
                 # Mayor weight uses proxy_target's role
                 weight = 2 if proxy_target.role == "mayor" else 1
 
     state.current_votes[user.id] = Vote(voter_id=voter_id, target_id=target_id, weight=weight)
     await game_service.save_state(state)
 
+    # Notify Crook's victim via DM (their vote was stolen)
+    if crook_proxy_victim_id is not None:
+        try:
+            await query.bot.send_message(crook_proxy_victim_id, _("crook-stole-vote-dm"))
+        except Exception as e:
+            logger.debug(f"Crook DM to {crook_proxy_victim_id} failed: {e}")
+
     show_anon = state.settings.get("display", {}).get("anonymous_voting", False)
+
+    # The "displayed voter" — for Crook proxy, broadcast as the proxy target's name.
+    # Mayor 2x weight: prefix role emoji+name to make double-impact visible.
+    display_voter = state.get_player(voter_id) or voter
+    voter_name_html = _safe_html(display_voter.first_name)
+    if display_voter.role == "mayor":
+        locale = state.settings.get("language", "uz")
+        voter_display = f"{role_emoji_name(display_voter.role, locale)} {voter_name_html}"
+    else:
+        voter_display = voter_name_html
+
     if show_anon:
         await query.answer(_("vote-recorded-anon"), show_alert=False)
     else:
@@ -114,10 +134,9 @@ async def callback_vote_cast(query: CallbackQuery, user: User, _: Translator) ->
             await query.answer(_("vote-skipped-toast"), show_alert=False)
             # Broadcast abstention to group (mirrors @MafiaAzBot format)
             try:
-                voter_name = _safe_html(voter.first_name)
                 await query.bot.send_message(
                     chat_id,
-                    _("vote-broadcast-abstain", voter=voter_name),
+                    _("vote-broadcast-abstain", voter=voter_display),
                     parse_mode="HTML",
                 )
             except Exception as e:
@@ -131,13 +150,12 @@ async def callback_vote_cast(query: CallbackQuery, user: User, _: Translator) ->
                 )
                 # Broadcast individual vote to group
                 try:
-                    voter_name = _safe_html(voter.first_name)
                     target_name = _safe_html(target.first_name)
                     await query.bot.send_message(
                         chat_id,
                         _(
                             "vote-broadcast",
-                            voter=voter_name,
+                            voter=voter_display,
                             target=target_name,
                         ),
                         parse_mode="HTML",

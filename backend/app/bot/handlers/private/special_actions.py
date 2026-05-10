@@ -263,13 +263,23 @@ async def callback_kamikaze_take(query: CallbackQuery, user: User, _: Translator
     kamikaze.extra["kamikaze_took_role"] = victim.role
     await game_service.save_state(state)
 
-    # Broadcast
+    # Broadcast (anonim Kamikaze + jabrlanuvchi roli oshkor)
     locale = state.settings.get("language", "uz")
     _t = get_translator(locale)
+
+    show_role_on_death = state.settings.get("display", {}).get("show_role_on_death", True)
+    from app.services.messaging import role_emoji_name
+
+    victim_role_label = role_emoji_name(victim.role, locale) if show_role_on_death else "?"
+    role_parts = victim_role_label.split(" ", 1)
+    victim_role_emoji = role_parts[0] if role_parts else "❓"
+    victim_role_name = role_parts[1] if len(role_parts) > 1 else victim.role
+
     text = _t(
         "kamikaze-took-victim",
-        kamikaze=player_mention(user.id, kamikaze.first_name),
         victim=player_mention(victim_id, victim.first_name),
+        victim_role_emoji=victim_role_emoji,
+        victim_role=victim_role_name,
     )
     await _safe_send(bot, state.chat_id, text)
 

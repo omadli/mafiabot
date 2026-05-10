@@ -150,14 +150,28 @@ async def cmd_leave(message: Message, user: User, _: Translator, bot: Bot) -> No
 
     # ELO/XP penalty (Bosqich 2 — to'liq qo'llanadi)
     leave_msg_template = state.settings.get("messages", {}).get("leave_message", "")
-    from app.services.messaging import player_mention
+    from app.services.messaging import player_mention, role_emoji_name
 
     mention = player_mention(user.id, user.first_name)
+    show_role_on_death = state.settings.get("display", {}).get("show_role_on_death", True)
+
     if leave_msg_template:
         text = leave_msg_template.replace("{mention}", mention)
+    elif show_role_on_death and player.role:
+        # Reference parity (@MafiaAzBot): role oshkor qilinadi
+        role_label = role_emoji_name(player.role, state.settings.get("language", "uz"))
+        role_parts = role_label.split(" ", 1)
+        role_emoji = role_parts[0] if role_parts else "❓"
+        role_name = role_parts[1] if len(role_parts) > 1 else player.role
+        text = _(
+            "leave-broadcast-with-role",
+            mention=mention,
+            role_emoji=role_emoji,
+            role_name=role_name,
+        )
     else:
         text = _("leave-broadcast", mention=mention)
-    await message.answer(text)
+    await message.answer(text, parse_mode="HTML")
 
 
 @router.message(Command("stop"))
@@ -362,19 +376,24 @@ async def _broadcast_hanging_result(bot: Bot, state) -> None:
     locale = state.settings.get("language", "uz")
     _ = get_translator(locale)
 
-    # Always show the tally first
-    try:
-        tally_text = _("hanging-tally", yes=yes_total or 0, no=no_total or 0)
-        await bot.send_message(state.group_id, tally_text)
-    except Exception as e:
-        logger.debug(f"Hanging tally broadcast failed: {e}")
-
+    # If cancelled — show inline-tally cancelled message (yes/no included in body)
     if extras.get("hang_cancelled"):
         try:
-            await bot.send_message(state.group_id, _("hanging-cancelled"))
+            await bot.send_message(
+                state.group_id,
+                _("hanging-cancelled", yes=yes_total or 0, no=no_total or 0),
+                parse_mode="HTML",
+            )
         except Exception as e:
             logger.debug(f"Hanging cancel broadcast failed: {e}")
         return
+
+    # Successful hanging — show tally first, then result with role
+    try:
+        tally_text = _("hanging-tally", yes=yes_total or 0, no=no_total or 0)
+        await bot.send_message(state.group_id, tally_text, parse_mode="HTML")
+    except Exception as e:
+        logger.debug(f"Hanging tally broadcast failed: {e}")
 
     if prev_round.hanged:
         hanged_name = extras.get("hanged_name", "")

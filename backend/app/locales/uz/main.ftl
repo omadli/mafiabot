@@ -133,9 +133,9 @@ role-snitch = 🤓 Sotqin
 
 night-action-msg-don = 🤵🏻 Don navbatdagi o'ljasini tanladi...
 
-night-action-msg-detective-check = 🕵🏼 Komissar Kattani yovuzlarni qidirishga ketdi...
+night-action-msg-detective-check = 🕵🏻‍♂ Komissar katani yovuzlarni qidirishga ketdi...
 
-night-action-msg-detective-shoot = 🕵🏼 Komissar Kattani pistoletini o'qladi...
+night-action-msg-detective-shoot = 🕵🏻‍♂ Komissar katani pistoletini o'qladi...
 
 night-action-msg-doctor = 👨🏻‍⚕ Doktor kechki vizitiga otlandi...
 
@@ -170,8 +170,8 @@ last-words-prompt-killed-night =
     So'nggi so'zingni aytishing mumkin:
 
 last-words-broadcast =
-    O'limidan oldin kimdir, { $mention } ni qichqirganini eshitdi:
-    { $message }
+    Aholidan kimdir { $role_emoji } { $role_name } { $mention } o'limidan oldin:
+    <i>{ $message }</i> deb qichqirganini eshitgan.
 
 
 # ===========================================================
@@ -327,13 +327,13 @@ click-to-join-private = Bot bilan private chatda ochiladi...
 # TUNGI ATMOSFERA XABARLARI — YANGI ROLLAR
 # ===========================================================
 
-night-action-msg-lawyer = 👨‍💼 Advokat o'z mijozini himoyalashga ketdi...
+night-action-msg-lawyer = 👨‍💼 Advokat Mafiani ximoya qilish uchun qidiryapti...
 
 night-action-msg-journalist = 👩🏼‍💻 Jurnalist tunda izlanmoqda...
 
 night-action-msg-killer = 🥷 Ninza qonli ishini boshladi...
 
-night-action-msg-maniac = 🔪 Qotil qonli pichog'ini qayradi...
+night-action-msg-maniac = 🔪 Qotil butalar orasiga yashirinib oldi va pichoqni qinidan chiqardi...
 
 night-action-msg-werewolf = 🐺 Bo'ri tunda uvlay boshladi...
 
@@ -341,7 +341,7 @@ night-action-msg-arsonist = 🧟 G'azabkor yangi qurbonini belgiladi...
 
 night-action-msg-crook = 🤹 Aferist yangi qiyofa kiyishni rejalashtirmoqda...
 
-night-action-msg-snitch = 🤓 Sotqin yashirin ma'lumot qidirib ko'chaga otildi...
+night-action-msg-snitch = 🤓 Sotqin malumot to'plash uchun izlanishni boshladi...
 
 night-action-msg-kamikaze = 🧞‍♂️ Afsungar mistik kuchlarini chaqirmoqda...
 
@@ -526,7 +526,7 @@ give-insufficient = ❌ Olmos yetarli emas (sizda 💎 { $have }, kerak 💎 { $
 
 give-target-not-found = ❌ Foydalanuvchi topilmadi
 
-give-direct-success = 💎 { $sender } → { $receiver }: { $amount } olmos hadya qildi!
+give-direct-success = { $sender } 💎 { $amount } { $receiver }-ga xayriya qildi!
 
 give-creating = 💎 Giveaway yaratilmoqda...
 
@@ -586,7 +586,10 @@ hanging-result-with-role = <b>{ $name }</b> O'tkazilgan kunduzgi yig'ilishda osi
 
 hanging-result = <b>{ $name }</b> O'tkazilgan kunduzgi yig'ilishda osildi!
 
-hanging-cancelled = 👎 Ovozlar yetarli emas — bugun hech kim osilmaydi.
+hanging-cancelled =
+    <b>Ovoz berish natijalari:</b>
+    Axoli kelisha olmadi ({ $yes } 👍 | { $no } 👎)...
+    Kelisha olmaslik oqibatida hech kim osilmadi...
 
 
 # ===========================================================
@@ -625,7 +628,9 @@ arsonist-final-confirm = 💥 Oxirgi tun aktivlashdi! Barcha tanlaganlaringiz o'
 
 kamikaze-choose-victim = 🧞 Sizni osishdi! O'zingiz bilan birga kim bilan ketmoqchisiz?
 
-kamikaze-took-victim = 🔥 { $kamikaze } o'lganida { $victim } ni o'zi bilan jahannamga olib ketdi!
+kamikaze-took-victim =
+    🧞 Afsungar { $victim } ni o'zi bilan birga jahannasiga olib ketdi..
+    U { $victim_role_emoji } { $victim_role } edi.
 
 kamikaze-took-confirm = Tanlandi
 
@@ -636,9 +641,9 @@ kamikaze-took-confirm-text = 🧞 Siz { $target } ni o'zingiz bilan olib ketding
 # BO'RI TRANSFORMATSIYA XABARLARI (guruhga)
 # ===========================================================
 
-transform-werewolf-to-mafia = 🐺 { $mention } yangi qiyofada paydo bo'ldi: bundan buyon 🤵🏼 Mafiya sifatida o'ynaydi!
+transform-werewolf-to-mafia = 🐺 Bo'ri 🤵🏼 Mafiya ga aylandi!
 
-transform-werewolf-to-sergeant = 🐺 { $mention } yangi qiyofada paydo bo'ldi: bundan buyon 👮🏻‍♂ Serjant sifatida tinch aholiga xizmat qiladi!
+transform-werewolf-to-sergeant = 🐺 Bo'ri 👮🏻‍♂ Serjant ga aylandi!
 
 
 # ===========================================================
@@ -728,3 +733,24 @@ atmosphere-saved = ✅ <b>{ $slot }</b> sloti uchun media saqlandi.
 atmosphere-clear-help = 🧹 <code>/clearatmosphere &lt;slot&gt;</code> — slotni tozalash. Mavjud: { $slots }
 
 atmosphere-cleared = ✅ <b>{ $slot }</b> tozalandi.
+
+
+# ===========================================================
+# YANGI KALITLAR (adds)
+# ===========================================================
+
+leave-broadcast-with-role =
+    { $mention } bu shaharning yovuzliklariga chiday olmadi va o'z joniga qasd qildi.
+    U { $role_emoji } { $role_name } edi.
+
+crook-stole-vote-dm = 🎭 Aferist sizni aldab, kunlik ovoz berishda sizning ovoz berish huquqingizni olib qo'ydi.
+
+arsonist-self-burn = <b>{ $name }</b> (🧟 G'azabkor) o'zimni o'ldirdim!
+
+game-end-header = <b>O'yin tugadi!</b>
+
+game-end-winners-section = <b>G'oliblar:</b>
+
+game-end-losers-section = <b>Qolgan o'yinchilar:</b>
+
+game-end-duration = <i>O'yin: { $minutes } minut davom etdi</i>

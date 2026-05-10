@@ -11,7 +11,7 @@ from loguru import logger
 from app.core.redis_state import get_state_backend
 from app.core.state import GameState
 from app.services.i18n_service import get_translator
-from app.services.messaging import player_mention
+from app.services.messaging import player_mention, role_emoji_name
 
 
 # Redis key: pending last-words player → game_id (for matching incoming messages)
@@ -85,13 +85,21 @@ async def broadcast_last_words(bot: Bot, state: GameState, user_id: int, message
     if len(message_text) > 500:
         message_text = message_text[:497] + "..."
 
+    show_role_on_death = state.settings.get("display", {}).get("show_role_on_death", True)
+    role_label = role_emoji_name(player.role, locale) if show_role_on_death else "?"
+    role_parts = role_label.split(" ", 1)
+    role_emoji = role_parts[0] if role_parts else "❓"
+    role_name = role_parts[1] if len(role_parts) > 1 else player.role
+
     text = _(
         "last-words-broadcast",
+        role_emoji=role_emoji,
+        role_name=role_name,
         mention=player_mention(user_id, player.first_name),
         message=message_text,
     )
     try:
-        await bot.send_message(state.chat_id, text)
+        await bot.send_message(state.chat_id, text, parse_mode="HTML")
     except Exception as e:
         logger.warning(f"Could not broadcast last words: {e}")
 
