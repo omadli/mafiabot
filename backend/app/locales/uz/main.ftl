@@ -677,3 +677,13 @@ rules-summary =
     Tinch aholi sonini tenglashtirsang — mafiya g'olib.
 
     /game bilan boshlang. Omad!
+
+
+# === Mafia chat ===
+
+mafia-chat-opened =
+    🤵🏻 Mafiya tunini ochildi.
+    Ayrim a'zolaringiz bilan suhbatlasha olasiz:
+    { $members }
+
+    💬 Bu yerga yozgan har qanday matningiz boshqa mafiyalarga yetkaziladi.

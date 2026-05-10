@@ -5,9 +5,11 @@ import { authStore } from "@shared/store/auth";
 import { AdminLayout } from "./components/AdminLayout";
 import { AuditPage } from "./pages/AuditPage";
 import { Dashboard } from "./pages/Dashboard";
+import { GameReplayPage } from "./pages/GameReplayPage";
 import { GamesPage } from "./pages/GamesPage";
 import { GroupsPage } from "./pages/GroupsPage";
 import { LoginPage } from "./pages/LoginPage";
+import { UserDetailPage } from "./pages/UserDetailPage";
 import { UsersPage } from "./pages/UsersPage";
 
 export function AdminApp() {
@@ -20,8 +22,10 @@ export function AdminApp() {
         <Route element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="users" element={<UsersPage />} />
+          <Route path="users/:userId" element={<UserDetailPage />} />
           <Route path="groups" element={<GroupsPage />} />
           <Route path="games" element={<GamesPage />} />
+          <Route path="games/:gameId" element={<GameReplayPage />} />
           <Route path="audit" element={<AuditPage />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Route>

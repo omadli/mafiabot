@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
 import { api } from "@shared/api/client";
@@ -42,7 +43,7 @@ export function GamesPage() {
               {data?.items.map((g) => (
                 <tr key={g.id}>
                   <td style={{ color: "var(--muted)", fontFamily: "monospace" }}>
-                    {g.id.slice(0, 8)}…
+                    <Link to={`/admin/games/${g.id}`}>{g.id.slice(0, 8)}…</Link>
                   </td>
                   <td>{g.group_id}</td>
                   <td>

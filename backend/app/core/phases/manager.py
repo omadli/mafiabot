@@ -89,6 +89,21 @@ class PhaseManager:
                     except Exception as e:
                         logger.exception(f"on_phase_change failed: {e}")
 
+                # Emit WS event to admin subscribers
+                try:
+                    from app.services.ws_broker import emit_game_event
+
+                    await emit_game_event(
+                        "phase_change",
+                        game_id=str(state.id),
+                        group_id=state.group_id,
+                        phase=state.phase.value,
+                        round_num=state.round_num,
+                        alive=len(state.alive_players()),
+                    )
+                except Exception as e:
+                    logger.debug(f"WS emit failed: {e}")
+
                 # Check winner
                 if state.phase != Phase.WAITING:
                     winner = check_winner(state)

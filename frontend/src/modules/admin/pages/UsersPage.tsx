@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@shared/api/client";
@@ -95,12 +96,16 @@ export function UsersPage() {
             <tbody>
               {data?.items.map((u) => (
                 <tr key={u.id}>
-                  <td style={{ color: "var(--muted)" }}>{u.id}</td>
+                  <td style={{ color: "var(--muted)" }}>
+                    <Link to={`/admin/users/${u.id}`}>{u.id}</Link>
+                  </td>
                   <td>
-                    <div>{u.first_name}</div>
-                    <small style={{ color: "var(--muted)" }}>
-                      {u.username ? `@${u.username}` : "—"}
-                    </small>
+                    <Link to={`/admin/users/${u.id}`}>
+                      <div>{u.first_name}</div>
+                      <small style={{ color: "var(--muted)" }}>
+                        {u.username ? `@${u.username}` : "—"}
+                      </small>
+                    </Link>
                   </td>
                   <td>{u.diamonds}</td>
                   <td>{u.dollars}</td>

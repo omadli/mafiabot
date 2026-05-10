@@ -678,3 +678,13 @@ rules-summary =
     Match or outnumber the civilians — mafia wins.
 
     Start with /game. Good luck!
+
+
+# === Mafia chat ===
+
+mafia-chat-opened =
+    🤵🏻 Mafia night is open.
+    You can chat with your teammates:
+    { $members }
+
+    💬 Any text you send here is relayed to other mafia members.

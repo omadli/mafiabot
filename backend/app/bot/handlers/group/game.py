@@ -306,6 +306,10 @@ async def _on_phase_change(bot: Bot, state) -> None:
     if state.phase == Phase.NIGHT:
         await broadcast_phase_change(bot, state)
         await send_night_prompts(bot, state)
+        # Open mafia private chat
+        from app.services.mafia_chat import announce_mafia_chat_open
+
+        await announce_mafia_chat_open(bot, state)
     elif state.phase == Phase.DAY:
         await _broadcast_results_from_log(bot, state)
         await broadcast_phase_change(bot, state)

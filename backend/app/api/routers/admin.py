@@ -463,6 +463,176 @@ async def list_audit(
     return {"total": total, "page": page, "page_size": page_size, "items": items}
 
 
+# === Charts ===
+
+
+@router.get("/admin/charts/elo")
+async def chart_elo_distribution(admin: AdminAccount = Depends(get_current_admin)) -> dict:
+    """ELO histogram bins."""
+    elo_values = await UserStats.all().values_list("elo", flat=True)
+    bins = {
+        "<800": 0,
+        "800-999": 0,
+        "1000-1199": 0,
+        "1200-1399": 0,
+        "1400-1599": 0,
+        "1600-1799": 0,
+        "1800+": 0,
+    }
+    for _elo in elo_values:
+        elo: int = _elo  # type: ignore[assignment]
+        if elo < 800:
+            bins["<800"] += 1
+        elif elo < 1000:
+            bins["800-999"] += 1
+        elif elo < 1200:
+            bins["1000-1199"] += 1
+        elif elo < 1400:
+            bins["1200-1399"] += 1
+        elif elo < 1600:
+            bins["1400-1599"] += 1
+        elif elo < 1800:
+            bins["1600-1799"] += 1
+        else:
+            bins["1800+"] += 1
+    return {"bins": [{"label": k, "count": v} for k, v in bins.items()]}
+
+
+@router.get("/admin/charts/cohort")
+async def chart_cohort_retention(admin: AdminAccount = Depends(get_current_admin)) -> dict:
+    """Retention for users joined in last 30 days."""
+    now = datetime.now(UTC)
+    thirty_ago = now - timedelta(days=30)
+    seven_ago = now - timedelta(days=7)
+
+    new_users = await User.filter(joined_at__gte=thirty_ago).count()
+    if new_users == 0:
+        return {"new_users": 0, "retention_7d": 0, "retention_30d": 0}
+
+    active_7d = await User.filter(joined_at__gte=thirty_ago, updated_at__gte=seven_ago).count()
+    active_30d = await User.filter(joined_at__gte=thirty_ago, updated_at__gte=thirty_ago).count()
+
+    return {
+        "new_users": new_users,
+        "active_7d": active_7d,
+        "active_30d": active_30d,
+        "retention_7d": round(active_7d / new_users, 3),
+        "retention_30d": round(active_30d / new_users, 3),
+    }
+
+
+@router.get("/admin/charts/games-per-day")
+async def chart_games_per_day(
+    admin: AdminAccount = Depends(get_current_admin),
+    days: int = Query(30, ge=1, le=90),
+) -> dict:
+    """Games per day for last N days."""
+    now = datetime.now(UTC)
+    since = now - timedelta(days=days)
+    games = await Game.filter(started_at__gte=since).all()
+
+    by_day: dict[str, int] = {}
+    for g in games:
+        if g.started_at is None:
+            continue
+        key = g.started_at.date().isoformat()
+        by_day[key] = by_day.get(key, 0) + 1
+
+    series = []
+    for i in range(days):
+        d = (now - timedelta(days=days - 1 - i)).date()
+        key = d.isoformat()
+        series.append({"date": key, "count": by_day.get(key, 0)})
+    return {"series": series}
+
+
+# === User extras: transactions, games, achievements ===
+
+
+@router.get("/admin/users/{user_id}/transactions")
+async def user_transactions(
+    user_id: int,
+    admin: AdminAccount = Depends(get_current_admin),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+) -> dict:
+    from app.db.models import Transaction
+
+    qs = Transaction.filter(user_id=user_id)
+    total = await qs.count()
+    rows = await qs.offset((page - 1) * page_size).limit(page_size).order_by("-created_at")
+
+    items = [
+        {
+            "id": str(t.id),
+            "type": t.type,
+            "stars_amount": t.stars_amount,
+            "diamonds_amount": t.diamonds_amount,
+            "dollars_amount": t.dollars_amount,
+            "item": t.item,
+            "status": t.status,
+            "note": t.note,
+            "created_at": t.created_at.isoformat(),
+        }
+        for t in rows
+    ]
+    return {"total": total, "page": page, "items": items}
+
+
+@router.get("/admin/users/{user_id}/games")
+async def user_games(
+    user_id: int,
+    admin: AdminAccount = Depends(get_current_admin),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+) -> dict:
+    from app.db.models import GameResult
+
+    qs = GameResult.filter(user_id=user_id)
+    total = await qs.count()
+    rows = await qs.offset((page - 1) * page_size).limit(page_size).order_by("-played_at")
+
+    items = [
+        {
+            "id": str(r.id),
+            "game_id": str(r.game_id),
+            "group_id": r.group_id,
+            "role": r.role,
+            "team": r.team,
+            "won": r.won,
+            "survived": r.survived,
+            "death_reason": r.death_reason,
+            "elo_before": r.elo_before,
+            "elo_after": r.elo_after,
+            "elo_change": r.elo_change,
+            "xp_earned": r.xp_earned,
+            "played_at": r.played_at.isoformat(),
+        }
+        for r in rows
+    ]
+    return {"total": total, "page": page, "items": items}
+
+
+@router.get("/admin/users/{user_id}/achievements")
+async def user_achievements(user_id: int, admin: AdminAccount = Depends(get_current_admin)) -> dict:
+    from app.db.models import UserAchievement
+
+    rows = await UserAchievement.filter(user_id=user_id).order_by("-unlocked_at").all()
+    items = []
+    for r in rows:
+        await r.fetch_related("achievement")
+        items.append(
+            {
+                "code": r.achievement.code,
+                "name_i18n": r.achievement.name_i18n,
+                "icon": r.achievement.icon,
+                "diamonds_reward": r.achievement.diamonds_reward,
+                "unlocked_at": r.unlocked_at.isoformat(),
+            }
+        )
+    return {"items": items}
+
+
 # === Me (current admin info) ===
 
 
