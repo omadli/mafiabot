@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import axios, { AxiosError } from "axios";
+import { AxiosError } from "axios";
 
 import { authStore } from "@shared/store/auth";
 import { api } from "@shared/api/client";
