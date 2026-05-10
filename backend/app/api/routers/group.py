@@ -89,13 +89,14 @@ async def get_group_settings(group_id: int) -> dict:
         "gameplay": s.gameplay,
         "display": s.display,
         "messages": s.messages,
+        "atmosphere_media": s.atmosphere_media,
     }
 
 
 class UpdateSettingsRequest(BaseModel):
     section: str = Field(
         ...,
-        pattern="^(roles|timings|silence|items_allowed|role_distribution|afk|permissions|gameplay|display|messages|language)$",
+        pattern="^(roles|timings|silence|items_allowed|role_distribution|afk|permissions|gameplay|display|messages|atmosphere_media|language)$",
     )
     value: dict | str
 

@@ -304,6 +304,8 @@ async def _on_phase_change(bot: Bot, state) -> None:
     from app.services.role_actions import send_night_prompts
 
     if state.phase == Phase.NIGHT:
+        # Broadcast previous round's hanging result before next night begins
+        await _broadcast_hanging_result(bot, state)
         await broadcast_phase_change(bot, state)
         await send_night_prompts(bot, state)
         # Open mafia private chat
@@ -313,6 +315,14 @@ async def _on_phase_change(bot: Bot, state) -> None:
     elif state.phase == Phase.DAY:
         await _broadcast_results_from_log(bot, state)
         await broadcast_phase_change(bot, state)
+        # Send alive players summary (numbered list + team breakdown)
+        from app.services.alive_summary import format_alive_summary
+
+        try:
+            summary = format_alive_summary(state)
+            await bot.send_message(state.group_id, summary, parse_mode="HTML")
+        except Exception as e:
+            logger.warning(f"Failed to send alive summary: {e}")
     elif state.phase == Phase.VOTING:
         await broadcast_phase_change(bot, state)
         await announce_voting(bot, state)
@@ -323,6 +333,69 @@ async def _on_phase_change(bot: Bot, state) -> None:
             await announce_hanging_confirm(bot, state, target_id)
     elif state.phase in (Phase.FINISHED, Phase.CANCELLED):
         await broadcast_game_end(bot, state)
+
+
+async def _broadcast_hanging_result(bot: Bot, state) -> None:
+    """Broadcast yes/no tally + 'X osildi! U edi {role}' or 'no consensus' message.
+
+    Looks at the most recent round prior to current round_num (the just-finished day).
+    """
+    from app.services.i18n_service import get_translator
+
+    if state.round_num <= 1 or not state.rounds:
+        return  # first round — no previous voting yet
+
+    prev_round = None
+    for r in state.rounds:
+        if r.round_num == state.round_num - 1:
+            prev_round = r
+            break
+    if prev_round is None:
+        return
+
+    extras = prev_round.__dict__
+    yes_total = extras.get("hang_yes_total")
+    no_total = extras.get("hang_no_total")
+    if yes_total is None and no_total is None:
+        return  # no hanging confirm happened
+
+    locale = state.settings.get("language", "uz")
+    _ = get_translator(locale)
+
+    # Always show the tally first
+    try:
+        tally_text = _("hanging-tally", yes=yes_total or 0, no=no_total or 0)
+        await bot.send_message(state.group_id, tally_text)
+    except Exception as e:
+        logger.debug(f"Hanging tally broadcast failed: {e}")
+
+    if extras.get("hang_cancelled"):
+        try:
+            await bot.send_message(state.group_id, _("hanging-cancelled"))
+        except Exception as e:
+            logger.debug(f"Hanging cancel broadcast failed: {e}")
+        return
+
+    if prev_round.hanged:
+        hanged_name = extras.get("hanged_name", "")
+        hanged_role = extras.get("hanged_role", "")
+        show_role = state.settings.get("display", {}).get("show_role_on_death", True)
+        try:
+            if show_role and hanged_role:
+                from app.services.alive_summary import ROLE_DISPLAY
+
+                emoji, role_name = ROLE_DISPLAY.get(hanged_role, ("", hanged_role))
+                msg = _(
+                    "hanging-result-with-role",
+                    name=hanged_name,
+                    role_emoji=emoji,
+                    role=role_name,
+                )
+            else:
+                msg = _("hanging-result", name=hanged_name)
+            await bot.send_message(state.group_id, msg, parse_mode="HTML")
+        except Exception as e:
+            logger.debug(f"Hanging result broadcast failed: {e}")
 
 
 async def _broadcast_results_from_log(bot: Bot, state) -> None:

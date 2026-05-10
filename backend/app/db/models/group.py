@@ -90,6 +90,13 @@ class GroupSettings(Model):
     messages: dict = fields.JSONField(default=dict)
     # {"leave_message": "...", "style": "formal"}
 
+    # Atmosphere media — admin-uploaded GIF/video file_ids per phase
+    atmosphere_media: dict = fields.JSONField(default=dict)
+    # {"night_start": "<file_id>", "day_start": "<file_id>",
+    #  "voting_start": "<file_id>", "game_end_civilian_win": "<file_id>",
+    #  "game_end_mafia_win": "<file_id>"}
+    # Each value is a Telegram file_id (sticker/animation/video) uploaded by group admin.
+
     class Meta:
         table = "group_settings"
 
@@ -153,6 +160,15 @@ DEFAULT_DISPLAY = {
     "anonymous_voting": False,
     "auto_pin_registration": True,
     "show_role_on_death": True,
+}
+
+DEFAULT_ATMOSPHERE_MEDIA: dict = {
+    "night_start": None,
+    "day_start": None,
+    "voting_start": None,
+    "game_end_civilian_win": None,
+    "game_end_mafia_win": None,
+    "game_end_singleton_win": None,
 }
 
 DEFAULT_ROLES_ENABLED = {

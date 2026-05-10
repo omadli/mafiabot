@@ -13,6 +13,7 @@ from loguru import logger
 from app.db.models import Group
 from app.db.models.group import (
     DEFAULT_AFK,
+    DEFAULT_ATMOSPHERE_MEDIA,
     DEFAULT_DISPLAY,
     DEFAULT_GAMEPLAY,
     DEFAULT_ITEMS_ALLOWED,
@@ -54,6 +55,7 @@ async def bot_added_to_group(event: ChatMemberUpdated, bot: Bot) -> None:
             "permissions": DEFAULT_PERMISSIONS,
             "gameplay": DEFAULT_GAMEPLAY,
             "display": DEFAULT_DISPLAY,
+            "atmosphere_media": DEFAULT_ATMOSPHERE_MEDIA,
         },
     )
 

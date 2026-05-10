@@ -559,6 +559,10 @@ vote-recorded-toast = ✅ Your vote: { $target }
 
 vote-skipped-toast = ✅ You chose "Nobody"
 
+vote-broadcast = <b>{ $voter }</b> -- voted for <b>{ $target }</b>
+
+vote-broadcast-abstain = 🚫 <b>{ $voter }</b> decided not to choose anyone..
+
 
 # ===========================================================
 # HANGING CONFIRMATION
@@ -573,6 +577,16 @@ hanging-yes = 👍 Yes, hang them
 hanging-no = 👎 No
 
 hanging-confirm-expired = ❌ Confirmation window has expired
+
+hanging-tally =
+    <b>Voting results:</b>
+    { $yes } 👍 | { $no } 👎
+
+hanging-result-with-role = <b>{ $name }</b> was hanged at the day meeting! They were { $role_emoji } <b>{ $role }</b>..
+
+hanging-result = <b>{ $name }</b> was hanged at the day meeting!
+
+hanging-cancelled = 👎 Not enough votes — no one will be hanged today.
 
 
 # ===========================================================
@@ -688,3 +702,30 @@ mafia-chat-opened =
     { $members }
 
     💬 Any text you send here is relayed to other mafia members.
+
+
+# === Atmosphere media ===
+
+atmosphere-admin-only = 🚫 This command is admin-only.
+
+atmosphere-help =
+    📺 <b>Atmosphere media</b>
+
+    Reply to a GIF/video with:
+    <code>/setatmosphere &lt;slot&gt;</code>
+
+    Available slots: { $slots }
+
+atmosphere-invalid-slot = ❌ Invalid slot. Available: { $slots }
+
+atmosphere-reply-required = ❌ Reply to an animation or video.
+
+atmosphere-no-media = ❌ No media found in the replied message.
+
+atmosphere-no-group = ❌ Group settings not found.
+
+atmosphere-saved = ✅ Media saved for slot <b>{ $slot }</b>.
+
+atmosphere-clear-help = 🧹 <code>/clearatmosphere &lt;slot&gt;</code> — clear slot. Available: { $slots }
+
+atmosphere-cleared = ✅ <b>{ $slot }</b> cleared.

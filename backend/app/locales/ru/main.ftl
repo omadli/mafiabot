@@ -559,6 +559,10 @@ vote-recorded-toast = ✅ Ваш голос: { $target }
 
 vote-skipped-toast = ✅ Вы выбрали «Никого»
 
+vote-broadcast = <b>{ $voter }</b> -- проголосовал(а) за <b>{ $target }</b>
+
+vote-broadcast-abstain = 🚫 <b>{ $voter }</b> решил(а) никого не выбирать..
+
 
 # ===========================================================
 # ПОДТВЕРЖДЕНИЕ КАЗНИ
@@ -573,6 +577,16 @@ hanging-yes = 👍 Да, повесить
 hanging-no = 👎 Нет
 
 hanging-confirm-expired = ❌ Время подтверждения истекло
+
+hanging-tally =
+    <b>Результаты голосования:</b>
+    { $yes } 👍 | { $no } 👎
+
+hanging-result-with-role = <b>{ $name }</b> повешен(а) на дневном собрании! Это был { $role_emoji } <b>{ $role }</b>..
+
+hanging-result = <b>{ $name }</b> повешен(а) на дневном собрании!
+
+hanging-cancelled = 👎 Голосов недостаточно — сегодня никто не будет повешен.
 
 
 # ===========================================================
@@ -687,3 +701,30 @@ mafia-chat-opened =
     { $members }
 
     💬 Любой текст здесь будет отправлен другим мафиози.
+
+
+# === Atmosphere media ===
+
+atmosphere-admin-only = 🚫 Эта команда только для администраторов группы.
+
+atmosphere-help =
+    📺 <b>Атмосферное медиа</b>
+
+    Ответьте на GIF/видео:
+    <code>/setatmosphere &lt;slot&gt;</code>
+
+    Доступные слоты: { $slots }
+
+atmosphere-invalid-slot = ❌ Неверный слот. Доступные: { $slots }
+
+atmosphere-reply-required = ❌ Ответьте на анимацию или видео.
+
+atmosphere-no-media = ❌ В ответном сообщении нет медиа.
+
+atmosphere-no-group = ❌ Настройки группы не найдены.
+
+atmosphere-saved = ✅ Медиа для слота <b>{ $slot }</b> сохранено.
+
+atmosphere-clear-help = 🧹 <code>/clearatmosphere &lt;slot&gt;</code> — очистить слот. Доступные: { $slots }
+
+atmosphere-cleared = ✅ <b>{ $slot }</b> очищен.

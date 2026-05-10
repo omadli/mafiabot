@@ -269,6 +269,10 @@ class PhaseManager:
         yes_total = sum(confirm_data.get("yes", {}).values())
         no_total = sum(confirm_data.get("no", {}).values())
 
+        # Persist totals for broadcast (👍 / 👎 breakdown reflects Mayor x2 weights)
+        state.current_round().__dict__["hang_yes_total"] = yes_total
+        state.current_round().__dict__["hang_no_total"] = no_total
+
         # If no confirmation votes at all — auto-confirm (fall through)
         if not confirm_data or (yes_total == 0 and no_total == 0):
             yes_total = 1  # default "yes"
@@ -276,6 +280,7 @@ class PhaseManager:
         if no_total >= yes_total:
             # Cancelled
             logger.info(f"Hanging cancelled by 👎 (yes={yes_total}, no={no_total})")
+            state.current_round().__dict__["hang_cancelled"] = True
             state.current_round().hanged = None
             state.current_votes = {}
             return
@@ -302,6 +307,9 @@ class PhaseManager:
         target.died_at_phase = Phase.VOTING
         target.died_reason = DeathReason.VOTED_OUT
         state.current_round().hanged = target_id
+        # Persist hanged role for broadcast (post-hang reveal)
+        state.current_round().__dict__["hanged_role"] = target.role
+        state.current_round().__dict__["hanged_name"] = target.first_name
 
         if target.role == "kamikaze":
             state.current_round().__dict__["kamikaze_pending_choice"] = target.user_id

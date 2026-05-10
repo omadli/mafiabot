@@ -112,6 +112,16 @@ async def callback_vote_cast(query: CallbackQuery, user: User, _: Translator) ->
     else:
         if target_id == 0:
             await query.answer(_("vote-skipped-toast"), show_alert=False)
+            # Broadcast abstention to group (mirrors @MafiaAzBot format)
+            try:
+                voter_name = _safe_html(voter.first_name)
+                await query.bot.send_message(
+                    chat_id,
+                    _("vote-broadcast-abstain", voter=voter_name),
+                    parse_mode="HTML",
+                )
+            except Exception as e:
+                logger.debug(f"Vote broadcast failed: {e}")
         else:
             target = state.get_player(target_id)
             if target is not None:
@@ -119,6 +129,25 @@ async def callback_vote_cast(query: CallbackQuery, user: User, _: Translator) ->
                     _("vote-recorded-toast", target=target.first_name),
                     show_alert=False,
                 )
+                # Broadcast individual vote to group
+                try:
+                    voter_name = _safe_html(voter.first_name)
+                    target_name = _safe_html(target.first_name)
+                    await query.bot.send_message(
+                        chat_id,
+                        _(
+                            "vote-broadcast",
+                            voter=voter_name,
+                            target=target_name,
+                        ),
+                        parse_mode="HTML",
+                    )
+                except Exception as e:
+                    logger.debug(f"Vote broadcast failed: {e}")
+
+
+def _safe_html(text: str) -> str:
+    return (text or "").replace("<", "&lt;").replace(">", "&gt;").replace("&", "&amp;")
 
 
 @router.callback_query(F.data.startswith("hangconfirm:"))

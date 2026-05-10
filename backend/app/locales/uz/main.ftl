@@ -559,6 +559,10 @@ vote-recorded-toast = ✅ Sizning ovozingiz: { $target }
 
 vote-skipped-toast = ✅ "Hech kim" tanladingiz
 
+vote-broadcast = <b>{ $voter }</b> -- <b>{ $target }</b> ga ovoz berdi
+
+vote-broadcast-abstain = 🚫 <b>{ $voter }</b> hech kimni tanlamaslikka qaror qildi..
+
 
 # ===========================================================
 # OSISH TASDIQLASH
@@ -573,6 +577,16 @@ hanging-yes = 👍 Ha, osmoq kerak
 hanging-no = 👎 Yo'q
 
 hanging-confirm-expired = ❌ Tasdiqlash vaqti tugagan
+
+hanging-tally =
+    <b>Ovoz berish natijalari:</b>
+    { $yes } 👍 | { $no } 👎
+
+hanging-result-with-role = <b>{ $name }</b> O'tkazilgan kunduzgi yig'ilishda osildi! U edi { $role_emoji } <b>{ $role }</b>..
+
+hanging-result = <b>{ $name }</b> O'tkazilgan kunduzgi yig'ilishda osildi!
+
+hanging-cancelled = 👎 Ovozlar yetarli emas — bugun hech kim osilmaydi.
 
 
 # ===========================================================
@@ -687,3 +701,30 @@ mafia-chat-opened =
     { $members }
 
     💬 Bu yerga yozgan har qanday matningiz boshqa mafiyalarga yetkaziladi.
+
+
+# === Atmosphere media ===
+
+atmosphere-admin-only = 🚫 Bu komanda faqat guruh administratorlari uchun.
+
+atmosphere-help =
+    📺 <b>Atmosfera media</b>
+
+    GIF/video xabarga reply qilib yuboring:
+    <code>/setatmosphere &lt;slot&gt;</code>
+
+    Mavjud slotlar: { $slots }
+
+atmosphere-invalid-slot = ❌ Noto'g'ri slot. Mavjud: { $slots }
+
+atmosphere-reply-required = ❌ Animatsiya yoki videoga reply qiling.
+
+atmosphere-no-media = ❌ Reply qilingan xabarda media topilmadi.
+
+atmosphere-no-group = ❌ Guruh sozlamalari topilmadi.
+
+atmosphere-saved = ✅ <b>{ $slot }</b> sloti uchun media saqlandi.
+
+atmosphere-clear-help = 🧹 <code>/clearatmosphere &lt;slot&gt;</code> — slotni tozalash. Mavjud: { $slots }
+
+atmosphere-cleared = ✅ <b>{ $slot }</b> tozalandi.

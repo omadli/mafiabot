@@ -187,16 +187,47 @@ async def _safe_send(bot: Bot, chat_id: int, text: str) -> None:
 
 
 async def broadcast_phase_change(bot: Bot, state: GameState) -> None:
-    """Generic phase change announcer (NIGHT/DAY/VOTING start)."""
+    """Generic phase change announcer (NIGHT/DAY/VOTING start).
+
+    If `atmosphere_media` is configured for this phase, sends the GIF/video first
+    (mirrors @MafiaAzBot which uses Baku skyline GIFs at night/day starts).
+    """
     locale = state.settings.get("language", "uz")
     _ = get_translator(locale)
 
-    if state.phase == Phase.NIGHT:
-        await _safe_send(bot, state.chat_id, _("phase-night-start", round=state.round_num))
-    elif state.phase == Phase.DAY:
-        await _safe_send(bot, state.chat_id, _("phase-day-start", round=state.round_num))
-    elif state.phase == Phase.VOTING:
-        await _safe_send(bot, state.chat_id, _("phase-voting-start"))
+    media = state.settings.get("atmosphere_media", {}) or {}
+    media_key_map = {
+        Phase.NIGHT: "night_start",
+        Phase.DAY: "day_start",
+        Phase.VOTING: "voting_start",
+    }
+    media_key = media_key_map.get(state.phase)
+    media_file_id = media.get(media_key) if media_key else None
+
+    text_key_map = {
+        Phase.NIGHT: ("phase-night-start", {"round": state.round_num}),
+        Phase.DAY: ("phase-day-start", {"round": state.round_num}),
+        Phase.VOTING: ("phase-voting-start", {}),
+    }
+    if state.phase not in text_key_map:
+        return
+
+    key, params = text_key_map[state.phase]
+    caption = _(key, **params)
+
+    if media_file_id:
+        try:
+            await bot.send_animation(state.chat_id, media_file_id, caption=caption)
+            return
+        except Exception as e:
+            logger.debug(f"send_animation failed (falling back to send_video): {e}")
+            try:
+                await bot.send_video(state.chat_id, media_file_id, caption=caption)
+                return
+            except Exception as e2:
+                logger.warning(f"atmosphere_media send failed for {media_key}: {e2}")
+
+    await _safe_send(bot, state.chat_id, caption)
 
 
 async def broadcast_game_end(bot: Bot, state: GameState) -> None:

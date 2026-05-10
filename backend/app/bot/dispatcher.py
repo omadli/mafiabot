@@ -7,6 +7,7 @@ from loguru import logger
 def setup_routers(dp: Dispatcher) -> None:
     """Register all bot routers."""
     from app.bot.handlers.common import help as common_help
+    from app.bot.handlers.group import atmosphere as group_atmosphere
     from app.bot.handlers.group import game as group_game
     from app.bot.handlers.group import giveaway as group_giveaway
     from app.bot.handlers.group import onboarding as group_onboarding
@@ -33,6 +34,7 @@ def setup_routers(dp: Dispatcher) -> None:
     dp.include_router(group_stats.router)
     dp.include_router(group_giveaway.router)
     dp.include_router(group_voting.router)
+    dp.include_router(group_atmosphere.router)
     dp.include_router(group_game.router)
     dp.include_router(private_inventory.router)
     dp.include_router(private_payment.router)

@@ -70,3 +70,67 @@ def test_singletons_appear_when_enabled():
     result = distribute_roles(_user_ids(10), enabled_roles=enabled)
     roles = [r.role for r in result]
     assert "maniac" in roles
+
+
+def test_n30_high_ratio_matches_reference():
+    """30 players, high ratio, all roles enabled — match @MafiaAzBot reference.
+
+    Reference shows: 10 mafia, 7 singletons, 13 civilians.
+    """
+    enabled = dict.fromkeys(
+        (
+            "lucky",
+            "suicide",
+            "kamikaze",
+            "journalist",
+            "killer",
+            "maniac",
+            "werewolf",
+            "mage",
+            "arsonist",
+            "crook",
+            "snitch",
+        ),
+        True,
+    )
+    result = distribute_roles(_user_ids(30), mafia_ratio="high", enabled_roles=enabled)
+    roles = [r.role for r in result]
+
+    mafia_codes = {"don", "mafia", "lawyer", "journalist", "killer"}
+    singleton_codes = {"maniac", "werewolf", "mage", "arsonist", "crook", "snitch"}
+
+    mafia_count = sum(1 for r in roles if r in mafia_codes)
+    singleton_count = sum(1 for r in roles if r in singleton_codes)
+    civilian_count = len(roles) - mafia_count - singleton_count
+
+    assert mafia_count == 10, f"Expected 10 mafia, got {mafia_count}"
+    assert singleton_count == 7, f"Expected 7 singletons, got {singleton_count}"
+    assert civilian_count == 13, f"Expected 13 civilians, got {civilian_count}"
+
+
+def test_n30_kamikaze_multi_instance():
+    """At N=30, kamikaze should appear 3 times (ceil(30/10))."""
+    enabled = {"kamikaze": True, "lucky": True, "suicide": True}
+    result = distribute_roles(_user_ids(30), mafia_ratio="high", enabled_roles=enabled)
+    roles = [r.role for r in result]
+    kamikaze_count = sum(1 for r in roles if r == "kamikaze")
+    assert kamikaze_count == 3, f"Expected 3 kamikazes, got {kamikaze_count}"
+
+
+def test_n20_extra_sergeant():
+    """At N>=20, sergeant appears twice."""
+    result = distribute_roles(_user_ids(20))
+    roles = [r.role for r in result]
+    sergeant_count = sum(1 for r in roles if r == "sergeant")
+    assert sergeant_count == 2, f"Expected 2 sergeants at N=20, got {sergeant_count}"
+
+
+def test_n24_werewolf_multi_instance():
+    """At N>=24, werewolf may appear twice."""
+    enabled = {"werewolf": True}
+    # Run multiple times: with only werewolf enabled, all singletons must be werewolves
+    result = distribute_roles(_user_ids(24), mafia_ratio="high", enabled_roles=enabled)
+    roles = [r.role for r in result]
+    werewolf_count = sum(1 for r in roles if r == "werewolf")
+    # N=24 → singletons = 24//4 = 6; with only werewolf enabled, all become werewolf
+    assert werewolf_count >= 2, f"Expected >=2 werewolves, got {werewolf_count}"
