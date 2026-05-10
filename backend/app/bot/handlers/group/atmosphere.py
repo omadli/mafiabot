@@ -15,8 +15,8 @@ from aiogram.filters import Command, CommandObject
 from aiogram.types import Message
 from loguru import logger
 
-from app.bot.middlewares.i18n import Translator
 from app.db.models import Group, GroupSettings, User
+from app.services.i18n_service import Translator
 
 router = Router(name="group_atmosphere")
 router.message.filter(F.chat.type.in_({"group", "supergroup"}))
