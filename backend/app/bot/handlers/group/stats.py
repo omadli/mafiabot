@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import UTC
+
 from aiogram import Router
 from aiogram.filters import Command, CommandObject
 from aiogram.types import Message
@@ -25,8 +27,7 @@ async def cmd_stats(message: Message, user: User, _: Translator, command: Comman
         await _show_role_stats(message, user, args[1], _)
         return
     if args and args[0] in ("day", "week", "month"):
-        # Period filter — Bosqich 2 cron job qiladi, hozir placeholder
-        await message.answer(_("stats-period-todo"))
+        await _show_period_stats(message, user, args[0], _)
         return
 
     stats = await UserStats.get_or_none(user=user)
@@ -35,6 +36,59 @@ async def cmd_stats(message: Message, user: User, _: Translator, command: Comman
         return
 
     text = _format_user_stats(user, stats, _)
+    await message.answer(text)
+
+
+async def _show_period_stats(message: Message, user: User, period: str, _: Translator) -> None:
+    """Show user's stats for last day / week / month from snapshots + recent results."""
+    from datetime import datetime, timedelta
+
+    from app.db.models import GameResult, StatsPeriodSnapshot
+
+    period_map = {"day": "daily", "week": "weekly", "month": "monthly"}
+    snap_period = period_map[period]
+
+    # Find most recent snapshot for this period (global)
+    snap = (
+        await StatsPeriodSnapshot.filter(user=user, group=None, period=snap_period)
+        .order_by("-period_start")
+        .first()
+    )
+
+    if snap is None or snap.games_total == 0:
+        # Fallback: compute from GameResult
+        now = datetime.now(UTC)
+        delta = {"day": timedelta(days=1), "week": timedelta(days=7), "month": timedelta(days=30)}[
+            period
+        ]
+        since = now - delta
+        results = await GameResult.filter(user=user, played_at__gte=since).all()
+        if not results:
+            await message.answer(_("stats-period-empty", period=period))
+            return
+        games = len(results)
+        wins = sum(1 for r in results if r.won)
+        elo_change = sum(r.elo_change for r in results)
+        xp = sum(r.xp_earned for r in results)
+        text = _(
+            "stats-period",
+            period=period,
+            games=games,
+            wins=wins,
+            winrate=int((wins / games) * 100) if games else 0,
+            elo_change=elo_change,
+            xp=xp,
+        )
+    else:
+        text = _(
+            "stats-period",
+            period=period,
+            games=snap.games_total,
+            wins=snap.games_won,
+            winrate=int((snap.games_won / snap.games_total) * 100) if snap.games_total else 0,
+            elo_change=snap.elo_change,
+            xp=snap.xp_earned,
+        )
     await message.answer(text)
 
 

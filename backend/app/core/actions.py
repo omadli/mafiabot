@@ -365,6 +365,13 @@ class ActionResolver:
                     )
                 )
 
+        # 12a. Crook (Aferist) — record proxy_target for next day's voting
+        for a in active_actions:
+            if a.role == "crook" and a.action_type == "visit" and a.target_id is not None:
+                actor = state.get_player(a.actor_id)
+                if actor is not None:
+                    actor.extra["proxy_target"] = a.target_id
+
         # 12. Snitch reveal
         for a in active_actions:
             if a.role != "snitch" or a.target_id is None:

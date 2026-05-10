@@ -254,6 +254,21 @@ async def finish_game(state: GameState, winner: Team | None) -> None:
     except Exception as e:
         logger.exception(f"Stats finalization failed for game {state.id}: {e}")
 
+    # Bounty payout (if /game N was used)
+    if state.bounty_pool and state.bounty_per_winner and state.winner_user_ids:
+        try:
+            from app.services.giveaway_service import payout_bounty
+
+            await payout_bounty(
+                pool=state.bounty_pool,
+                per_winner=state.bounty_per_winner,
+                winner_user_ids=state.winner_user_ids,
+                initiator_id=state.bounty_initiator_id,
+                game_id=state.id,
+            )
+        except Exception as e:
+            logger.exception(f"Bounty payout failed for game {state.id}: {e}")
+
     # Clear active_game for all participants
     for p in state.players:
         await set_user_active_game(p.user_id, None)
@@ -313,16 +328,33 @@ async def _resolve_active_items(user_id: int, items_allowed: dict) -> list[str]:
 
 
 async def cancel_game(state: GameState, reason: str = "cancelled") -> None:
-    """Cancel game (admin /stop or auto)."""
+    """Cancel game (admin /stop or auto). Refund bounty if applicable."""
+    from datetime import datetime
+
     state.phase = Phase.CANCELLED
     state.finished_at = int(time.time())
 
     db_game = await Game.get_or_none(id=state.id)
     if db_game is not None:
         db_game.status = GameStatus.CANCELLED
-        db_game.finished_at = state.finished_at  # type: ignore[assignment]
+        db_game.finished_at = datetime.now(UTC)
         db_game.history = state.to_history_dict()
         await db_game.save()
+
+    # Refund bounty escrow
+    if state.bounty_pool and state.bounty_initiator_id:
+        try:
+            from app.services.giveaway_service import payout_bounty
+
+            await payout_bounty(
+                pool=state.bounty_pool,
+                per_winner=0,
+                winner_user_ids=[],  # empty → full refund
+                initiator_id=state.bounty_initiator_id,
+                game_id=state.id,
+            )
+        except Exception as e:
+            logger.exception(f"Bounty refund failed for game {state.id}: {e}")
 
     for p in state.players:
         await set_user_active_game(p.user_id, None)

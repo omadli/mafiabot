@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
+from loguru import logger
 from pydantic import BaseModel, Field
 
+from app.config import settings
 from app.db.models import Group
 from app.services.audit_service import log_action
 from app.utils.webapp_auth import validate_init_data
@@ -13,18 +15,18 @@ router = APIRouter()
 
 
 class WebAppAuthData(BaseModel):
-    """Validated Telegram WebApp data."""
-
     user_id: int
-    chat_id: int  # group_id from start_param
+    chat_id: int
 
 
-async def _validate_webapp(
+async def validate_webapp(
     x_telegram_init_data: str | None = Header(default=None, alias="X-Telegram-Init-Data"),
     x_chat_id: int | None = Header(default=None, alias="X-Chat-Id"),
 ) -> WebAppAuthData:
-    """Validate Telegram WebApp initData header."""
+    """Validate Telegram WebApp initData. In DEBUG mode, X-Chat-Id alone is enough."""
     if not x_telegram_init_data:
+        if settings.debug and x_chat_id is not None:
+            return WebAppAuthData(user_id=0, chat_id=x_chat_id)
         raise HTTPException(status_code=401, detail="Missing init data")
     if x_chat_id is None:
         raise HTTPException(status_code=400, detail="Missing X-Chat-Id header")
@@ -38,6 +40,30 @@ async def _validate_webapp(
         raise HTTPException(status_code=400, detail="Invalid user payload")
 
     return WebAppAuthData(user_id=user_obj["id"], chat_id=x_chat_id)
+
+
+async def require_group_admin(
+    auth: WebAppAuthData = Depends(validate_webapp),
+) -> WebAppAuthData:
+    """Verify the authenticated user is admin in the target group via Bot API."""
+    if auth.user_id == 0:
+        return auth  # dev mode
+
+    from app.main import bot
+
+    if bot is None:
+        raise HTTPException(status_code=503, detail="Bot not initialized")
+
+    try:
+        member = await bot.get_chat_member(auth.chat_id, auth.user_id)
+        if member.status not in ("creator", "administrator"):
+            raise HTTPException(status_code=403, detail="Group admin required")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.warning(f"Group admin check failed: {e}")
+        raise HTTPException(status_code=403, detail="Could not verify admin status")
+    return auth
 
 
 @router.get("/group/{group_id}/settings")
@@ -78,15 +104,11 @@ class UpdateSettingsRequest(BaseModel):
 async def update_group_settings(
     group_id: int,
     payload: UpdateSettingsRequest,
-    auth: WebAppAuthData = None,  # type: ignore[assignment]
+    auth: WebAppAuthData = Depends(require_group_admin),
 ) -> dict:
-    """Update group settings — only group admins (validated via Telegram WebApp).
-
-    Note: For now we trust the X-Chat-Id header. Real admin check should call
-    Telegram getChatMember to verify the user is admin in this group.
-    """
-    # Manual auth (optional for MVP)
-    # auth = await _validate_webapp(...) — wired via FastAPI Depends in route
+    """Update a settings section. Requires group admin via WebApp initData."""
+    if auth.chat_id != group_id:
+        raise HTTPException(status_code=403, detail="Chat ID mismatch")
 
     group = await Group.get_or_none(id=group_id).prefetch_related("settings")
     if group is None:
@@ -96,7 +118,6 @@ async def update_group_settings(
     if s is None:
         raise HTTPException(status_code=404, detail="Settings not found")
 
-    # Apply
     if payload.section == "language":
         if not isinstance(payload.value, str) or len(payload.value) > 8:
             raise HTTPException(status_code=400, detail="Invalid language code")
@@ -110,7 +131,7 @@ async def update_group_settings(
         action=f"group.settings.{payload.section}",
         target_type="group",
         target_id=str(group_id),
-        payload={"section": payload.section, "value": payload.value},
+        payload={"section": payload.section, "user_id": auth.user_id},
     )
     return {"ok": True, "section": payload.section}
 

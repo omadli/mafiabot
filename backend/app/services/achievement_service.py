@@ -314,6 +314,23 @@ async def seed_achievements() -> None:
     logger.info(f"Seeded {len(ACHIEVEMENTS)} achievements")
 
 
+async def notify_unlock(bot, user_id: int, ach: AchievementDef, locale: str) -> None:
+    """Send private notification when user unlocks an achievement."""
+    from aiogram.exceptions import TelegramForbiddenError
+
+    name = ach.name.get(locale, ach.name.get("uz", ach.code))
+    description = ach.description.get(locale, ach.description.get("uz", ""))
+    reward = f"💎 {ach.diamonds} olmos · ⭐ {ach.xp} XP" if ach.diamonds or ach.xp else ""
+    text = f"{ach.icon} <b>Yangi yutuq!</b>\n\n<b>{name}</b>\n{description}"
+    if reward:
+        text += f"\n\n🎁 {reward}"
+
+    try:
+        await bot.send_message(user_id, text)
+    except TelegramForbiddenError:
+        logger.debug(f"Cannot DM user {user_id} for achievement notification")
+
+
 async def check_and_unlock(user: User, state: GameState) -> list[AchievementDef]:
     """Check all achievements for user after game finished. Returns newly unlocked ones."""
     stats = await UserStats.get_or_none(user=user)

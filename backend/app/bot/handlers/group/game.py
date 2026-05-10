@@ -65,7 +65,7 @@ async def cmd_game(
         except (ValueError, IndexError):
             pass
 
-    # Bounty escrow check
+    # Bounty escrow check + actual escrow transfer
     if bounty_per_winner is not None:
         required = bounty_per_winner * 10
         if user.diamonds < required:
@@ -73,7 +73,13 @@ async def cmd_game(
                 _("game-bounty-insufficient", required=required, have=user.diamonds)
             )
             return
-        # TODO: escrow transfer (Bosqich 3)
+        try:
+            from app.services.giveaway_service import GiveawayError, escrow_bounty
+
+            await escrow_bounty(user, bounty_per_winner)
+        except GiveawayError as e:
+            await message.answer(_(str(e)))
+            return
 
     try:
         state = await game_service.create_game(group, user, bounty_per_winner)

@@ -90,7 +90,20 @@ async def callback_vote_cast(query: CallbackQuery, user: User, _: Translator) ->
 
     # Mayor 2x weight
     weight = 2 if voter.role == "mayor" else 1
-    state.current_votes[user.id] = Vote(voter_id=user.id, target_id=target_id, weight=weight)
+
+    # Crook (Aferist) proxy vote — uses target_user's name from previous night
+    voter_id = user.id
+    if voter.role == "crook":
+        proxy_target_id = voter.extra.get("proxy_target")
+        if proxy_target_id is not None:
+            proxy_target = state.get_player(proxy_target_id)
+            if proxy_target is not None and proxy_target.alive:
+                # Cast vote AS proxy_target (their name appears, but it's Crook's choice)
+                voter_id = proxy_target_id
+                # Mayor weight uses proxy_target's role
+                weight = 2 if proxy_target.role == "mayor" else 1
+
+    state.current_votes[user.id] = Vote(voter_id=voter_id, target_id=target_id, weight=weight)
     await game_service.save_state(state)
 
     show_anon = state.settings.get("display", {}).get("anonymous_voting", False)

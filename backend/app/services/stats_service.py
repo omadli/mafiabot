@@ -121,16 +121,27 @@ async def finalize_game_stats(state: GameState) -> None:
         # 5. GroupStats (rolling)
         await _update_group_stats(state, duration)
 
-    # Achievement checks
-    from app.services.achievement_service import check_and_unlock
+    # Achievement checks + notifications
+    from app.services.achievement_service import check_and_unlock, notify_unlock
 
     for player in state.players:
         user = await User.get_or_none(id=player.user_id)
-        if user is not None:
-            try:
-                await check_and_unlock(user, state)
-            except Exception as e:
-                logger.warning(f"Achievement check for {user.id} failed: {e}")
+        if user is None:
+            continue
+        try:
+            unlocks = await check_and_unlock(user, state)
+            if unlocks:
+                from app.main import bot
+
+                if bot is not None:
+                    locale = user.language_code or "uz"
+                    for ach in unlocks:
+                        try:
+                            await notify_unlock(bot, user.id, ach, locale)
+                        except Exception as e:
+                            logger.debug(f"Notify unlock failed for {user.id}: {e}")
+        except Exception as e:
+            logger.warning(f"Achievement check for {user.id} failed: {e}")
 
     logger.info(f"Stats finalized for game {state.id}: winner={state.winner_team}")
 
