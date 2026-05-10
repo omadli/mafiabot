@@ -20,6 +20,7 @@ def setup_routers(dp: Dispatcher) -> None:
     from app.bot.handlers.private import role_actions as private_role_actions
     from app.bot.handlers.private import special_actions as private_special
     from app.bot.handlers.private import start as private_start
+    from app.bot.handlers.private import super_admin as private_super_admin
 
     # Middlewares
     from app.bot.middlewares.i18n import I18nMiddleware
@@ -29,6 +30,7 @@ def setup_routers(dp: Dispatcher) -> None:
     dp.update.outer_middleware(I18nMiddleware())
 
     # Routers (order matters: more specific first)
+    dp.include_router(private_super_admin.router)  # before other private handlers
     dp.include_router(common_help.router)
     dp.include_router(group_onboarding.router)
     dp.include_router(group_stats.router)

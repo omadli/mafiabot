@@ -3,8 +3,13 @@ import react from "@vitejs/plugin-react";
 import path from "node:path";
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), "");
-  const backendPort = env.BACKEND_PORT || "8001";
+  // Load env from frontend dir AND root (../) so a single .env at the
+  // repo root drives both backend and frontend. Root values win.
+  const localEnv = loadEnv(mode, process.cwd(), "");
+  const rootEnv = loadEnv(mode, path.resolve(process.cwd(), ".."), "");
+  const env = { ...localEnv, ...rootEnv };
+
+  const backendPort = env.BACKEND_PORT || "8002";
   const backendURL = `http://localhost:${backendPort}`;
 
   return {

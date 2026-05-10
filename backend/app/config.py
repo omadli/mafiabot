@@ -59,6 +59,19 @@ class Settings(BaseSettings):
     admin_default_username: str = "admin"
     admin_default_password: SecretStr = Field(default=SecretStr("admin"))
 
+    # Comma-separated Telegram user IDs of super admins (in-bot powers via /sa_*)
+    super_admin_telegram_ids: str = ""
+
+    @property
+    def super_admin_ids(self) -> set[int]:
+        """Parsed set of super admin Telegram user IDs."""
+        out: set[int] = set()
+        for part in self.super_admin_telegram_ids.split(","):
+            part = part.strip()
+            if part.lstrip("-").isdigit():
+                out.add(int(part))
+        return out
+
     # === Sentry ===
     sentry_dsn: str | None = None
     sentry_environment: str = "production"
