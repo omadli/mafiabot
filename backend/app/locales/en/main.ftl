@@ -456,15 +456,24 @@ group-stats-message =
 # ===========================================================
 
 profile-info =
-    👤 { $name }
-    { $is_premium ->
-        [true] 👑 Premium (expires: { $premium_until })
-       *[false] —
-    }
+    ⭐ ID: <code>{ $id }</code>
 
-    💎 Diamonds: { $diamonds }
+    👤 { $name }
+
     💵 Dollars: { $dollars }
-    ⭐ XP: { $xp }   🏅 Level: { $level }
+    💎 Diamonds: { $diamonds }
+
+    🛡 Shield: { $shield }
+    ⛑ Killer shield: { $killer_shield }
+    ⚖️ Vote shield: { $vote_shield }
+    🔫 Rifle: { $rifle }
+
+    🎭 Mask: { $mask }
+    📁 Fake document: { $fake_document }
+    🃏 Next game role: { $next_role }
+
+    🎯 Wins: { $wins }
+    🎲 Total games: { $games_total }
 
 inventory-header = 🎒 Your inventory:
 
@@ -474,7 +483,21 @@ inv-toggle-off = ⬜ Disabled
 
 inv-no-items = 🚫 You don't own this item.
 
+btn-toggle-on = { $emoji } - 🟢 ON
+
+btn-toggle-off = { $emoji } - 🔴 OFF
+
+btn-toggle-empty = { $emoji } - 🚫 0
+
 btn-shop = 🛒 Shop
+
+btn-buy-dollars = 💵 Buy
+
+btn-buy-diamonds = 💎 Buy
+
+btn-premium-groups = 👑 Premium groups
+
+btn-news = 📢 News
 
 btn-back = 🔙 Back
 
@@ -497,6 +520,8 @@ shop-welcome-balance =
     Your balance: <b>{ $diamonds }</b> 💎  <b>{ $dollars }</b> 💵
 
 shop-diamonds-header = 💎 Diamond packages:
+
+shop-no-items = 🚫 Nothing available in this currency
 
 shop-items-header =
     🛡 <b>Items</b>

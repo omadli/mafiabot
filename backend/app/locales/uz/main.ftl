@@ -456,15 +456,24 @@ group-stats-message =
 # ===========================================================
 
 profile-info =
-    👤 { $name }
-    { $is_premium ->
-        [true] 👑 Premium (tugashi: { $premium_until })
-       *[false] —
-    }
+    ⭐ ID: <code>{ $id }</code>
 
-    💎 Olmos: { $diamonds }
+    👤 { $name }
+
     💵 Dollar: { $dollars }
-    ⭐ XP: { $xp }   🏅 Level: { $level }
+    💎 Olmos: { $diamonds }
+
+    🛡 Himoya: { $shield }
+    ⛑ Qotildan himoya: { $killer_shield }
+    ⚖️ Ovoz berishni himoya qilish: { $vote_shield }
+    🔫 Miltiq: { $rifle }
+
+    🎭 Maska: { $mask }
+    📁 Soxta hujjat: { $fake_document }
+    🃏 Keyingi o'yindagi rolingiz: { $next_role }
+
+    🎯 G'alabalar: { $wins }
+    🎲 Jami o'yinlar: { $games_total }
 
 inventory-header = 🎒 Sizning inventaringiz:
 
@@ -474,8 +483,17 @@ inv-toggle-off = ⬜ O'chirildi
 
 inv-no-items = 🚫 Sizda bu narsadan yo'q.
 
-btn-shop = 🛒 Do'kon
+# Single-line toggle button labels — used for profile inline keyboard
+# Format: <item_emoji> - 🟢 ON  or  <item_emoji> - 🔴 OFF  or  <item_emoji> - 🚫 0
+btn-toggle-on = { $emoji } - 🟢 ON
+btn-toggle-off = { $emoji } - 🔴 OFF
+btn-toggle-empty = { $emoji } - 🚫 0
 
+btn-shop = 🛒 Do'kon
+btn-buy-dollars = 💵 Xarid qilish
+btn-buy-diamonds = 💎 Xarid qilish
+btn-premium-groups = 👑 Premium guruhlar
+btn-news = 📢 Yangiliklar
 btn-back = 🔙 Orqaga
 
 btn-exchange = 🔁 Konvertatsiya
@@ -497,6 +515,8 @@ shop-welcome-balance =
     Sizning balansingiz: <b>{ $diamonds }</b> 💎  <b>{ $dollars }</b> 💵
 
 shop-diamonds-header = 💎 Olmos paketlari:
+
+shop-no-items = 🚫 Bu valyutada hech narsa yo'q
 
 shop-items-header =
     🛡 <b>Itemlar</b>

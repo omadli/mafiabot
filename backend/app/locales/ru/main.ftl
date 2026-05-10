@@ -456,15 +456,24 @@ group-stats-message =
 # ===========================================================
 
 profile-info =
-    👤 { $name }
-    { $is_premium ->
-        [true] 👑 Премиум (до: { $premium_until })
-       *[false] —
-    }
+    ⭐ ID: <code>{ $id }</code>
 
-    💎 Алмазы: { $diamonds }
-    💵 Доллары: { $dollars }
-    ⭐ XP: { $xp }   🏅 Уровень: { $level }
+    👤 { $name }
+
+    💵 Доллар: { $dollars }
+    💎 Алмаз: { $diamonds }
+
+    🛡 Защита: { $shield }
+    ⛑ Защита от убийцы: { $killer_shield }
+    ⚖️ Защита от голосования: { $vote_shield }
+    🔫 Винтовка: { $rifle }
+
+    🎭 Маска: { $mask }
+    📁 Поддельный документ: { $fake_document }
+    🃏 Роль на следующую игру: { $next_role }
+
+    🎯 Побед: { $wins }
+    🎲 Всего игр: { $games_total }
 
 inventory-header = 🎒 Ваш инвентарь:
 
@@ -474,7 +483,21 @@ inv-toggle-off = ⬜ Отключено
 
 inv-no-items = 🚫 У вас нет этого предмета.
 
+btn-toggle-on = { $emoji } - 🟢 ВКЛ
+
+btn-toggle-off = { $emoji } - 🔴 ВЫКЛ
+
+btn-toggle-empty = { $emoji } - 🚫 0
+
 btn-shop = 🛒 Магазин
+
+btn-buy-dollars = 💵 Купить
+
+btn-buy-diamonds = 💎 Купить
+
+btn-premium-groups = 👑 Премиум-группы
+
+btn-news = 📢 Новости
 
 btn-back = 🔙 Назад
 
@@ -497,6 +520,8 @@ shop-welcome-balance =
     Ваш баланс: <b>{ $diamonds }</b> 💎  <b>{ $dollars }</b> 💵
 
 shop-diamonds-header = 💎 Пакеты алмазов:
+
+shop-no-items = 🚫 В этой валюте ничего нет
 
 shop-items-header =
     🛡 <b>Предметы</b>
