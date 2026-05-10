@@ -9,7 +9,7 @@ from tortoise.models import Model
 class TransactionType(StrEnum):
     BUY_DIAMONDS = "buy_diamonds"  # Telegram Stars → diamonds
     SPEND_DIAMONDS = "spend_diamonds"  # premium item purchase
-    SPEND_DOLLARS = "spend_dollars"  # stats reset
+    SPEND_DOLLARS = "spend_dollars"  # stats reset, dollar item purchase
     GIFT_SEND = "gift_send"  # /give reply
     GIFT_RECEIVE = "gift_receive"
     ADMIN_GRANT = "admin_grant"  # super admin grant (system)
@@ -17,6 +17,8 @@ class TransactionType(StrEnum):
     GAME_BOUNTY_PAYOUT = "game_bounty_payout"
     GAME_BOUNTY_REFUND = "game_bounty_refund"
     GIVEAWAY_PAYOUT = "giveaway_payout"
+    EXCHANGE = "exchange"  # diamonds ↔ dollars conversion
+    GAME_REWARD = "game_reward"  # win-game dollar reward
 
 
 class TransactionStatus(StrEnum):

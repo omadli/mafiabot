@@ -472,9 +472,15 @@ inv-toggle-on = ✅ Включено
 
 inv-toggle-off = ⬜ Отключено
 
+inv-no-items = 🚫 У вас нет этого предмета.
+
 btn-shop = 🛒 Магазин
 
 btn-back = 🔙 Назад
+
+btn-exchange = 🔁 Обмен
+
+btn-close = ❎ Закрыть
 
 
 # ===========================================================
@@ -485,9 +491,19 @@ shop-welcome =
     🛒 Добро пожаловать в магазин Mafia!
     Что желаете купить?
 
+shop-welcome-balance =
+    🛒 <b>Магазин</b>
+
+    Ваш баланс: <b>{ $diamonds }</b> 💎  <b>{ $dollars }</b> 💵
+
 shop-diamonds-header = 💎 Пакеты алмазов:
 
-shop-items-header = 🛡 Оружие и защита (у вас 💎 { $diamonds }):
+shop-items-header =
+    🛡 <b>Предметы</b>
+
+    Баланс: <b>{ $diamonds }</b> 💎  <b>{ $dollars }</b> 💵
+
+    Оплата в указанной валюте.
 
 shop-premium-info =
     👑 Премиум-пользователь:
@@ -499,17 +515,46 @@ btn-buy-items = 🎒 Оружие/защита
 
 btn-buy-premium = 👑 Премиум
 
-btn-buy-premium-30d = 👑 30 дней — 💎 { $price }
+btn-buy-premium-30d = ⭐ 30 дней премиум — { $price } 💎
 
 buy-insufficient = ❌ Недостаточно алмазов
 
 buy-success = ✅ Куплено!
+
+buy-success-detailed = ✅ { $item } куплен! ({ $cost } { $currency })
+
+buy-insufficient-diamonds = 💎 Недостаточно алмазов
+
+buy-insufficient-dollars = 💵 Недостаточно долларов
 
 premium-activated = 👑 Премиум активирован: { $days } дней
 
 payment-success = ✅ Оплата прошла успешно! +💎 { $diamonds }
 
 payment-failed = ❌ Ошибка оплаты
+
+
+# ===========================================================
+# КОНВЕРТАЦИЯ ВАЛЮТЫ
+# ===========================================================
+
+exchange-menu =
+    🔁 <b>Конвертация валюты</b>
+
+    Ваш баланс: <b>{ $diamonds }</b> 💎  <b>{ $dollars }</b> 💵
+    Курс: 1 💎 = { $rate } 💵
+
+    Выберите направление:
+
+exchange-success = ✅ Вам зачислено { $got } { $currency }!
+
+exchange-disabled = 🚫 Конвертация сейчас отключена.
+
+exchange-insufficient-diamonds = 💎 Недостаточно алмазов для конвертации
+
+exchange-insufficient-dollars = 💵 Недостаточно долларов для конвертации
+
+exchange-below-minimum = ❌ Ниже минимальной суммы
 
 
 # ===========================================================

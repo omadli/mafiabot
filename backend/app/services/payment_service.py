@@ -33,19 +33,18 @@ DIAMOND_PACKAGES: list[DiamondPackage] = [
 @dataclass
 class ItemSpec:
     code: str
-    diamonds_price: int
     inventory_field: str  # field in UserInventory to increment
 
 
-# === Items purchasable with diamonds ===
+# === Items purchasable in shop (price comes from SystemSettings now) ===
 ITEM_CATALOG: list[ItemSpec] = [
-    ItemSpec(code="shield", diamonds_price=10, inventory_field="shield"),
-    ItemSpec(code="killer_shield", diamonds_price=15, inventory_field="killer_shield"),
-    ItemSpec(code="vote_shield", diamonds_price=12, inventory_field="vote_shield"),
-    ItemSpec(code="rifle", diamonds_price=25, inventory_field="rifle"),
-    ItemSpec(code="mask", diamonds_price=15, inventory_field="mask"),
-    ItemSpec(code="fake_document", diamonds_price=20, inventory_field="fake_document"),
-    ItemSpec(code="special_role", diamonds_price=50, inventory_field="special_role"),
+    ItemSpec(code="shield", inventory_field="shield"),
+    ItemSpec(code="killer_shield", inventory_field="killer_shield"),
+    ItemSpec(code="vote_shield", inventory_field="vote_shield"),
+    ItemSpec(code="rifle", inventory_field="rifle"),
+    ItemSpec(code="mask", inventory_field="mask"),
+    ItemSpec(code="fake_document", inventory_field="fake_document"),
+    ItemSpec(code="special_role", inventory_field="special_role"),
 ]
 
 
@@ -132,23 +131,62 @@ class InsufficientDiamonds(Exception):
     pass
 
 
-async def purchase_item(user: User, item_code: str, quantity: int = 1) -> ItemSpec:
-    """Buy an item with diamonds. Atomic."""
+class InsufficientDollars(Exception):
+    pass
+
+
+async def purchase_item(
+    user: User, item_code: str, quantity: int = 1, currency: str | None = None
+) -> tuple[ItemSpec, str, int]:
+    """Buy an item using whichever currency the price is set in.
+
+    If both dollars and diamonds prices are set, `currency` arg picks one.
+    If neither is set (price = 0), raises ValueError.
+
+    Returns (spec, currency_used, total_cost).
+    """
+    from app.services import pricing_service
+
     spec = get_item(item_code)
     if spec is None:
         raise ValueError(f"Unknown item: {item_code}")
     if quantity < 1:
         raise ValueError("Quantity must be >= 1")
 
-    cost = spec.diamonds_price * quantity
+    dollars_price, diamonds_price = await pricing_service.get_item_price(item_code)
+
+    # Currency resolution: explicit arg > diamonds > dollars
+    if currency is None:
+        if diamonds_price > 0:
+            currency = "diamonds"
+        elif dollars_price > 0:
+            currency = "dollars"
+        else:
+            raise ValueError(f"No price configured for item: {item_code}")
+    elif currency == "diamonds" and diamonds_price <= 0:
+        raise ValueError(f"{item_code} cannot be purchased with diamonds")
+    elif currency == "dollars" and dollars_price <= 0:
+        raise ValueError(f"{item_code} cannot be purchased with dollars")
+
+    cost = (diamonds_price if currency == "diamonds" else dollars_price) * quantity
 
     async with in_transaction():
         user_locked = await User.select_for_update().get(id=user.id)
-        if user_locked.diamonds < cost:
-            raise InsufficientDiamonds(f"Need {cost} diamonds, have {user_locked.diamonds}")
 
-        user_locked.diamonds -= cost
-        await user_locked.save(update_fields=["diamonds"])
+        if currency == "diamonds":
+            if user_locked.diamonds < cost:
+                raise InsufficientDiamonds(f"Need {cost} 💎, have {user_locked.diamonds}")
+            user_locked.diamonds -= cost
+            tx_type = TransactionType.SPEND_DIAMONDS
+            tx_amount = {"diamonds_amount": -cost}
+        else:
+            if user_locked.dollars < cost:
+                raise InsufficientDollars(f"Need {cost} 💵, have {user_locked.dollars}")
+            user_locked.dollars -= cost
+            tx_type = TransactionType.SPEND_DOLLARS
+            tx_amount = {"dollars_amount": -cost}
+
+        await user_locked.save(update_fields=[currency])
 
         # Increment inventory field
         inv, _ = await UserInventory.get_or_create(user=user_locked)
@@ -158,28 +196,30 @@ async def purchase_item(user: User, item_code: str, quantity: int = 1) -> ItemSp
 
         await Transaction.create(
             user=user_locked,
-            type=TransactionType.SPEND_DIAMONDS,
-            diamonds_amount=-cost,
+            type=tx_type,
             item=item_code,
             status=TransactionStatus.COMPLETED,
-            note=f"Quantity: {quantity}",
+            note=f"Quantity: {quantity}, currency: {currency}",
+            **tx_amount,
         )
 
-    logger.info(f"User {user.id} bought {quantity}x {item_code} for {cost} diamonds")
-    return spec
+    logger.info(f"User {user.id} bought {quantity}x {item_code} for {cost} {currency}")
+    return spec, currency, cost
 
 
 # === Premium subscription ===
 
 
-PREMIUM_PRICE_MONTHLY = 200  # diamonds
+PREMIUM_PRICE_MONTHLY = 200  # diamonds (legacy fallback; real value in SystemSettings)
 
 
 async def buy_premium(user: User, days: int = 30) -> None:
     """Activate/extend premium for given days."""
     from datetime import datetime, timedelta
 
-    cost = PREMIUM_PRICE_MONTHLY * (days // 30 or 1)
+    from app.services import pricing_service
+
+    cost = await pricing_service.get_premium_price(days)
 
     async with in_transaction():
         user_locked = await User.select_for_update().get(id=user.id)

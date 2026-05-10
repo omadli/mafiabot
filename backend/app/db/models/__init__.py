@@ -16,6 +16,7 @@ from app.db.models.statistics import (
     StatsPeriodSnapshot,
     UserStats,
 )
+from app.db.models.system_settings import SystemSettings
 from app.db.models.transaction import (
     Giveaway,
     GiveawayClick,
@@ -42,6 +43,7 @@ __all__ = [
     "GroupUserStats",
     "OneTimeToken",
     "StatsPeriodSnapshot",
+    "SystemSettings",
     "Transaction",
     "TransactionStatus",
     "TransactionType",

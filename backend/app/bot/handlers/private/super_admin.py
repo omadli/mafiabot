@@ -45,16 +45,26 @@ router.message.filter(F.chat.type == "private", IsSuperAdmin())
 async def sa_help(message: Message) -> None:
     text = (
         "<b>🛡 Super admin komandalar</b>\n\n"
+        "<u>Foydalanuvchi boshqaruvi:</u>\n"
         "<code>/sa_grant &lt;user_id&gt; &lt;amount&gt;</code> — olmos berish\n"
         "<code>/sa_revoke &lt;user_id&gt; &lt;amount&gt;</code> — olmos olib qo'yish\n"
         "<code>/sa_setdollars &lt;user_id&gt; &lt;amount&gt;</code> — dollar o'rnatish\n"
         "<code>/sa_premium &lt;user_id&gt; &lt;days&gt;</code> — premium berish\n"
-        "<code>/sa_ban &lt;user_id&gt; [sabab]</code> — foydalanuvchini ban qilish\n"
+        "<code>/sa_ban &lt;user_id&gt; [sabab]</code> — ban qilish\n"
         "<code>/sa_unban &lt;user_id&gt;</code> — banni olib tashlash\n"
-        "<code>/sa_userinfo &lt;user_id&gt;</code> — foydalanuvchi haqida\n"
+        "<code>/sa_userinfo &lt;user_id&gt;</code> — foydalanuvchi haqida\n\n"
+        "<u>Tizim:</u>\n"
         "<code>/sa_groups</code> — aktiv guruhlar\n"
         "<code>/sa_broadcast &lt;matn&gt;</code> — barchaga DM\n"
-        "<code>/sa_stats</code> — umumiy KPI\n"
+        "<code>/sa_stats</code> — umumiy KPI\n\n"
+        "<u>Narxlar va sozlamalar:</u>\n"
+        "<code>/sa_prices</code> — barcha narxlar va sozlamalar\n"
+        "<code>/sa_setprice &lt;item&gt; &lt;currency&gt; &lt;amount&gt;</code> — item narxi\n"
+        "  Misol: <code>/sa_setprice shield dollars 150</code>\n"
+        "<code>/sa_setreward &lt;key&gt; &lt;value&gt;</code> — g'olib mukofoti\n"
+        "  Keys: win_short_dollars, win_long_dollars, long_threshold_minutes,\n"
+        "        mafia_singleton_bonus, xp_per_win\n"
+        "<code>/sa_setrate &lt;rate&gt;</code> — 1💎 = N💵 kursi\n"
     )
     await message.answer(text, parse_mode="HTML")
 
@@ -403,6 +413,170 @@ async def sa_stats(message: Message) -> None:
         f"🎲 O'yinlar: <b>{games_total}</b> jami, <b>{games_running}</b> hozir o'ynalmoqda\n"
     )
     await message.answer(text, parse_mode="HTML")
+
+
+# === Pricing commands ===
+
+
+@router.message(Command("sa_prices"))
+async def sa_prices(message: Message) -> None:
+    """Show current prices, rewards, exchange-rate."""
+    from app.services import pricing_service
+
+    s = await pricing_service.get_settings(force=True)
+    lines = ["<b>💎 Narxlar</b>\n"]
+    lines.append("<u>Items:</u>")
+    for code, spec in (s.item_prices or {}).items():
+        d = int(spec.get("dollars", 0))
+        dia = int(spec.get("diamonds", 0))
+        parts = []
+        if dia > 0:
+            parts.append(f"💎 {dia}")
+        if d > 0:
+            parts.append(f"💵 {d}")
+        if not parts:
+            parts.append("⛔ disabled")
+        lines.append(f"  <code>{code}</code> — {' / '.join(parts)}")
+
+    lines.append("\n<u>Rewards:</u>")
+    for k, v in (s.rewards or {}).items():
+        lines.append(f"  <code>{k}</code> = {v}")
+
+    lines.append("\n<u>Exchange:</u>")
+    for k, v in (s.exchange or {}).items():
+        lines.append(f"  <code>{k}</code> = {v}")
+
+    lines.append("\n<u>Premium:</u>")
+    for k, v in (s.premium or {}).items():
+        lines.append(f"  <code>{k}</code> = {v}")
+
+    if s.updated_at:
+        lines.append(f"\n<i>Oxirgi yangilanish: {s.updated_at:%Y-%m-%d %H:%M}</i>")
+
+    await message.answer("\n".join(lines), parse_mode="HTML")
+
+
+@router.message(Command("sa_setprice"))
+async def sa_setprice(message: Message, command: CommandObject) -> None:
+    """Set item price: /sa_setprice <item> <currency:dollars|diamonds> <amount>"""
+    from app.services import pricing_service
+
+    parts = (command.args or "").split()
+    if len(parts) != 3:
+        await message.answer(
+            "Foydalanish: <code>/sa_setprice &lt;item&gt; &lt;dollars|diamonds&gt; &lt;amount&gt;</code>\n"
+            "Misol: <code>/sa_setprice shield dollars 150</code>",
+            parse_mode="HTML",
+        )
+        return
+
+    item, currency, amount_str = parts
+    if currency not in ("dollars", "diamonds"):
+        await message.answer("❌ Currency: 'dollars' yoki 'diamonds'")
+        return
+    try:
+        amount = int(amount_str)
+    except ValueError:
+        await message.answer("❌ Miqdor noto'g'ri")
+        return
+    if amount < 0:
+        await message.answer("❌ Miqdor manfiy bo'lishi mumkin emas")
+        return
+
+    try:
+        await pricing_service.update_setting(
+            "item_prices", f"{item}.{currency}", amount, by_tg_id=message.from_user.id
+        )
+    except ValueError as e:
+        await message.answer(f"❌ {e}")
+        return
+
+    await log_action(
+        action="sa.set.price",
+        target_type="item_price",
+        target_id=item,
+        payload={
+            "currency": currency,
+            "amount": amount,
+            "actor_tg_id": message.from_user.id,
+        },
+    )
+    await message.answer(f"✅ <code>{item}.{currency}</code> = <b>{amount}</b>", parse_mode="HTML")
+
+
+@router.message(Command("sa_setreward"))
+async def sa_setreward(message: Message, command: CommandObject) -> None:
+    """Set reward parameter: /sa_setreward <key> <value>"""
+    from app.services import pricing_service
+
+    parts = (command.args or "").split()
+    if len(parts) != 2:
+        await message.answer(
+            "Foydalanish: <code>/sa_setreward &lt;key&gt; &lt;value&gt;</code>\n"
+            "Keys: win_short_dollars, win_long_dollars, long_threshold_minutes,\n"
+            "      mafia_singleton_bonus, xp_per_win, xp_per_game, xp_per_survive",
+            parse_mode="HTML",
+        )
+        return
+
+    key, value_str = parts
+    try:
+        value = int(value_str)
+    except ValueError:
+        await message.answer("❌ Qiymat butun son bo'lishi kerak")
+        return
+
+    valid_keys = {
+        "win_short_dollars",
+        "win_long_dollars",
+        "long_threshold_minutes",
+        "mafia_singleton_bonus",
+        "xp_per_game",
+        "xp_per_win",
+        "xp_per_survive",
+    }
+    if key not in valid_keys:
+        await message.answer(f"❌ Unknown key. Valid: {', '.join(sorted(valid_keys))}")
+        return
+
+    await pricing_service.update_setting("rewards", key, value, by_tg_id=message.from_user.id)
+    await log_action(
+        action="sa.set.reward",
+        target_type="reward",
+        target_id=key,
+        payload={"value": value, "actor_tg_id": message.from_user.id},
+    )
+    await message.answer(f"✅ Reward <code>{key}</code> = <b>{value}</b>", parse_mode="HTML")
+
+
+@router.message(Command("sa_setrate"))
+async def sa_setrate(message: Message, command: CommandObject) -> None:
+    """Set diamond → dollar exchange rate: /sa_setrate <N>  (1💎 = N💵)"""
+    from app.services import pricing_service
+
+    try:
+        rate = int((command.args or "").strip())
+    except ValueError:
+        await message.answer(
+            "Foydalanish: <code>/sa_setrate &lt;rate&gt;</code> — 1💎 = N💵\n"
+            "Misol: <code>/sa_setrate 1000</code>",
+            parse_mode="HTML",
+        )
+        return
+    if rate < 1:
+        await message.answer("❌ Kurs 1 dan kam bo'lishi mumkin emas")
+        return
+
+    await pricing_service.update_setting(
+        "exchange", "diamond_to_dollar_rate", rate, by_tg_id=message.from_user.id
+    )
+    await log_action(
+        action="sa.set.exchange_rate",
+        target_type="exchange",
+        target_id="rate",
+        payload={"rate": rate, "actor_tg_id": message.from_user.id},
+    )
+    await message.answer(f"✅ Yangi kurs: <b>1💎 = {rate}💵</b>", parse_mode="HTML")
 
 
 logger.info("Super admin handlers loaded")

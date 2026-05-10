@@ -472,9 +472,15 @@ inv-toggle-on = ✅ Enabled
 
 inv-toggle-off = ⬜ Disabled
 
+inv-no-items = 🚫 You don't own this item.
+
 btn-shop = 🛒 Shop
 
 btn-back = 🔙 Back
+
+btn-exchange = 🔁 Exchange
+
+btn-close = ❎ Close
 
 
 # ===========================================================
@@ -485,9 +491,19 @@ shop-welcome =
     🛒 Welcome to the Mafia shop!
     What would you like to buy?
 
+shop-welcome-balance =
+    🛒 <b>Shop</b>
+
+    Your balance: <b>{ $diamonds }</b> 💎  <b>{ $dollars }</b> 💵
+
 shop-diamonds-header = 💎 Diamond packages:
 
-shop-items-header = 🛡 Weapons and shields (you have 💎 { $diamonds }):
+shop-items-header =
+    🛡 <b>Items</b>
+
+    Balance: <b>{ $diamonds }</b> 💎  <b>{ $dollars }</b> 💵
+
+    Pay in the listed currency.
 
 shop-premium-info =
     👑 Premium user:
@@ -499,17 +515,46 @@ btn-buy-items = 🎒 Weapons/shields
 
 btn-buy-premium = 👑 Premium
 
-btn-buy-premium-30d = 👑 30 days — 💎 { $price }
+btn-buy-premium-30d = ⭐ 30-day premium — { $price } 💎
 
 buy-insufficient = ❌ Not enough diamonds
 
 buy-success = ✅ Purchased!
+
+buy-success-detailed = ✅ { $item } purchased! ({ $cost } { $currency })
+
+buy-insufficient-diamonds = 💎 Not enough diamonds
+
+buy-insufficient-dollars = 💵 Not enough dollars
 
 premium-activated = 👑 Premium activated: { $days } days
 
 payment-success = ✅ Payment successful! +💎 { $diamonds }
 
 payment-failed = ❌ Payment failed
+
+
+# ===========================================================
+# CURRENCY EXCHANGE
+# ===========================================================
+
+exchange-menu =
+    🔁 <b>Currency exchange</b>
+
+    Your balance: <b>{ $diamonds }</b> 💎  <b>{ $dollars }</b> 💵
+    Rate: 1 💎 = { $rate } 💵
+
+    Pick a direction:
+
+exchange-success = ✅ Credited { $got } { $currency }!
+
+exchange-disabled = 🚫 Exchange is currently disabled.
+
+exchange-insufficient-diamonds = 💎 Not enough diamonds for exchange
+
+exchange-insufficient-dollars = 💵 Not enough dollars for exchange
+
+exchange-below-minimum = ❌ Amount is below the minimum
 
 
 # ===========================================================

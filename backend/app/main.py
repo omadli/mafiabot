@@ -94,6 +94,14 @@ async def init_db() -> None:
     except Exception as e:
         logger.warning(f"Default admin seed failed: {e}")
 
+    # Seed SystemSettings (prices/rewards/exchange) defaults if missing
+    try:
+        from app.services.pricing_service import seed_default_settings
+
+        await seed_default_settings()
+    except Exception as e:
+        logger.warning(f"SystemSettings seed failed: {e}")
+
 
 async def close_db() -> None:
     await Tortoise.close_connections()

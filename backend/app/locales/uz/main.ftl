@@ -472,9 +472,15 @@ inv-toggle-on = ✅ Yoqildi
 
 inv-toggle-off = ⬜ O'chirildi
 
+inv-no-items = 🚫 Sizda bu narsadan yo'q.
+
 btn-shop = 🛒 Do'kon
 
 btn-back = 🔙 Orqaga
+
+btn-exchange = 🔁 Konvertatsiya
+
+btn-close = ❎ Yopish
 
 
 # ===========================================================
@@ -485,9 +491,19 @@ shop-welcome =
     🛒 Mafia do'koniga xush kelibsiz!
     Nimani sotib olmoqchisiz?
 
+shop-welcome-balance =
+    🛒 <b>Do'kon</b>
+
+    Sizning balansingiz: <b>{ $diamonds }</b> 💎  <b>{ $dollars }</b> 💵
+
 shop-diamonds-header = 💎 Olmos paketlari:
 
-shop-items-header = 🛡 Qurol va himoyalar (sizda 💎 { $diamonds }):
+shop-items-header =
+    🛡 <b>Itemlar</b>
+
+    Balans: <b>{ $diamonds }</b> 💎  <b>{ $dollars }</b> 💵
+
+    Narxni belgilangan valyutada to'lang.
 
 shop-premium-info =
     👑 Premium foydalanuvchi:
@@ -499,17 +515,46 @@ btn-buy-items = 🎒 Qurol/himoya
 
 btn-buy-premium = 👑 Premium
 
-btn-buy-premium-30d = 👑 30 kun — 💎 { $price }
+btn-buy-premium-30d = ⭐ 30 kun premium — { $price } 💎
 
 buy-insufficient = ❌ Olmos yetarli emas
 
 buy-success = ✅ Sotib olindi!
+
+buy-success-detailed = ✅ { $item } sotib olindi! ({ $cost } { $currency })
+
+buy-insufficient-diamonds = 💎 Olmosingiz yetarli emas
+
+buy-insufficient-dollars = 💵 Dollarlaringiz yetarli emas
 
 premium-activated = 👑 Premium aktivlashtirildi: { $days } kun
 
 payment-success = ✅ To'lov muvaffaqiyatli! +💎 { $diamonds }
 
 payment-failed = ❌ To'lov xato bo'ldi
+
+
+# ===========================================================
+# VALYUTA KONVERTATSIYASI
+# ===========================================================
+
+exchange-menu =
+    🔁 <b>Valyuta konvertatsiyasi</b>
+
+    Sizning balans: <b>{ $diamonds }</b> 💎  <b>{ $dollars }</b> 💵
+    Kurs: 1 💎 = { $rate } 💵
+
+    Yo'nalishni tanlang:
+
+exchange-success = ✅ Sizga { $got } { $currency } qo'shildi!
+
+exchange-disabled = 🚫 Konvertatsiya hozir o'chirilgan.
+
+exchange-insufficient-diamonds = 💎 Konvertatsiya uchun olmos yetarli emas
+
+exchange-insufficient-dollars = 💵 Konvertatsiya uchun dollar yetarli emas
+
+exchange-below-minimum = ❌ Minimal miqdordan kam
 
 
 # ===========================================================

@@ -22,8 +22,7 @@ from app.services.elo_service import EloChange, calculate_team_elo_changes
 XP_WIN = 50
 XP_LOSS = 10
 XP_SURVIVED_BONUS = 20
-DOLLARS_WIN = 10
-DOLLARS_LOSS = 2
+DOLLARS_LOSS = 2  # default for losers (winners use SystemSettings.rewards)
 
 
 async def finalize_game_stats(state: GameState) -> None:
@@ -66,6 +65,15 @@ async def finalize_game_stats(state: GameState) -> None:
     group_elo_map = {c.user_id: c for c in group_elo_changes}
 
     duration = (state.finished_at or int(time.time())) - (state.started_at or 0)
+    duration_minutes = max(1, duration // 60)
+
+    # Pre-compute reward (same for all winners of the same team)
+    from app.services import pricing_service
+
+    winner_team_value = state.winner_team.value if state.winner_team else None
+    winner_dollars, _winner_xp_extra = await pricing_service.get_reward(
+        duration_minutes=duration_minutes, winner_team=winner_team_value
+    )
 
     async with in_transaction():
         for player in state.players:
@@ -75,8 +83,9 @@ async def finalize_game_stats(state: GameState) -> None:
             if global_change is None or group_change is None:
                 continue
 
-            xp_earned = (XP_WIN if won else XP_LOSS) + (XP_SURVIVED_BONUS if player.alive else 0)
-            dollars_earned = DOLLARS_WIN if won else DOLLARS_LOSS
+            base_xp = XP_WIN if won else XP_LOSS
+            xp_earned = base_xp + (XP_SURVIVED_BONUS if player.alive else 0)
+            dollars_earned = winner_dollars if won else DOLLARS_LOSS
 
             # 1. GameResult INSERT
             await GameResult.create(
@@ -117,6 +126,21 @@ async def finalize_game_stats(state: GameState) -> None:
             user.dollars += dollars_earned
             user.level = _compute_level(user.xp)
             await user.save(update_fields=["xp", "dollars", "level"])
+
+            # 5. Audit reward as Transaction (only for winners with positive amount)
+            if won and dollars_earned > 0:
+                from app.db.models import Transaction, TransactionStatus, TransactionType
+
+                await Transaction.create(
+                    user=user,
+                    type=TransactionType.GAME_REWARD,
+                    dollars_amount=dollars_earned,
+                    status=TransactionStatus.COMPLETED,
+                    note=(
+                        f"game={state.id} duration={duration_minutes}min "
+                        f"team={winner_team_value} role={player.role}"
+                    ),
+                )
 
         # 5. GroupStats (rolling)
         await _update_group_stats(state, duration)

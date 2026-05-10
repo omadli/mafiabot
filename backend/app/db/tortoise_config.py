@@ -9,6 +9,7 @@ MODELS_MODULES = [
     "app.db.models.statistics",
     "app.db.models.transaction",
     "app.db.models.audit",
+    "app.db.models.system_settings",
     "aerich.models",
 ]
 
