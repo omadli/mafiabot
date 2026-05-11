@@ -128,6 +128,10 @@ class GameState(BaseModel):
     bounty_pool: int | None = None
     bounty_initiator_id: int | None = None
 
+    # Who initiated registration (/game or /start). Has permission to /start
+    # the game manually regardless of group permissions.
+    creator_user_id: int | None = None
+
     # Round logs (for history)
     rounds: list[RoundLog] = Field(default_factory=list)
 

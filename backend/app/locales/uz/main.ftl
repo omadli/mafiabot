@@ -274,6 +274,10 @@ extend-not-in-registration = Faqat ro'yxatdan o'tish fazasida uzaytirsa bo'ladi.
 
 extend-success = ⏱ Vaqt { $seconds } sekundga uzaytirildi.
 
+extend-indefinite = ⏳ Ro'yxatdan o'tish cheksiz uzaytirildi. O'yinni boshlash uchun /start buyrug'idan foydalaning.
+
+game-launched-by-admin = 🚀 O'yin boshlandi!
+
 
 # ===========================================================
 # TUNGI SO'ROVLAR (o'yinchiga shaxsiy chatda)

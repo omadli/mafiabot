@@ -93,6 +93,7 @@ async def create_game(
         bounty_per_winner=bounty_per_winner,
         bounty_pool=bounty_per_winner * 10 if bounty_per_winner else None,
         bounty_initiator_id=host_user.id if bounty_per_winner else None,
+        creator_user_id=host_user.id,
     )
 
     # Set phase end time (registration timeout)

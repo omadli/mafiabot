@@ -68,11 +68,24 @@ class PhaseManager:
                 if state is None or state.phase in (Phase.FINISHED, Phase.CANCELLED):
                     break
 
-                # Sleep until phase ends
+                # Sleep until phase ends.
+                # phase_ends_at = None → indefinite registration (after /extend).
+                # We still wake periodically to allow external trigger via
+                # state changes (e.g. /start by admin sets phase to NIGHT).
                 if state.phase_ends_at is not None:
                     delay = state.phase_ends_at - int(time.time())
                     if delay > 0:
                         await asyncio.sleep(delay)
+                else:
+                    # Sleep in 5s chunks and re-read state each cycle.
+                    # An external /start handler can transition WAITING → NIGHT
+                    # directly; this loop will detect the new phase and resume.
+                    await asyncio.sleep(5)
+                    state = await load_state(group_id)
+                    if state is None or state.phase != Phase.WAITING:
+                        continue  # phase changed externally — re-enter loop
+                    # Still in WAITING with no deadline → keep waiting silently
+                    continue
 
                 # Reload state (may have changed)
                 state = await load_state(group_id)

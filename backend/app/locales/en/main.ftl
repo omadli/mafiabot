@@ -274,6 +274,10 @@ extend-not-in-registration = You can only extend time during the registration ph
 
 extend-success = ⏱ Time extended by { $seconds } seconds.
 
+extend-indefinite = ⏳ Registration extended indefinitely. Use /start to launch the game.
+
+game-launched-by-admin = 🚀 The game has begun!
+
 
 # ===========================================================
 # NIGHT PROMPTS (private chat to player)

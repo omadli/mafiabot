@@ -199,22 +199,19 @@ async def cmd_stop(message: Message, user: User, _: Translator, bot: Bot) -> Non
 
 
 @router.message(Command("extend"))
-async def cmd_extend(message: Message, user: User, _: Translator, command: CommandObject) -> None:
-    """Ro'yxatdan o'tish vaqtini uzaytirish."""
+async def cmd_extend(message: Message, user: User, _: Translator) -> None:
+    """Ro'yxatdan o'tish vaqtini cheksiz uzaytirish (timeout o'chiriladi).
+
+    `/start` bosilguncha o'yin avtomatik boshlanmaydi.
+    """
     state = await game_service.load_state(message.chat.id)
     if state is None or state.phase != Phase.WAITING:
         await message.answer(_("extend-not-in-registration"))
         return
 
-    extra = 30
-    if command.args:
-        with contextlib.suppress(ValueError):
-            extra = max(10, min(120, int(command.args.strip())))
-
-    if state.phase_ends_at is not None:
-        state.phase_ends_at += extra
+    state.phase_ends_at = None  # disable auto-timeout
     await game_service.save_state(state)
-    await message.answer(_("extend-success", seconds=extra))
+    await message.answer(_("extend-indefinite"))
 
 
 @router.message(Command("vote"))
@@ -289,6 +286,119 @@ async def callback_join(query: CallbackQuery, user: User, _: Translator, bot: Bo
     # Just redirect user to bot via deeplink (same flow as deeplink)
     deeplink = f"https://t.me/{settings.bot_username}?start=join_{group_id}"
     await query.answer(_("click-to-join-private"), url=deeplink)
+
+
+# === /start group command (registration starter / launcher) ===
+
+
+@router.message(Command("start", "go", "begin"))
+async def cmd_start(
+    message: Message, user: User, _: Translator, command: CommandObject, bot: Bot
+) -> None:
+    """Group `/start` command — context-aware:
+
+    Active registration (WAITING phase):
+      - Admin OR creator → launch the game now (if enough players)
+      - Other user → re-broadcast registration message at bottom of chat
+        (deletes the previous one + unpins, then pins the fresh one)
+
+    No active registration:
+      - Treat as `/game` and start a new registration.
+    """
+    chat_id = message.chat.id
+
+    state = await game_service.load_state(chat_id)
+
+    # === Case A: Active registration ===
+    if state is not None and state.phase == Phase.WAITING:
+        # Is the caller authorized to launch the game?
+        is_admin = False
+        try:
+            member = await bot.get_chat_member(chat_id, user.id)
+            is_admin = member.status in ("creator", "administrator")
+        except Exception as e:
+            logger.debug(f"/start get_chat_member failed: {e}")
+
+        is_creator = state.creator_user_id == user.id
+
+        if is_admin or is_creator:
+            # Launch the game now
+            min_players = state.settings.get("gameplay", {}).get("min_players", 4)
+            if len(state.players) < min_players:
+                await message.reply(_("game-not-enough-players"))
+                return
+            try:
+                await game_service.start_game(state)
+            except game_service.GameError as e:
+                await message.reply(_(str(e)))
+                return
+            await game_service.save_state(state)
+            await message.reply(_("game-launched-by-admin"))
+            # Phase manager loop is already running; it will pick up the
+            # new NIGHT phase on its next 5s tick (or immediately if
+            # phase_ends_at has passed).
+            return
+
+        # Non-admin, non-creator → just re-announce
+        await _re_announce_registration(bot, state, _)
+        return
+
+    # === Case B: No active registration ===
+    # Permission check (same logic as /game)
+    group = await Group.get_or_none(id=chat_id).prefetch_related("settings")
+    if group is None or not group.onboarding_completed:
+        await message.answer(_("game-onboarding-required"))
+        return
+
+    perms = group.settings.permissions if group.settings else {}
+    who_can = perms.get("who_can_register", "all")
+    if who_can == "admins":
+        try:
+            member = await bot.get_chat_member(chat_id, user.id)
+            if member.status not in ("creator", "administrator"):
+                await message.reply(_("error-only-admins"))
+                return
+        except Exception:
+            await message.reply(_("error-only-admins"))
+            return
+
+    # Defer to /game handler (creates state + announces)
+    await cmd_game(message, user, _, command, bot)
+
+
+async def _re_announce_registration(bot: Bot, state, _: Translator) -> None:
+    """Re-send the registration message — delete the old one, unpin, post fresh, pin again.
+
+    Keeps the existing player list visible at the bottom of the chat (handy
+    when registration scrolled out of view after a busy stretch).
+    """
+    chat_id = state.chat_id
+    old_msg_id = state.registration_message_id
+
+    # Unpin + delete the old message (best-effort)
+    if old_msg_id is not None:
+        with contextlib.suppress(Exception):
+            await bot.unpin_chat_message(chat_id=chat_id, message_id=old_msg_id)
+        with contextlib.suppress(Exception):
+            await bot.delete_message(chat_id=chat_id, message_id=old_msg_id)
+
+    # Send fresh registration message
+    text = format_registration_text(state, _)
+    keyboard = build_registration_keyboard(state, settings.bot_username, _)
+    sent = await bot.send_message(
+        chat_id=chat_id,
+        text=text,
+        reply_markup=keyboard,
+        disable_web_page_preview=True,
+    )
+    state.registration_message_id = sent.message_id
+    await game_service.save_state(state)
+
+    # Pin if group settings allow
+    pin_enabled = state.settings.get("display", {}).get("auto_pin_registration", True)
+    if pin_enabled:
+        with contextlib.suppress(Exception):
+            await bot.pin_chat_message(chat_id, sent.message_id, disable_notification=True)
 
 
 # === Helpers ===
