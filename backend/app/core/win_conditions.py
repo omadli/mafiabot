@@ -12,6 +12,11 @@ def check_winner(state: GameState) -> Team | None:
     Singleton victories also reported as Team.SINGLETON. Specific singleton role
     that won is encoded in state.winner_user_ids (only those user_ids).
     """
+    # Guard: no players → no winner. Avoids the 0>=0 case wrongly returning Mafia
+    # for cancelled games where registration timed out.
+    if not state.players:
+        return None
+
     alive = state.alive_players()
     mafia_alive = [p for p in alive if p.team == Team.MAFIA]
     citizens_alive = [p for p in alive if p.team == Team.CITIZENS]

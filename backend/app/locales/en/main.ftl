@@ -323,6 +323,10 @@ game-end-winner =
 
 game-cancelled = ❌ The game has been cancelled.
 
+game-cancelled-not-enough-players =
+    ⏱ The game didn't start — not enough players joined in time (at least { $min_players } required).
+    Use /game to start a new one.
+
 team-citizens = 👨🏼 Civilians
 
 team-mafia = 🤵🏼 Mafia

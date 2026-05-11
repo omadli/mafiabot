@@ -323,6 +323,10 @@ game-end-winner =
 
 game-cancelled = ❌ O'yin bekor qilindi.
 
+game-cancelled-not-enough-players =
+    ⏱ O'yin boshlanmadi — vaqt tugaganda o'yinchilar yetarli emas edi (kamida { $min_players } ta kerak).
+    Keyingi o'yinni boshlash uchun /game buyrug'idan foydalaning.
+
 team-citizens = 👨🏼 Tinch aholi
 
 team-mafia = 🤵🏼 Mafiya

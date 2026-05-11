@@ -323,6 +323,10 @@ game-end-winner =
 
 game-cancelled = ❌ Игра отменена.
 
+game-cancelled-not-enough-players =
+    ⏱ Игра не началась — к моменту окончания регистрации не набралось достаточно игроков (нужно минимум { $min_players }).
+    Чтобы начать новую игру, используйте /game.
+
 team-citizens = 👨🏼 Мирные жители
 
 team-mafia = 🤵🏼 Мафия

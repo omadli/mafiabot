@@ -275,7 +275,19 @@ async def broadcast_game_end(bot: Bot, state: GameState) -> None:
     locale = state.settings.get("language", "uz")
     _ = get_translator(locale)
     if state.winner_team is None:
-        await _safe_send(bot, state.chat_id, _("game-cancelled"))
+        # Distinguish "registration timed out" from "/stop or other mid-game cancel"
+        from app.core.state import Phase
+
+        if state.phase == Phase.CANCELLED and not state.started_at:
+            # Game was cancelled in WAITING phase → never started
+            min_players = state.settings.get("gameplay", {}).get("min_players", 4)
+            await _safe_send(
+                bot,
+                state.chat_id,
+                _("game-cancelled-not-enough-players", min_players=min_players),
+            )
+        else:
+            await _safe_send(bot, state.chat_id, _("game-cancelled"))
         return
 
     # Determine individual winners (team + qualifying singletons)

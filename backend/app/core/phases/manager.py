@@ -104,7 +104,12 @@ class PhaseManager:
                 except Exception as e:
                     logger.debug(f"WS emit failed: {e}")
 
-                # Check winner
+                # Check winner — skip when game was just cancelled or already finished
+                # (avoids false winner announcement on registration-timeout cancels).
+                if state.phase in (Phase.CANCELLED, Phase.FINISHED):
+                    # Phase change broadcast happens above; loop now exits naturally.
+                    break
+
                 if state.phase != Phase.WAITING:
                     winner = check_winner(state)
                     if winner is not None:
