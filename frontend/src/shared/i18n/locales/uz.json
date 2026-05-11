@@ -163,6 +163,12 @@
       "system": "Tizim"
     },
     "dashboard": {
+      "elo_chart": "ELO taqsimoti",
+      "games_chart": "Kunlik o'yinlar (30 kun)",
+      "winrate_chart": "Rollar yutuq foizi",
+      "cohort_chart": "Cohort retention (30 kun)",
+      "new_users": "Yangi foydalanuvchilar",
+      "retention": "retention",
       "title": "Umumiy ko'rsatkichlar",
       "users_block": "Foydalanuvchilar",
       "groups_block": "Guruhlar",

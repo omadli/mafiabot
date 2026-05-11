@@ -163,6 +163,12 @@
       "system": "System"
     },
     "dashboard": {
+      "elo_chart": "ELO distribution",
+      "games_chart": "Games per day (30d)",
+      "winrate_chart": "Role winrates",
+      "cohort_chart": "Cohort retention (30d)",
+      "new_users": "New users",
+      "retention": "retention",
       "title": "Global KPIs",
       "users_block": "Users",
       "groups_block": "Groups",

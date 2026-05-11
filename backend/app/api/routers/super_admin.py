@@ -288,7 +288,7 @@ async def group_leaderboard(
     rows = await GroupUserStats.filter(group_id=group_id).order_by("-elo").limit(limit)
     items = []
     for i, s in enumerate(rows, start=1):
-        u = await User.get_or_none(id=s.user_id)
+        u = await User.get_or_none(id=s.user_id)  # type: ignore[attr-defined]
         if u is None:
             continue
         items.append(
@@ -435,3 +435,126 @@ async def get_role_defaults(
     from app.db.models.group import DEFAULT_ROLES_ENABLED
 
     return {"defaults": DEFAULT_ROLES_ENABLED}
+
+
+# === Charts ===
+
+
+@router.get("/charts/elo")
+async def chart_elo_distribution(
+    sa: SuperAdminContext = Depends(get_current_super_admin),
+) -> dict:
+    """Global ELO histogram, 7 bins."""
+    elo_values: list[int] = await UserStats.all().values_list("elo", flat=True)  # type: ignore[assignment]
+    bins = {
+        "<800": 0,
+        "800-999": 0,
+        "1000-1199": 0,
+        "1200-1399": 0,
+        "1400-1599": 0,
+        "1600-1799": 0,
+        "1800+": 0,
+    }
+    for elo in elo_values:
+        if elo < 800:
+            bins["<800"] += 1
+        elif elo < 1000:
+            bins["800-999"] += 1
+        elif elo < 1200:
+            bins["1000-1199"] += 1
+        elif elo < 1400:
+            bins["1200-1399"] += 1
+        elif elo < 1600:
+            bins["1400-1599"] += 1
+        elif elo < 1800:
+            bins["1600-1799"] += 1
+        else:
+            bins["1800+"] += 1
+    return {"bins": [{"label": k, "count": v} for k, v in bins.items()]}
+
+
+@router.get("/charts/games-per-day")
+async def chart_games_per_day(
+    sa: SuperAdminContext = Depends(get_current_super_admin),
+    days: int = Query(30, ge=1, le=90),
+) -> dict:
+    """Games per day for the last N days. Backfills zero entries."""
+    now = datetime.now(UTC)
+    since = now - timedelta(days=days)
+    games = await Game.filter(started_at__gte=since).all()
+
+    by_day: dict[str, int] = {}
+    for g in games:
+        if g.started_at is None:
+            continue
+        key = g.started_at.date().isoformat()
+        by_day[key] = by_day.get(key, 0) + 1
+
+    series = []
+    for i in range(days):
+        d = (now - timedelta(days=days - 1 - i)).date()
+        key = d.isoformat()
+        series.append({"date": key, "count": by_day.get(key, 0)})
+    return {"series": series}
+
+
+@router.get("/charts/cohort")
+async def chart_cohort_retention(
+    sa: SuperAdminContext = Depends(get_current_super_admin),
+) -> dict:
+    """7d/30d retention for users joined in last 30 days."""
+    now = datetime.now(UTC)
+    thirty_ago = now - timedelta(days=30)
+    seven_ago = now - timedelta(days=7)
+
+    new_users = await User.filter(joined_at__gte=thirty_ago).count()
+    if new_users == 0:
+        return {
+            "new_users": 0,
+            "active_7d": 0,
+            "active_30d": 0,
+            "retention_7d": 0,
+            "retention_30d": 0,
+        }
+
+    active_7d = await User.filter(joined_at__gte=thirty_ago, updated_at__gte=seven_ago).count()
+    active_30d = await User.filter(joined_at__gte=thirty_ago, updated_at__gte=thirty_ago).count()
+
+    return {
+        "new_users": new_users,
+        "active_7d": active_7d,
+        "active_30d": active_30d,
+        "retention_7d": round(active_7d / new_users, 3),
+        "retention_30d": round(active_30d / new_users, 3),
+    }
+
+
+@router.get("/charts/role-winrates")
+async def chart_role_winrates(
+    sa: SuperAdminContext = Depends(get_current_super_admin),
+) -> dict:
+    """Role winrate breakdown for a stacked bar / radar chart.
+
+    Returns top-12 roles by games_played with winrate%. Frontend can
+    visualize as horizontal bars sorted by winrate.
+    """
+    wins_per_role: dict[str, int] = {}
+    games_per_role: dict[str, int] = {}
+    for r in await GameResult.all().values("role", "won"):
+        games_per_role[r["role"]] = games_per_role.get(r["role"], 0) + 1
+        if r["won"]:
+            wins_per_role[r["role"]] = wins_per_role.get(r["role"], 0) + 1
+
+    items: list[dict[str, Any]] = []
+    for role, games in games_per_role.items():
+        wins = wins_per_role.get(role, 0)
+        items.append(
+            {
+                "role": role,
+                "games": games,
+                "wins": wins,
+                "winrate_pct": round(wins / games * 100, 1) if games else 0.0,
+            }
+        )
+    items.sort(key=lambda x: x["games"], reverse=True)
+    return {"items": items[:12]}

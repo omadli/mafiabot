@@ -163,6 +163,12 @@
       "system": "Система"
     },
     "dashboard": {
+      "elo_chart": "Распределение ELO",
+      "games_chart": "Игры по дням (30 дней)",
+      "winrate_chart": "Винрейт ролей",
+      "cohort_chart": "Когортная ретенция (30 дней)",
+      "new_users": "Новые пользователи",
+      "retention": "retention",
       "title": "Общие показатели",
       "users_block": "Пользователи",
       "groups_block": "Группы",

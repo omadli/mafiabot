@@ -1,18 +1,45 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 import { saApi } from "@shared/api/sa";
 import { useI18n } from "@shared/i18n/useI18n";
+import { BarChart, HBarChart, LineChart } from "@shared/components/Charts";
 
 export function SaDashboardPage() {
-  const { t } = useI18n();
+  const { t: tFlat } = useI18n();
+  const { t } = useTranslation();
   const { data, isLoading } = useQuery({
     queryKey: ["sa-global-stats"],
     queryFn: saApi.globalStats,
     refetchInterval: 30_000,
   });
 
+  const { data: eloChart } = useQuery({
+    queryKey: ["sa-chart-elo"],
+    queryFn: saApi.chartElo,
+    refetchInterval: 60_000,
+  });
+
+  const { data: gamesChart } = useQuery({
+    queryKey: ["sa-chart-games-per-day"],
+    queryFn: () => saApi.chartGamesPerDay(30),
+    refetchInterval: 60_000,
+  });
+
+  const { data: cohortChart } = useQuery({
+    queryKey: ["sa-chart-cohort"],
+    queryFn: saApi.chartCohort,
+    refetchInterval: 60_000,
+  });
+
+  const { data: winratesChart } = useQuery({
+    queryKey: ["sa-chart-role-winrates"],
+    queryFn: saApi.chartRoleWinrates,
+    refetchInterval: 60_000,
+  });
+
   if (isLoading || !data) {
-    return <div className="webapp-section">⏳ {t("loading")}</div>;
+    return <div className="webapp-section">⏳ {tFlat("loading")}</div>;
   }
 
   return (
@@ -47,29 +74,85 @@ export function SaDashboardPage() {
         <KPI label={t("games-last-7d")} value={data.games.last_7d} />
       </Section>
 
-      <Section title={t("winrates-block")}>
+      <Section title={tFlat("winrates-block")}>
         <p style={{ color: "var(--muted)", fontSize: "0.85rem", marginTop: 0 }}>
-          {t("total-player-games")}: <strong>{data.winrates.total_player_games}</strong>
+          {tFlat("total-player-games")}: <strong>{data.winrates.total_player_games}</strong>
         </p>
         <WinrateBar
-          label={t("winrates-citizen")}
+          label={tFlat("winrates-citizen")}
           pct={data.winrates.citizen_pct}
           wins={data.winrates.citizen_wins}
           color="#4ade80"
         />
         <WinrateBar
-          label={t("winrates-mafia")}
+          label={tFlat("winrates-mafia")}
           pct={data.winrates.mafia_pct}
           wins={data.winrates.mafia_wins}
           color="#e74c3c"
         />
         <WinrateBar
-          label={t("winrates-singleton")}
+          label={tFlat("winrates-singleton")}
           pct={data.winrates.singleton_pct}
           wins={data.winrates.singleton_wins}
           color="#f0a020"
         />
       </Section>
+
+      {/* === Charts === */}
+
+      {eloChart && eloChart.bins.some((b) => b.count > 0) && (
+        <div className="webapp-section">
+          <h3>📈 {t("sa.dashboard.elo_chart")}</h3>
+          <BarChart bins={eloChart.bins} />
+        </div>
+      )}
+
+      {gamesChart && gamesChart.series.length > 0 && (
+        <div className="webapp-section">
+          <h3>📅 {t("sa.dashboard.games_chart")}</h3>
+          <LineChart series={gamesChart.series} />
+        </div>
+      )}
+
+      {winratesChart && winratesChart.items.length > 0 && (
+        <div className="webapp-section">
+          <h3>🎯 {t("sa.dashboard.winrate_chart")}</h3>
+          <HBarChart
+            items={winratesChart.items.map((r) => ({
+              label: `${r.role} (${r.games})`,
+              value: r.winrate_pct,
+              color: r.winrate_pct >= 50 ? "#4ade80" : "#e74c3c",
+            }))}
+            max={100}
+            unit="%"
+          />
+        </div>
+      )}
+
+      {cohortChart && cohortChart.new_users > 0 && (
+        <div className="webapp-section">
+          <h3>🧪 {t("sa.dashboard.cohort_chart")}</h3>
+          <div className="sa-kpi-grid">
+            <div className="sa-kpi sa-kpi-primary">
+              <div className="sa-kpi-value">{cohortChart.new_users}</div>
+              <div className="sa-kpi-label">{t("sa.dashboard.new_users")}</div>
+            </div>
+            <div className="sa-kpi">
+              <div className="sa-kpi-value">{cohortChart.active_7d}</div>
+              <div className="sa-kpi-label">
+                7d · {(cohortChart.retention_7d * 100).toFixed(1)}% {t("sa.dashboard.retention")}
+              </div>
+            </div>
+            <div className="sa-kpi">
+              <div className="sa-kpi-value">{cohortChart.active_30d}</div>
+              <div className="sa-kpi-label">
+                30d · {(cohortChart.retention_30d * 100).toFixed(1)}%{" "}
+                {t("sa.dashboard.retention")}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

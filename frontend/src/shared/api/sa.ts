@@ -78,7 +78,34 @@ export const saApi = {
     value: unknown,
   ): Promise<{ ok: boolean; section: string; key: string; value: unknown }> =>
     (await api.post("/sa/system-settings", { section, key, value })).data,
+
+  // === Charts ===
+  chartElo: async (): Promise<{ bins: { label: string; count: number }[] }> =>
+    (await api.get("/sa/charts/elo")).data,
+
+  chartGamesPerDay: async (days = 30): Promise<{ series: { date: string; count: number }[] }> =>
+    (await api.get("/sa/charts/games-per-day", { params: { days } })).data,
+
+  chartCohort: async (): Promise<CohortChart> => (await api.get("/sa/charts/cohort")).data,
+
+  chartRoleWinrates: async (): Promise<{ items: RoleWinrate[] }> =>
+    (await api.get("/sa/charts/role-winrates")).data,
 };
+
+export interface CohortChart {
+  new_users: number;
+  active_7d: number;
+  active_30d: number;
+  retention_7d: number;
+  retention_30d: number;
+}
+
+export interface RoleWinrate {
+  role: string;
+  games: number;
+  wins: number;
+  winrate_pct: number;
+}
 
 // === Types ===
 
