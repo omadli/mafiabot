@@ -240,6 +240,36 @@
       "rewards": "G'olib mukofotlari",
       "exchange": "Konvertatsiya",
       "premium": "Premium"
+    },
+    "settings": {
+      "roles": "Rollar",
+      "timings": "Vaqt sozlamalari",
+      "timings_unit": "sekund",
+      "items": "Himoyalar",
+      "silence": "Jimlik",
+      "gameplay": "O'yin variantlari",
+      "language": "Til",
+      "saved": "Saqlandi",
+      "team_civilians": "Tinch aholilar",
+      "team_mafia": "Mafiya",
+      "team_singletons": "Singletonlar",
+      "timing_registration": "Ro'yxat",
+      "timing_night": "Tun",
+      "timing_day": "Kun",
+      "timing_mafia_vote": "Mafia ovozi",
+      "timing_hanging_vote": "Osish ovozi",
+      "timing_hanging_confirm": "Tasdiq",
+      "timing_last_words": "So'nggi so'z",
+      "timing_afsungar_carry": "Afsungar tanlovi",
+      "silence_dead": "O'lganlar jim",
+      "silence_sleeping": "Uxlovchilar jim",
+      "silence_non_players": "Tashqari odamlar jim",
+      "silence_night_chat": "Tunda yozish yo'q",
+      "ratio": "Mafia nisbati",
+      "ratio_low": "Past (1/4)",
+      "ratio_high": "Yuqori (1/3)",
+      "skip_day_vote": "Kun ovozini o'tkazib yuborish",
+      "skip_night_action": "Tun harakatini o'tkazib yuborish"
     }
   }
 }

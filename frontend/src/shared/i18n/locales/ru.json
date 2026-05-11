@@ -240,6 +240,36 @@
       "rewards": "Награды победителей",
       "exchange": "Обмен",
       "premium": "Премиум"
+    },
+    "settings": {
+      "roles": "Роли",
+      "timings": "Время фаз",
+      "timings_unit": "секунд",
+      "items": "Защиты",
+      "silence": "Тишина",
+      "gameplay": "Игровые параметры",
+      "language": "Язык",
+      "saved": "Сохранено",
+      "team_civilians": "Мирные",
+      "team_mafia": "Мафия",
+      "team_singletons": "Одиночки",
+      "timing_registration": "Регистрация",
+      "timing_night": "Ночь",
+      "timing_day": "День",
+      "timing_mafia_vote": "Голос мафии",
+      "timing_hanging_vote": "Голос казни",
+      "timing_hanging_confirm": "Подтверждение",
+      "timing_last_words": "Последнее слово",
+      "timing_afsungar_carry": "Выбор камикадзе",
+      "silence_dead": "Мёртвые молчат",
+      "silence_sleeping": "Спящие молчат",
+      "silence_non_players": "Зрители молчат",
+      "silence_night_chat": "Тишина ночью",
+      "ratio": "Доля мафии",
+      "ratio_low": "Низкая (1/4)",
+      "ratio_high": "Высокая (1/3)",
+      "skip_day_vote": "Пропуск дневного голоса",
+      "skip_night_action": "Пропуск ночного действия"
     }
   }
 }

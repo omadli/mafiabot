@@ -1,9 +1,19 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 import { saApi } from "@shared/api/sa";
 import { useI18n } from "@shared/i18n/useI18n";
+
+import {
+  GameplayEditor,
+  ItemsEditor,
+  LanguageEditor,
+  RolesEditor,
+  SilenceEditor,
+  TimingsEditor,
+} from "./GroupSettingsEditors";
 
 type Tab = "games" | "leaderboard" | "settings";
 
@@ -154,66 +164,106 @@ function LeaderboardTab({ groupId }: { groupId: number }) {
 }
 
 function SettingsTab({ groupId }: { groupId: number }) {
-  const { t } = useI18n();
+  const { t: tFlat } = useI18n();
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  const [savedKey, setSavedKey] = useState<string | null>(null);
+
   const { data, isLoading } = useQuery({
     queryKey: ["sa-group-settings", groupId],
     queryFn: () => saApi.groupSettings(groupId),
   });
 
-  if (isLoading || !data) return <div className="webapp-section">⏳ {t("loading")}</div>;
+  const mutation = useMutation({
+    mutationFn: ({ section, value }: { section: string; value: unknown }) =>
+      saApi.updateGroupSettings(groupId, section, value),
+    onMutate: (vars) => {
+      // Show a "saved" badge tagged with the section name
+      setSavedKey(vars.section);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["sa-group-settings", groupId] });
+      // Clear the badge after a moment
+      setTimeout(() => setSavedKey(null), 1500);
+    },
+  });
+
+  if (isLoading || !data) return <div className="webapp-section">⏳ {tFlat("loading")}</div>;
+
+  const onSave = (section: string, value: unknown) => {
+    mutation.mutate({ section, value });
+  };
+
+  const sections: { code: string; title: string; emoji: string; render: () => JSX.Element }[] = [
+    {
+      code: "roles",
+      emoji: "🎭",
+      title: t("admin.settings.roles"),
+      render: () => <RolesEditor settings={data} onSave={onSave} />,
+    },
+    {
+      code: "timings",
+      emoji: "⏱",
+      title: t("admin.settings.timings"),
+      render: () => <TimingsEditor settings={data} onSave={onSave} />,
+    },
+    {
+      code: "items_allowed",
+      emoji: "🛡",
+      title: t("admin.settings.items"),
+      render: () => <ItemsEditor settings={data} onSave={onSave} />,
+    },
+    {
+      code: "silence",
+      emoji: "🔇",
+      title: t("admin.settings.silence"),
+      render: () => <SilenceEditor settings={data} onSave={onSave} />,
+    },
+    {
+      code: "gameplay",
+      emoji: "🎮",
+      title: t("admin.settings.gameplay"),
+      render: () => <GameplayEditor settings={data} onSave={onSave} />,
+    },
+    {
+      code: "language",
+      emoji: "🌐",
+      title: t("admin.settings.language"),
+      render: () => <LanguageEditor settings={data} onSave={onSave} />,
+    },
+  ];
 
   return (
-    <div className="webapp-section">
-      <h3>{t("group-settings-title")}</h3>
-      <p style={{ color: "var(--muted)", fontSize: "0.85rem", marginTop: 0 }}>
-        Read-only view. Use bot's /settings command inside the group for full editing
-        (or the existing /webapp/settings/&lt;id&gt; flow as group admin).
-      </p>
-
-      <details style={{ marginBottom: "0.5rem" }} open>
-        <summary>
-          <strong>🎭 Roles</strong>
-        </summary>
-        <pre style={{ fontSize: "0.75rem", overflowX: "auto" }}>
-          {JSON.stringify(data.roles, null, 2)}
-        </pre>
-      </details>
-
-      <details style={{ marginBottom: "0.5rem" }}>
-        <summary>
-          <strong>⏱ Timings</strong>
-        </summary>
-        <pre style={{ fontSize: "0.75rem", overflowX: "auto" }}>
-          {JSON.stringify(data.timings, null, 2)}
-        </pre>
-      </details>
-
-      <details style={{ marginBottom: "0.5rem" }}>
-        <summary>
-          <strong>🛡 Items</strong>
-        </summary>
-        <pre style={{ fontSize: "0.75rem", overflowX: "auto" }}>
-          {JSON.stringify(data.items_allowed, null, 2)}
-        </pre>
-      </details>
-
-      <details style={{ marginBottom: "0.5rem" }}>
-        <summary>
-          <strong>🔇 Silence</strong>
-        </summary>
-        <pre style={{ fontSize: "0.75rem", overflowX: "auto" }}>
-          {JSON.stringify(data.silence, null, 2)}
-        </pre>
-      </details>
-
-      <details>
-        <summary>
-          <strong>🎮 Gameplay</strong>
-        </summary>
-        <pre style={{ fontSize: "0.75rem", overflowX: "auto" }}>
-          {JSON.stringify(data.gameplay, null, 2)}
-        </pre>
-      </details>
-    </div>
+    <>
+      {sections.map((sec, idx) => (
+        <details
+          key={sec.code}
+          open={idx === 0}
+          className="webapp-section"
+          style={{ marginBottom: "0.5rem" }}
+        >
+          <summary
+            style={{
+              cursor: "pointer",
+              listStyle: "none",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "0.25rem 0",
+            }}
+          >
+            <strong style={{ color: "var(--accent)" }}>
+              {sec.emoji} {sec.title}
+            </strong>
+            {savedKey === sec.code && (
+              <span style={{ color: "#4ade80", fontSize: "0.8rem" }}>
+                ✓ {t("admin.settings.saved")}
+              </span>
+            )}
+          </summary>
+          <div style={{ marginTop: "0.75rem" }}>{sec.render()}</div>
+        </details>
+      ))}
+    </>
   );
 }

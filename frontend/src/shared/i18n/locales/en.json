@@ -240,6 +240,36 @@
       "rewards": "Winner rewards",
       "exchange": "Exchange",
       "premium": "Premium"
+    },
+    "settings": {
+      "roles": "Roles",
+      "timings": "Phase timings",
+      "timings_unit": "seconds",
+      "items": "Items",
+      "silence": "Silence",
+      "gameplay": "Gameplay",
+      "language": "Language",
+      "saved": "Saved",
+      "team_civilians": "Civilians",
+      "team_mafia": "Mafia",
+      "team_singletons": "Singletons",
+      "timing_registration": "Registration",
+      "timing_night": "Night",
+      "timing_day": "Day",
+      "timing_mafia_vote": "Mafia vote",
+      "timing_hanging_vote": "Hanging vote",
+      "timing_hanging_confirm": "Confirmation",
+      "timing_last_words": "Last words",
+      "timing_afsungar_carry": "Kamikaze choice",
+      "silence_dead": "Dead are silent",
+      "silence_sleeping": "Sleeping are silent",
+      "silence_non_players": "Non-players silent",
+      "silence_night_chat": "Silent at night",
+      "ratio": "Mafia ratio",
+      "ratio_low": "Low (1/4)",
+      "ratio_high": "High (1/3)",
+      "skip_day_vote": "Allow skip day vote",
+      "skip_night_action": "Allow skip night action"
     }
   }
 }
