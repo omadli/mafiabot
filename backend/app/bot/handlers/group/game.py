@@ -271,6 +271,36 @@ async def cmd_vote(message: Message, user: User, _: Translator, command: Command
 # === Inline join callback ===
 
 
+@router.callback_query(F.data.startswith("game:show-role:"))
+async def callback_show_my_role(query: CallbackQuery, user: User, _: Translator) -> None:
+    """Show the caller their assigned role as an alert.
+
+    Triggered by the "🎭 Sizning rolingiz" button on the game-started message.
+    Non-players get an explicit "you are not in this game" alert.
+    """
+    if query.data is None or query.message is None:
+        await query.answer()
+        return
+
+    state = await game_service.load_state(query.message.chat.id)
+    if state is None:
+        await query.answer(_("show-role-no-game"), show_alert=True)
+        return
+
+    player = state.get_player(user.id)
+    if player is None:
+        await query.answer(_("show-role-not-in-game"), show_alert=True)
+        return
+
+    role_label = _(f"role-{player.role}")
+    role_desc = _(f"role-desc-{player.role}")
+    text = _("show-role-alert", role=role_label, description=role_desc)
+    # Telegram caps callback answer text at ~200 chars
+    if len(text) > 195:
+        text = text[:192] + "..."
+    await query.answer(text, show_alert=True)
+
+
 @router.callback_query(F.data.startswith("game:join:"))
 async def callback_join(query: CallbackQuery, user: User, _: Translator, bot: Bot) -> None:
     """Inline tugma orqali registratsiya — alternativ deeplink uchun."""
@@ -428,6 +458,12 @@ async def _on_phase_change(bot: Bot, state) -> None:
     from app.services.role_actions import send_night_prompts
 
     if state.phase == Phase.NIGHT:
+        # On the FIRST night, announce game start + role-reveal button + DM roles
+        if state.round_num == 1:
+            from app.services.game_start_announce import announce_game_started
+
+            await announce_game_started(bot, state)
+
         # Broadcast previous round's hanging result before next night begins
         await _broadcast_hanging_result(bot, state)
         await broadcast_phase_change(bot, state)

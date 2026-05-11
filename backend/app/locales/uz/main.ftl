@@ -1054,3 +1054,46 @@ settings-atmosphere-info =
 
     Slotlar: <code>night</code>, <code>day</code>, <code>voting</code>,
     <code>win_civilian</code>, <code>win_mafia</code>, <code>win_singleton</code>
+
+
+# === Game start announcement + role descriptions ===
+
+game-started-announcement =
+    🎭 <b>O'yin boshlandi!</b>
+
+    Quyidagi tugmani bosing va o'z rolingizni ko'ring:
+
+btn-show-my-role = 🎭 Sizning rolingiz
+
+show-role-not-in-game = 🚫 Siz bu o'yinda emassiz
+
+show-role-no-game = 🚫 Hozir o'yin yo'q
+
+show-role-alert = 🎭 Sizning rolingiz: { $role }\n\n{ $description }
+
+dm-your-role =
+    🎭 <b>Siz - { $role } siz!</b>
+
+    { $description }
+
+role-desc-citizen = Vazifangiz mafiani topish va kunduzgi ovozda osish.
+role-desc-detective = Har tunda 1 o'yinchini tekshirib, uning aslida kim ekanligini bilasiz.
+role-desc-sergeant = Komissarning yordamchisi — uning xabarlarini ko'rasiz va himoya qilasiz.
+role-desc-mayor = Sizning ovozingiz ikki barobar hisoblanadi.
+role-desc-doctor = Har tunda 1 o'yinchini davolab, uni o'limdan saqlaysiz.
+role-desc-hooker = Har tunda 1 o'yinchini uxlatib, uning tundagi harakatini bekor qilasiz.
+role-desc-hobo = Tunda 1 o'yinchining uyiga borasiz va uning mehmonlarini ko'rasiz.
+role-desc-lucky = 50% omadingiz bor — o'limdan tasodifan qutulishingiz mumkin.
+role-desc-suicide = Sizni kunduzgi ovozda osishsa, siz g'olib bo'lasiz!
+role-desc-kamikaze = Osilsangiz, o'zingiz bilan birga 1 odamni jahannamga olib ketasiz.
+role-desc-don = Mafiya boshlig'i — har tunda 1 o'yinchini o'ldirasiz.
+role-desc-mafia = Mafiya guruhi a'zosi. Donni qo'llab-quvvatlaysiz.
+role-desc-lawyer = Tunda 1 mafiyani Komissardan va kunduzgi osishdan himoyalaysiz.
+role-desc-journalist = Komissar yordamchilarini topa olasiz, lekin Komissarning o'zini emas.
+role-desc-killer = Mafiyaning eng kuchli o'ldiruvchisi — barcha himoyalarni teshib o'tasiz.
+role-desc-maniac = Yakka g'olib — oxirgi tirik qolish uchun hammani o'ldirasiz.
+role-desc-werewolf = Hujum qilgan o'yinchining roliga aylanasiz.
+role-desc-mage = Oxirgacha tirik qolsangiz, yakka g'olib bo'lasiz.
+role-desc-arsonist = 3+ o'yinchini o'ldirsangiz, yakka g'olib bo'lasiz.
+role-desc-crook = Tirik qolsangiz, yakka g'olib bo'lasiz. Kunduzi boshqa o'yinchi nomidan ovoz bera olasiz.
+role-desc-snitch = Komissar bilan bir odamni tanlasangiz, rolini guruhga oshkor qilasiz.

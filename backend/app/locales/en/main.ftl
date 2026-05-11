@@ -1039,3 +1039,46 @@ settings-atmosphere-info =
 
     Slots: <code>night</code>, <code>day</code>, <code>voting</code>,
     <code>win_civilian</code>, <code>win_mafia</code>, <code>win_singleton</code>
+
+
+# === Game start announcement + role descriptions ===
+
+game-started-announcement =
+    🎭 <b>The game has started!</b>
+
+    Tap the button to see your role:
+
+btn-show-my-role = 🎭 Your role
+
+show-role-not-in-game = 🚫 You are not in this game
+
+show-role-no-game = 🚫 No active game right now
+
+show-role-alert = 🎭 Your role: { $role }\n\n{ $description }
+
+dm-your-role =
+    🎭 <b>You are { $role }!</b>
+
+    { $description }
+
+role-desc-citizen = Your task: find the mafia and vote them out by day.
+role-desc-detective = Each night you check one player and learn their real role.
+role-desc-sergeant = Detective's helper — you see their messages and protect them.
+role-desc-mayor = Your daytime vote counts twice.
+role-desc-doctor = Each night you heal one player, saving them from death.
+role-desc-hooker = Each night you put one player to sleep, cancelling their night action.
+role-desc-hobo = At night you visit one player and see their visitors.
+role-desc-lucky = 50% chance to survive a deadly attack.
+role-desc-suicide = If you're hanged during the day — you win!
+role-desc-kamikaze = If you're hanged, you take one player with you.
+role-desc-don = Mafia boss — each night you kill one player.
+role-desc-mafia = Member of the mafia. You support the Don.
+role-desc-lawyer = At night you protect one mafia from the detective and from being hanged.
+role-desc-journalist = You can find the detective's helpers, but not the detective.
+role-desc-killer = Mafia's strongest killer — pierces through all protections.
+role-desc-maniac = Solo winner — survive to be the last one standing.
+role-desc-werewolf = You transform into the role of whoever you attack.
+role-desc-mage = Win if you survive to the very end.
+role-desc-arsonist = Win if you kill 3+ players.
+role-desc-crook = Win if you survive. By day you can vote in another player's name.
+role-desc-snitch = If you and the detective both target the same player, their role is revealed publicly.

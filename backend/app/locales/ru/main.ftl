@@ -1039,3 +1039,46 @@ settings-atmosphere-info =
 
     Слоты: <code>night</code>, <code>day</code>, <code>voting</code>,
     <code>win_civilian</code>, <code>win_mafia</code>, <code>win_singleton</code>
+
+
+# === Game start announcement + role descriptions ===
+
+game-started-announcement =
+    🎭 <b>Игра началась!</b>
+
+    Нажмите кнопку и узнайте свою роль:
+
+btn-show-my-role = 🎭 Ваша роль
+
+show-role-not-in-game = 🚫 Вы не в этой игре
+
+show-role-no-game = 🚫 Сейчас нет активной игры
+
+show-role-alert = 🎭 Ваша роль: { $role }\n\n{ $description }
+
+dm-your-role =
+    🎭 <b>Вы - { $role }!</b>
+
+    { $description }
+
+role-desc-citizen = Ваша задача — найти мафию и проголосовать за её казнь днём.
+role-desc-detective = Каждую ночь проверяете одного игрока и узнаёте его настоящую роль.
+role-desc-sergeant = Помощник комиссара — видите его сообщения и защищаете его.
+role-desc-mayor = Ваш голос на дневном голосовании считается за два.
+role-desc-doctor = Каждую ночь лечите одного игрока, спасая его от смерти.
+role-desc-hooker = Каждую ночь усыпляете одного игрока, отменяя его ночное действие.
+role-desc-hobo = Ночью ходите к одному игроку и видите его гостей.
+role-desc-lucky = 50%-ный шанс пережить смертельную атаку.
+role-desc-suicide = Если вас повесят днём — вы победили!
+role-desc-kamikaze = Если вас повесят, вы заберёте с собой одного игрока.
+role-desc-don = Глава мафии — каждую ночь убиваете одного игрока.
+role-desc-mafia = Член мафии. Поддерживаете Дона.
+role-desc-lawyer = Ночью защищаете одного мафиози от комиссара и от казни днём.
+role-desc-journalist = Можете найти помощников комиссара, но не его самого.
+role-desc-killer = Самый сильный убийца мафии — пробиваете все защиты.
+role-desc-maniac = Одиночка-победитель — должны выжить последним.
+role-desc-werewolf = Превращаетесь в роль того, на кого нападёте.
+role-desc-mage = Победите, если доживёте до конца.
+role-desc-arsonist = Победите, если убьёте 3+ игроков.
+role-desc-crook = Победа, если выживете. Днём можете голосовать от имени другого.
+role-desc-snitch = Если вы и комиссар выбрали одного игрока, его роль раскрывается группе.
