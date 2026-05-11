@@ -311,7 +311,9 @@ night-target-invalid = Выбранный игрок не найден или у
 
 night-action-recorded = ✅ { $target } выбран.
 
-night-action-confirmed = ✅ Ваш выбор: { $target }
+night-action-confirmed = ✅ Ваш выбор: <b>{ $target }</b>
+
+mafia-team-pick-broadcast = 🤵🏼 <b>{ $role }</b> ({ $actor }) выбрал: <b>{ $target }</b>
 
 
 # ===========================================================

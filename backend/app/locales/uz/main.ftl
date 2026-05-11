@@ -311,7 +311,9 @@ night-target-invalid = Tanlangan o'yinchi yo'q yoki o'lgan.
 
 night-action-recorded = ✅ { $target } tanlandi.
 
-night-action-confirmed = ✅ Sizning tanlovingiz: { $target }
+night-action-confirmed = ✅ Sizning tanlovingiz: <b>{ $target }</b>
+
+mafia-team-pick-broadcast = 🤵🏼 <b>{ $role }</b> ({ $actor }) tanlovi: <b>{ $target }</b>
 
 
 # ===========================================================

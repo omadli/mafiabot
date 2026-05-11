@@ -311,7 +311,9 @@ night-target-invalid = The selected player does not exist or is already dead.
 
 night-action-recorded = ✅ { $target } selected.
 
-night-action-confirmed = ✅ Your choice: { $target }
+night-action-confirmed = ✅ Your choice: <b>{ $target }</b>
+
+mafia-team-pick-broadcast = 🤵🏼 <b>{ $role }</b> ({ $actor }) picked: <b>{ $target }</b>
 
 
 # ===========================================================

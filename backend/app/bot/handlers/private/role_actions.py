@@ -2,23 +2,40 @@
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 
-from aiogram import F, Router
-from aiogram.types import CallbackQuery
+from aiogram import Bot, F, Router
+from aiogram.exceptions import TelegramForbiddenError
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
+from loguru import logger
 
-from app.core.state import NightAction, Phase
-from app.db.models import User
+from app.config import settings as app_settings
+from app.core.state import GameState, NightAction, Phase, Team
+from app.db.models import Group, User
 from app.services import game_service
-from app.services.i18n_service import Translator
+from app.services.i18n_service import Translator, get_translator
 from app.services.role_actions import role_action_type
 
 router = Router(name="private_role_actions")
 router.callback_query.filter(F.data.startswith("night:"))
 
 
+async def _back_to_group_kb(state: GameState, _: Translator) -> InlineKeyboardMarkup:
+    """Build a single-button keyboard pointing the user back at the group."""
+    group = await Group.get_or_none(id=state.group_id)
+    url = (
+        group.invite_link
+        if group and group.invite_link
+        else f"https://t.me/{app_settings.bot_username}"
+    )
+    return InlineKeyboardMarkup(
+        inline_keyboard=[[InlineKeyboardButton(text=_("btn-back-to-group"), url=url)]]
+    )
+
+
 @router.callback_query(F.data.startswith("night:"))
-async def handle_night_pick(query: CallbackQuery, user: User, _: Translator) -> None:
+async def handle_night_pick(query: CallbackQuery, user: User, _: Translator, bot: Bot) -> None:
     if query.data is None:
         await query.answer()
         return
@@ -59,8 +76,9 @@ async def handle_night_pick(query: CallbackQuery, user: User, _: Translator) -> 
         await game_service.save_state(state)
         await query.answer(_("night-skipped"), show_alert=False)
         if query.message:
+            back_kb = await _back_to_group_kb(state, _)
             with contextlib.suppress(Exception):
-                await query.message.edit_text(_("night-skipped-confirm"))
+                await query.message.edit_text(_("night-skipped-confirm"), reply_markup=back_kb)
         return
 
     # Validate target
@@ -84,8 +102,56 @@ async def handle_night_pick(query: CallbackQuery, user: User, _: Translator) -> 
         show_alert=False,
     )
     if query.message:
+        back_kb = await _back_to_group_kb(state, _)
         with contextlib.suppress(Exception):
-            await query.message.edit_text(_("night-action-confirmed", target=target.first_name))
+            await query.message.edit_text(
+                _("night-action-confirmed", target=target.first_name),
+                reply_markup=back_kb,
+                parse_mode="HTML",
+            )
+
+    # Broadcast to other alive mafia teammates if actor is on the mafia team.
+    # Lets the team coordinate / see each other's picks during night.
+    if actor.team == Team.MAFIA:
+        await _broadcast_to_mafia(bot, state, actor, target, action_kind)
+
+
+async def _broadcast_to_mafia(
+    bot: Bot,
+    state: GameState,
+    actor,
+    target,
+    action_kind: str,
+) -> None:
+    """Notify other alive mafia members of one member's night pick."""
+    locale = state.settings.get("language", "uz")
+    t = get_translator(locale)
+    actor_role_label = t(f"role-{actor.role}")
+
+    text = t(
+        "mafia-team-pick-broadcast",
+        role=actor_role_label,
+        actor=actor.first_name,
+        target=target.first_name,
+        action=action_kind,
+    )
+
+    async def _dm(uid: int) -> None:
+        try:
+            await bot.send_message(uid, text, parse_mode="HTML")
+        except TelegramForbiddenError:
+            pass
+        except Exception as e:
+            logger.debug(f"Mafia pick broadcast DM to {uid} failed: {e}")
+
+    targets = [
+        p.user_id
+        for p in state.alive_players()
+        if p.team == Team.MAFIA and p.user_id != actor.user_id
+    ]
+    if not targets:
+        return
+    await asyncio.gather(*(_dm(uid) for uid in targets), return_exceptions=True)
 
 
 async def _find_state_by_game_id(game_id) -> object | None:
