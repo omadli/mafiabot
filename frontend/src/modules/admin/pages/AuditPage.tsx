@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 import { api } from "@shared/api/client";
 
@@ -15,6 +16,7 @@ interface AuditItem {
 }
 
 export function AuditPage() {
+  const { t } = useTranslation();
   const { data, isLoading } = useQuery({
     queryKey: ["audit"],
     queryFn: async () =>
@@ -24,19 +26,19 @@ export function AuditPage() {
 
   return (
     <>
-      <h1 className="admin-page-title">📝 Audit Log</h1>
+      <h1 className="admin-page-title">📝 {t("admin.audit.title")}</h1>
       <div className="admin-card" style={{ padding: 0, overflow: "hidden" }}>
         {isLoading ? (
-          <div style={{ padding: "2rem", textAlign: "center" }}>⏳</div>
+          <div style={{ padding: "2rem", textAlign: "center" }}>⏳ {t("loading")}</div>
         ) : (
           <table className="admin-table">
             <thead>
               <tr>
-                <th>Vaqt</th>
-                <th>Actor</th>
-                <th>Action</th>
-                <th>Target</th>
-                <th>Payload</th>
+                <th>{t("admin.audit.col_time")}</th>
+                <th>{t("admin.audit.col_actor")}</th>
+                <th>{t("admin.audit.col_action")}</th>
+                <th>{t("admin.audit.col_target")}</th>
+                <th>{t("admin.audit.col_payload")}</th>
                 <th>IP</th>
               </tr>
             </thead>

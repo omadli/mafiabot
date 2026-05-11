@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 import { api } from "@shared/api/client";
 
@@ -29,6 +30,7 @@ interface GamesPerDayChart {
 }
 
 export function Dashboard() {
+  const { t } = useTranslation();
   const { events, connected } = useAdminLive();
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard"],
@@ -55,12 +57,15 @@ export function Dashboard() {
     refetchInterval: 60_000,
   });
 
-  if (isLoading || !data) return <div className="admin-card">⏳</div>;
+  if (isLoading || !data) return <div className="admin-card">⏳ {t("loading")}</div>;
 
   return (
     <>
-      <h1 className="admin-page-title" style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-        📊 Dashboard
+      <h1
+        className="admin-page-title"
+        style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}
+      >
+        📊 {t("admin.dashboard.title")}
         <span
           style={{
             fontSize: "0.7rem",
@@ -72,13 +77,15 @@ export function Dashboard() {
             letterSpacing: "0.05em",
           }}
         >
-          {connected ? "🟢 LIVE" : "🔴 OFFLINE"}
+          {connected ? `🟢 ${t("admin.dashboard.live")}` : `🔴 ${t("admin.dashboard.offline")}`}
         </span>
       </h1>
 
       {events.length > 0 && (
         <div className="admin-card" style={{ marginBottom: "1.5rem" }}>
-          <h3 style={{ marginTop: 0, color: "var(--muted)" }}>📡 Live oqim</h3>
+          <h3 style={{ marginTop: 0, color: "var(--muted)" }}>
+            📡 {t("admin.dashboard.live_feed")}
+          </h3>
           <ul
             style={{
               margin: 0,
@@ -113,35 +120,41 @@ export function Dashboard() {
         </div>
       )}
 
-      <h3 style={{ color: "var(--muted)", marginTop: 0 }}>Foydalanuvchilar</h3>
+      <h3 style={{ color: "var(--muted)", marginTop: 0 }}>{t("admin.dashboard.users")}</h3>
       <div className="admin-grid" style={{ marginBottom: "2rem" }}>
-        <KPI label="Jami" value={data.users.total} />
+        <KPI label={t("admin.dashboard.users_total")} value={data.users.total} />
         <KPI
-          label="Premium"
+          label={t("admin.dashboard.users_premium")}
           value={data.users.premium}
           sub={`${(data.users.premium_rate * 100).toFixed(1)}%`}
         />
-        <KPI label="Banlangan" value={data.users.banned} />
+        <KPI label={t("admin.dashboard.users_banned")} value={data.users.banned} />
       </div>
 
-      <h3 style={{ color: "var(--muted)" }}>Aktivlik</h3>
+      <h3 style={{ color: "var(--muted)" }}>{t("admin.dashboard.activity")}</h3>
       <div className="admin-grid" style={{ marginBottom: "2rem" }}>
-        <KPI label="DAU (24h)" value={data.activity.dau} />
-        <KPI label="WAU (7d)" value={data.activity.wau} />
-        <KPI label="MAU (30d)" value={data.activity.mau} />
+        <KPI label={t("admin.dashboard.dau")} value={data.activity.dau} />
+        <KPI label={t("admin.dashboard.wau")} value={data.activity.wau} />
+        <KPI label={t("admin.dashboard.mau")} value={data.activity.mau} />
       </div>
 
-      <h3 style={{ color: "var(--muted)" }}>Guruhlar va o'yinlar</h3>
+      <h3 style={{ color: "var(--muted)" }}>{t("admin.dashboard.groups_games")}</h3>
       <div className="admin-grid" style={{ marginBottom: "2rem" }}>
-        <KPI label="Guruhlar" value={data.groups.total} sub={`${data.groups.active} aktiv`} />
-        <KPI label="Jami o'yinlar" value={data.games.total} />
-        <KPI label="Tugagan" value={data.games.finished} />
-        <KPI label="Hozir o'ynalmoqda" value={data.games.running} />
+        <KPI
+          label={t("admin.dashboard.groups")}
+          value={data.groups.total}
+          sub={`${data.groups.active} ${t("admin.dashboard.active")}`}
+        />
+        <KPI label={t("admin.dashboard.games_total")} value={data.games.total} />
+        <KPI label={t("admin.dashboard.games_finished")} value={data.games.finished} />
+        <KPI label={t("admin.dashboard.games_running")} value={data.games.running} />
       </div>
 
       {elo && elo.bins.some((b) => b.count > 0) && (
         <>
-          <h3 style={{ color: "var(--muted)" }}>📈 ELO taqsimoti</h3>
+          <h3 style={{ color: "var(--muted)" }}>
+            📈 {t("admin.dashboard.elo_distribution")}
+          </h3>
           <div className="admin-card" style={{ marginBottom: "2rem" }}>
             <BarChart bins={elo.bins} />
           </div>
@@ -150,18 +163,18 @@ export function Dashboard() {
 
       {cohort && cohort.new_users > 0 && (
         <>
-          <h3 style={{ color: "var(--muted)" }}>🎯 Cohort retention (so'nggi 30 kun)</h3>
+          <h3 style={{ color: "var(--muted)" }}>🎯 {t("admin.dashboard.cohort")}</h3>
           <div className="admin-grid" style={{ marginBottom: "2rem" }}>
-            <KPI label="Yangi foydalanuvchilar" value={cohort.new_users} />
+            <KPI label={t("admin.dashboard.new_users")} value={cohort.new_users} />
             <KPI
-              label="Aktiv (7 kun)"
+              label={t("admin.dashboard.active_7d")}
               value={cohort.active_7d}
-              sub={`${(cohort.retention_7d * 100).toFixed(1)}% retention`}
+              sub={`${(cohort.retention_7d * 100).toFixed(1)}% ${t("admin.dashboard.retention")}`}
             />
             <KPI
-              label="Aktiv (30 kun)"
+              label={t("admin.dashboard.active_30d")}
               value={cohort.active_30d}
-              sub={`${(cohort.retention_30d * 100).toFixed(1)}% retention`}
+              sub={`${(cohort.retention_30d * 100).toFixed(1)}% ${t("admin.dashboard.retention")}`}
             />
           </div>
         </>
@@ -169,7 +182,7 @@ export function Dashboard() {
 
       {gamesPerDay && (
         <>
-          <h3 style={{ color: "var(--muted)" }}>📅 Kunlik o'yinlar (so'nggi 30 kun)</h3>
+          <h3 style={{ color: "var(--muted)" }}>📅 {t("admin.dashboard.daily_games")}</h3>
           <div className="admin-card" style={{ marginBottom: "2rem" }}>
             <LineChart series={gamesPerDay.series} />
           </div>
@@ -177,7 +190,7 @@ export function Dashboard() {
       )}
 
       <p style={{ marginTop: "2rem", color: "var(--muted)", fontSize: "0.8rem" }}>
-        Yangilangan: {new Date(data.generated_at).toLocaleString()}
+        {t("admin.dashboard.updated")}: {new Date(data.generated_at).toLocaleString()}
       </p>
     </>
   );

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 import { api } from "@shared/api/client";
 
@@ -25,6 +26,7 @@ interface UsersResponse {
 }
 
 export function UsersPage() {
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const queryClient = useQueryClient();
@@ -61,12 +63,12 @@ export function UsersPage() {
 
   return (
     <>
-      <h1 className="admin-page-title">👥 Foydalanuvchilar</h1>
+      <h1 className="admin-page-title">👥 {t("admin.users.title")}</h1>
 
       <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem", maxWidth: 500 }}>
         <input
           className="admin-input"
-          placeholder="🔍 Search by username/name..."
+          placeholder={`🔍 ${t("admin.users.search_placeholder")}`}
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
@@ -77,20 +79,20 @@ export function UsersPage() {
 
       <div className="admin-card" style={{ padding: 0, overflow: "hidden" }}>
         {isLoading ? (
-          <div style={{ padding: "2rem", textAlign: "center" }}>⏳</div>
+          <div style={{ padding: "2rem", textAlign: "center" }}>⏳ {t("loading")}</div>
         ) : (
           <table className="admin-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>User</th>
+                <th>{t("admin.users.col_id")}</th>
+                <th>{t("admin.users.col_name")}</th>
                 <th>💎</th>
                 <th>💵</th>
                 <th>Lvl</th>
                 <th>ELO</th>
-                <th>Games</th>
-                <th>Status</th>
-                <th>Actions</th>
+                <th>{t("admin.users.col_balance")}</th>
+                <th>{t("admin.users.col_status")}</th>
+                <th>{t("admin.users.col_actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -113,8 +115,12 @@ export function UsersPage() {
                   <td>{u.elo}</td>
                   <td>{u.games_total}</td>
                   <td>
-                    {u.is_premium && <span className="badge yellow">PREMIUM</span>}{" "}
-                    {u.is_banned && <span className="badge red">BAN</span>}
+                    {u.is_premium && (
+                      <span className="badge yellow">{t("admin.users.premium")}</span>
+                    )}{" "}
+                    {u.is_banned && (
+                      <span className="badge red">{t("admin.users.banned")}</span>
+                    )}
                   </td>
                   <td style={{ display: "flex", gap: "0.4rem" }}>
                     {u.is_banned ? (
@@ -122,24 +128,25 @@ export function UsersPage() {
                         className="admin-btn"
                         onClick={() => unbanMutation.mutate(u.id)}
                       >
-                        Unban
+                        {t("admin.users.unban")}
                       </button>
                     ) : (
                       <button
                         className="admin-btn admin-btn-danger"
                         onClick={() => {
-                          const reason = prompt("Sabab?", "Spam");
+                          const reason = prompt("Reason?", "Spam");
                           if (reason) banMutation.mutate({ userId: u.id, reason });
                         }}
                       >
-                        Ban
+                        {t("admin.users.ban")}
                       </button>
                     )}
                     <button
                       className="admin-btn"
                       onClick={() => {
-                        const amt = prompt("Olmos miqdori?", "100");
-                        if (amt) grantMutation.mutate({ userId: u.id, amount: parseInt(amt) });
+                        const amt = prompt(t("admin.users.grant_diamonds"), "100");
+                        if (amt)
+                          grantMutation.mutate({ userId: u.id, amount: parseInt(amt) });
                       }}
                     >
                       💎+

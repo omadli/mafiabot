@@ -1,12 +1,15 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AxiosError } from "axios";
+import { useTranslation } from "react-i18next";
 
 import { authStore } from "@shared/store/auth";
 import { api } from "@shared/api/client";
+import type { Locale } from "@shared/i18n";
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const setAuth = authStore((s) => s.setAuth);
   const [searchParams] = useSearchParams();
   const oneTimeToken = searchParams.get("token");
@@ -26,7 +29,7 @@ export function LoginPage() {
       navigate("/admin");
     } catch (err) {
       const ax = err as AxiosError<{ detail: string }>;
-      setError(ax.response?.data?.detail || "Login failed");
+      setError(ax.response?.data?.detail || t("admin.login.invalid"));
     } finally {
       setLoading(false);
     }
@@ -48,13 +51,23 @@ export function LoginPage() {
   return (
     <div className="login-shell">
       <div className="login-card">
-        <h1>🎲 Mafia Admin</h1>
-        <p className="login-sub">Super admin paneliga kirish</p>
+        <select
+          value={i18n.language}
+          onChange={(e) => i18n.changeLanguage(e.target.value as Locale)}
+          className="admin-lang-select"
+          style={{ marginBottom: "1rem" }}
+        >
+          <option value="uz">🇺🇿 O&apos;zbekcha</option>
+          <option value="ru">🇷🇺 Русский</option>
+          <option value="en">🇬🇧 English</option>
+        </select>
+        <h1>🎲 {t("admin.logo")}</h1>
+        <p className="login-sub">{t("admin.login.title")}</p>
         <form onSubmit={submit}>
           <input
             className="admin-input"
             type="text"
-            placeholder="Username"
+            placeholder={t("admin.login.username")}
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             autoFocus
@@ -63,14 +76,14 @@ export function LoginPage() {
           <input
             className="admin-input"
             type="password"
-            placeholder="Password"
+            placeholder={t("admin.login.password")}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
           {error && <div className="login-error">⚠️ {error}</div>}
           <button type="submit" className="admin-btn login-btn" disabled={loading}>
-            {loading ? "..." : "Kirish"}
+            {loading ? t("admin.login.loading") : t("admin.login.submit")}
           </button>
         </form>
         <small className="login-hint">

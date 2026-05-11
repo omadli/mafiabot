@@ -210,3 +210,21 @@
   background: #3d2e1a;
   color: #f0a020;
 }
+
+
+/* Language selector in admin sidebar */
+.admin-lang-select {
+  width: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid #2a2a45;
+  border-radius: 6px;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+}
+
+.admin-lang-select:focus {
+  outline: 1px solid var(--accent);
+}

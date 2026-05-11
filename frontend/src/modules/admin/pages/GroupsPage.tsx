@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 import { api } from "@shared/api/client";
 
@@ -21,6 +22,7 @@ interface GroupsResponse {
 }
 
 export function GroupsPage() {
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const queryClient = useQueryClient();
@@ -48,12 +50,12 @@ export function GroupsPage() {
 
   return (
     <>
-      <h1 className="admin-page-title">💬 Guruhlar</h1>
+      <h1 className="admin-page-title">💬 {t("admin.groups.title")}</h1>
 
       <input
         className="admin-input"
         style={{ maxWidth: 500, marginBottom: "1rem" }}
-        placeholder="🔍 Search by title..."
+        placeholder={`🔍 ${t("search")}`}
         value={search}
         onChange={(e) => {
           setSearch(e.target.value);
@@ -63,17 +65,17 @@ export function GroupsPage() {
 
       <div className="admin-card" style={{ padding: 0, overflow: "hidden" }}>
         {isLoading ? (
-          <div style={{ padding: "2rem", textAlign: "center" }}>⏳</div>
+          <div style={{ padding: "2rem", textAlign: "center" }}>⏳ {t("loading")}</div>
         ) : (
           <table className="admin-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Nomi</th>
-                <th>O'yinlar</th>
-                <th>Status</th>
-                <th>Yaratildi</th>
-                <th>Actions</th>
+                <th>{t("admin.groups.col_id")}</th>
+                <th>{t("admin.groups.col_title")}</th>
+                <th>{t("admin.groups.col_games")}</th>
+                <th>{t("admin.groups.col_status")}</th>
+                <th>{t("admin.users.col_joined")}</th>
+                <th>{t("admin.groups.col_actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -84,11 +86,13 @@ export function GroupsPage() {
                   <td>{g.total_games}</td>
                   <td>
                     {g.is_blocked ? (
-                      <span className="badge red">BLOCKED</span>
+                      <span className="badge red">{t("admin.groups.blocked")}</span>
                     ) : g.onboarding_completed ? (
-                      <span className="badge green">ACTIVE</span>
+                      <span className="badge green">{t("admin.groups.active")}</span>
                     ) : (
-                      <span className="badge yellow">SETUP</span>
+                      <span className="badge yellow">
+                        {t("admin.groups.not_onboarded")}
+                      </span>
                     )}
                   </td>
                   <td style={{ color: "var(--muted)" }}>
@@ -100,18 +104,18 @@ export function GroupsPage() {
                         className="admin-btn"
                         onClick={() => unblockMutation.mutate(g.id)}
                       >
-                        Unblock
+                        {t("admin.groups.unblock")}
                       </button>
                     ) : (
                       <button
                         className="admin-btn admin-btn-danger"
                         onClick={() => {
-                          const reason = prompt("Sabab?", "Spam");
+                          const reason = prompt("Reason?", "Spam");
                           if (reason)
                             blockMutation.mutate({ groupId: g.id, reason });
                         }}
                       >
-                        Block
+                        {t("admin.groups.block")}
                       </button>
                     )}
                   </td>

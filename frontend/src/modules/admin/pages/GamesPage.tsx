@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 import { api } from "@shared/api/client";
 
@@ -14,6 +15,7 @@ interface GameItem {
 }
 
 export function GamesPage() {
+  const { t } = useTranslation();
   const { data, isLoading } = useQuery({
     queryKey: ["games"],
     queryFn: async () =>
@@ -22,20 +24,20 @@ export function GamesPage() {
 
   return (
     <>
-      <h1 className="admin-page-title">🎲 O'yinlar</h1>
+      <h1 className="admin-page-title">🎲 {t("admin.games.title")}</h1>
       <div className="admin-card" style={{ padding: 0, overflow: "hidden" }}>
         {isLoading ? (
-          <div style={{ padding: "2rem", textAlign: "center" }}>⏳</div>
+          <div style={{ padding: "2rem", textAlign: "center" }}>⏳ {t("loading")}</div>
         ) : (
           <table className="admin-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Group</th>
-                <th>Status</th>
-                <th>Winner</th>
-                <th>Boshlandi</th>
-                <th>Tugadi</th>
+                <th>{t("admin.games.col_id")}</th>
+                <th>{t("admin.games.col_group")}</th>
+                <th>{t("admin.games.col_status")}</th>
+                <th>{t("admin.games.col_winner")}</th>
+                <th>{t("admin.games.col_started")}</th>
+                <th>{t("admin.games.col_duration")}</th>
                 <th>Bounty</th>
               </tr>
             </thead>
