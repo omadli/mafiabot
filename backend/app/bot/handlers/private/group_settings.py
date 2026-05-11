@@ -47,6 +47,7 @@ from app.db.models.group import (
     DEFAULT_SILENCE,
     DEFAULT_TIMINGS,
 )
+from app.services.group_settings_helper import save_settings_fields
 from app.services.i18n_service import Translator, get_translator
 
 router = Router(name="private_group_settings")
@@ -272,8 +273,7 @@ async def cb_role_toggle(query: CallbackQuery, user: User, _: Translator) -> Non
     roles = {**DEFAULT_ROLES_ENABLED, **(s.roles or {})}
     new_state = not roles.get(code, False)
     roles[code] = new_state
-    s.roles = roles
-    await s.save(update_fields=["roles"])
+    await save_settings_fields(s, roles=roles)
 
     emoji_name = _(f"role-{code}")
     await query.answer(f"{emoji_name}: {_toggle_label(new_state)}")
@@ -343,8 +343,7 @@ async def cb_timing_adjust(query: CallbackQuery, user: User, _: Translator) -> N
     t = {**DEFAULT_TIMINGS, **(s.timings or {})}
     new_val = max(5, min(900, t.get(key, 0) + delta))  # clamp 5..900s
     t[key] = new_val
-    s.timings = t
-    await s.save(update_fields=["timings"])
+    await save_settings_fields(s, timings=t)
 
     await query.answer(f"{_(f'timing-{key}')}: {new_val}s")
     await _edit(query, _build_timings_text(s, _), _build_timings_kb(s, gid, _))
@@ -397,8 +396,7 @@ async def cb_item_toggle(query: CallbackQuery, user: User, _: Translator) -> Non
 
     items = {**DEFAULT_ITEMS_ALLOWED, **(s.items_allowed or {})}
     items[code] = not items.get(code, False)
-    s.items_allowed = items
-    await s.save(update_fields=["items_allowed"])
+    await save_settings_fields(s, items_allowed=items)
 
     await query.answer(f"{ITEM_LABELS.get(code, code)}: {_toggle_label(items[code])}")
     await _edit(query, _("settings-items-prompt"), _build_items_kb(s, gid, _))
@@ -445,8 +443,7 @@ async def cb_silence_toggle(query: CallbackQuery, user: User, _: Translator) -> 
 
     silence = {**DEFAULT_SILENCE, **(s.silence or {})}
     silence[key] = not silence.get(key, False)
-    s.silence = silence
-    await s.save(update_fields=["silence"])
+    await save_settings_fields(s, silence=silence)
 
     await query.answer(f"{_(f'silence-{key}')}: {_toggle_label(silence[key])}")
     await _edit(query, _("settings-silence-prompt"), _build_silence_kb(s, gid, _))
@@ -527,8 +524,7 @@ async def cb_gameplay_ratio(query: CallbackQuery, user: User, _: Translator) -> 
 
     g = {**DEFAULT_GAMEPLAY, **(s.gameplay or {})}
     g["mafia_ratio"] = ratio
-    s.gameplay = g
-    await s.save(update_fields=["gameplay"])
+    await save_settings_fields(s, gameplay=g)
 
     await query.answer(f"{_('gameplay-ratio-' + ratio)} ✓")
     await _edit(query, _build_gameplay_text(s, _), _build_gameplay_kb(s, gid, _))
@@ -552,8 +548,7 @@ async def cb_gameplay_toggle(query: CallbackQuery, user: User, _: Translator) ->
 
     g = {**DEFAULT_GAMEPLAY, **(s.gameplay or {})}
     g[key] = not g.get(key, False)
-    s.gameplay = g
-    await s.save(update_fields=["gameplay"])
+    await save_settings_fields(s, gameplay=g)
 
     await query.answer(
         f"{_('gameplay-' + key.replace('allow_skip_', 'skip-').replace('_', '-'))}: {_toggle_label(g[key])}"
@@ -606,8 +601,7 @@ async def cb_lang_set(query: CallbackQuery, user: User, _: Translator) -> None:
     if group is None or s is None:
         return
 
-    s.language = new_lang
-    await s.save(update_fields=["language"])
+    await save_settings_fields(s, language=new_lang)
     new_t = get_translator(new_lang)
     await query.answer(new_t("language-switched"))
     await _edit(query, new_t("settings-lang-prompt"), _build_lang_kb(s, gid, new_t))

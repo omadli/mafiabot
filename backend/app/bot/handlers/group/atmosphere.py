@@ -8,8 +8,6 @@ GroupSettings.atmosphere_media JSON.
 
 from __future__ import annotations
 
-from typing import cast
-
 from aiogram import F, Router
 from aiogram.filters import Command, CommandObject
 from aiogram.types import Message
@@ -85,16 +83,20 @@ async def set_atmosphere(
         await message.reply(_("atmosphere-no-media"))
         return
 
-    group = await Group.get_or_none(id=message.chat.id).prefetch_related("settings")
-    if group is None or group.settings is None:
+    group = await Group.get_or_none(id=message.chat.id)
+    if group is None:
+        await message.reply(_("atmosphere-no-group"))
+        return
+    settings = await GroupSettings.get_or_none(group_id=message.chat.id)
+    if settings is None:
         await message.reply(_("atmosphere-no-group"))
         return
 
-    settings: GroupSettings = cast(GroupSettings, group.settings)
+    from app.services.group_settings_helper import save_settings_fields
+
     media = dict(settings.atmosphere_media or {})
     media[canonical] = file_id
-    settings.atmosphere_media = media
-    await settings.save(update_fields=["atmosphere_media"])
+    await save_settings_fields(settings, atmosphere_media=media)
 
     logger.info(
         f"Atmosphere media set: group={message.chat.id} slot={canonical} file_id={file_id[:20]}…"
@@ -121,22 +123,25 @@ async def clear_atmosphere(
         await message.reply(_("atmosphere-clear-help", slots=slots))
         return
 
-    group = await Group.get_or_none(id=message.chat.id).prefetch_related("settings")
-    if group is None or group.settings is None:
+    group = await Group.get_or_none(id=message.chat.id)
+    if group is None:
+        return
+    settings = await GroupSettings.get_or_none(group_id=message.chat.id)
+    if settings is None:
         return
 
-    settings: GroupSettings = cast(GroupSettings, group.settings)
+    from app.services.group_settings_helper import save_settings_fields
+
     if arg == "all":
-        settings.atmosphere_media = {}
+        new_media: dict = {}
     else:
         canonical = SLOT_ALIASES.get(arg)
         if canonical is None:
             slots = " | ".join(SLOT_ALIASES.keys())
             await message.reply(_("atmosphere-invalid-slot", slots=slots))
             return
-        media = dict(settings.atmosphere_media or {})
-        media.pop(canonical, None)
-        settings.atmosphere_media = media
+        new_media = dict(settings.atmosphere_media or {})
+        new_media.pop(canonical, None)
 
-    await settings.save(update_fields=["atmosphere_media"])
+    await save_settings_fields(settings, atmosphere_media=new_media)
     await message.reply(_("atmosphere-cleared", slot=arg))

@@ -111,22 +111,22 @@ async def update_group_settings(
     if auth.chat_id != group_id:
         raise HTTPException(status_code=403, detail="Chat ID mismatch")
 
-    group = await Group.get_or_none(id=group_id).prefetch_related("settings")
+    from app.db.models import GroupSettings
+    from app.services.group_settings_helper import save_settings_fields
+
+    group = await Group.get_or_none(id=group_id)
     if group is None:
         raise HTTPException(status_code=404, detail="Group not found")
-
-    s = group.settings
+    s = await GroupSettings.get_or_none(group_id=group_id)
     if s is None:
         raise HTTPException(status_code=404, detail="Settings not found")
 
-    if payload.section == "language":
-        if not isinstance(payload.value, str) or len(payload.value) > 8:
-            raise HTTPException(status_code=400, detail="Invalid language code")
-        s.language = payload.value
-        await s.save(update_fields=["language"])
-    else:
-        setattr(s, payload.section, payload.value)
-        await s.save(update_fields=[payload.section])
+    if payload.section == "language" and (
+        not isinstance(payload.value, str) or len(payload.value) > 8
+    ):
+        raise HTTPException(status_code=400, detail="Invalid language code")
+
+    await save_settings_fields(s, **{payload.section: payload.value})
 
     await log_action(
         action=f"group.settings.{payload.section}",

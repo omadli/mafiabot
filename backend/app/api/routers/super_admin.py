@@ -367,8 +367,9 @@ async def update_group_settings(
     if payload.section not in valid_sections:
         raise HTTPException(status_code=400, detail=f"Invalid section: {payload.section}")
 
-    setattr(s, payload.section, payload.value)
-    await s.save(update_fields=[payload.section])
+    from app.services.group_settings_helper import save_settings_fields
+
+    await save_settings_fields(s, **{payload.section: payload.value})
 
     await log_action(
         action=f"sa.group.settings.{payload.section}",

@@ -114,8 +114,10 @@ async def onboarding_set_language(query: CallbackQuery, bot: Bot) -> None:
         await query.answer("Settings not found", show_alert=True)
         return
 
-    s.language = lang
-    await s.save(update_fields=["language"])
+    # Use helper — Tortoise 0.21 OneToOneField(pk=True) save() bug workaround
+    from app.services.group_settings_helper import save_settings_fields
+
+    await save_settings_fields(s, language=lang)
 
     _t = get_translator(lang)
     keyboard = InlineKeyboardMarkup(
