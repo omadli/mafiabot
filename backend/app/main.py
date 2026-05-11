@@ -257,6 +257,7 @@ def create_app() -> FastAPI:
     from app.api.routers import (
         admin,
         health,
+        super_admin,
         webhook,
         ws,
     )
@@ -271,6 +272,7 @@ def create_app() -> FastAPI:
     app.include_router(webhook.router, prefix="/webhook", tags=["webhook"])
     app.include_router(auth_router.router, prefix="/api", tags=["auth"])
     app.include_router(admin.router, prefix="/api", tags=["admin"])
+    app.include_router(super_admin.router)  # /api/sa/* — Telegram-ID auth
     app.include_router(group_router.router, prefix="/api", tags=["group"])
     app.include_router(ws.router, prefix="/ws", tags=["websocket"])
 
