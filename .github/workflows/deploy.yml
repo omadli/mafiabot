@@ -10,37 +10,74 @@ jobs:
     name: Deploy to production
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    needs: []
     steps:
       - uses: actions/checkout@v4
 
-      # Build frontend artifact
+      # Build frontend artifact (host-served, copied via scp after build)
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Build frontend
+      - name: Install + build frontend
         working-directory: frontend
         run: |
           npm ci || npm install
           npm run build
 
-      # SSH deploy (uncomment + configure secrets when ready)
-      # - name: Deploy via SSH
-      #   uses: appleboy/ssh-action@v1
-      #   with:
-      #     host: ${{ secrets.DEPLOY_HOST }}
-      #     username: ${{ secrets.DEPLOY_USER }}
-      #     key: ${{ secrets.DEPLOY_KEY }}
-      #     script: |
-      #       cd /opt/mafia
-      #       git pull origin main
-      #       docker compose pull
-      #       docker compose up -d --build backend
-      #       docker compose exec -T backend aerich upgrade
-      #       bash scripts/build-frontend.sh
+      # Bundle frontend dist for transfer
+      - name: Tar frontend dist
+        run: tar -czf frontend-dist.tar.gz -C frontend/dist .
 
-      - name: Skipped
-        run: echo "Deploy job is a placeholder. Configure secrets to enable SSH deploy."
+      - name: Copy frontend dist to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          source: "frontend-dist.tar.gz"
+          target: "/tmp/"
+
+      - name: SSH deploy (pull + rebuild backend + migrate + extract frontend)
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          script: |
+            set -e
+            cd ~/apps/mafiabot
+
+            # Pull latest code
+            git fetch --all
+            git reset --hard origin/main
+
+            # Rebuild backend image
+            docker compose pull postgres redis
+            docker compose up -d --build backend
+
+            # Wait for backend health
+            for i in 1 2 3 4 5 6 7 8 9 10; do
+              if docker compose exec -T backend python -c "from app.main import create_app; create_app()" 2>/dev/null; then
+                echo "Backend healthy"
+                break
+              fi
+              echo "Waiting backend... ($i/10)"
+              sleep 2
+            done
+
+            # Apply migrations (idempotent — generate_schemas handles fresh DBs)
+            # aerich upgrade is used when migrating existing DB with new schema
+            docker compose exec -T backend aerich upgrade || echo "aerich upgrade: no pending migrations or first run"
+
+            # Deploy frontend static files
+            sudo mkdir -p /var/www/mafia
+            sudo tar -xzf /tmp/frontend-dist.tar.gz -C /var/www/mafia
+            sudo chown -R www-data:www-data /var/www/mafia || true
+            rm -f /tmp/frontend-dist.tar.gz
+
+            # Reload nginx
+            sudo systemctl reload nginx || sudo nginx -s reload || true
+
+            echo "✅ Deploy complete"

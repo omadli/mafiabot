@@ -71,12 +71,14 @@ def _build_storage() -> BaseStorage:
 
 async def init_db() -> None:
     await Tortoise.init(config=TORTOISE_ORM)
+    # generate_schemas(safe=True) is idempotent — creates tables only if missing.
+    # Works for both SQLite (dev) and PostgreSQL (production fresh deploy).
+    # For migrating an existing DB with old schema, use `aerich upgrade` instead.
+    await Tortoise.generate_schemas(safe=True)
     if settings.database_url and settings.database_url.startswith("sqlite"):
-        # Auto-create schema for local SQLite (no Aerich needed for dev)
-        await Tortoise.generate_schemas(safe=True)
-        logger.info(f"Database connected: {settings.database_url} (schema generated)")
+        logger.info(f"Database connected: {settings.database_url} (schema ensured)")
     else:
-        logger.info(f"Database connected: {settings.db_url.split('@')[-1]}")
+        logger.info(f"Database connected: {settings.db_url.split('@')[-1]} (schema ensured)")
 
     # Seed achievements
     try:
