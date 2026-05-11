@@ -43,14 +43,28 @@ perm-pin-messages = Xabarlarni qadash
 # ===========================================================
 
 start-welcome =
-    👋 Salom, { $username }!
-    Mafia Baku Black botiga xush kelibsiz.
-    Telegram guruhingizda o'yin boshlash uchun guruhga qo'shing.
+    👋 Salom, <b>{ $username }</b>!
+
+    🎭 <b>Mafia Baku Black</b> botiga xush kelibsiz!
+
+    Bu yerda siz:
+    • 🎮 Telegram guruhingizda mafia o'yini o'ynay olasiz
+    • 💎 Olmos, 💵 dollar, ⭐ XP yig'asiz
+    • 🏆 Yutuqlarni qo'lga kiritasiz va ELO oshirasiz
+    • 👑 Premium maqomga ega bo'lasiz
+
+    Quyidagi tugmalardan birini tanlang:
 
 btn-profile = 👤 Profil
 btn-inventory = 🎒 Inventar
 btn-buy-diamonds = 💎 Olmos sotib olish
 btn-help = ❓ Yordam
+
+btn-add-to-group = ➕ Guruhga qo'shish
+
+btn-language = 🌐 Til
+
+btn-rules = 📖 O'yin qoidalari
 
 
 # ===========================================================
@@ -721,6 +735,85 @@ snitch-reveal-broadcast = 📢 Sotqin xabari: { $target } ning roli — { $role 
 # ===========================================================
 # YORDAM VA QOIDALAR
 # ===========================================================
+
+help-text =
+    ❓ <b>Yordam</b>
+
+    <b>Asosiy buyruqlar (private chat):</b>
+    /start — Bosh menyu
+    /profile — Profil + inventar + statistika
+    /exchange — 💎 olmos ↔ 💵 dollar
+
+    <b>Guruh buyruqlari (admin sifatida qo'shgan guruhda):</b>
+    /game — Yangi o'yin boshlash
+    /join — O'yinga qo'shilish
+    /leave — O'yindan chiqish
+    /vote &lt;raqam&gt; — Ovoz berish
+    /stats — Guruh statistikasi
+
+    <b>Premium imkoniyatlari:</b>
+    • 👑 Premium maqom: /buy_premium
+    • 🎁 Olmos sovg'a: <code>/give &lt;miqdor&gt;</code> (reply qilib)
+
+    <b>Yordam kerakmi?</b>
+    📢 Kanal: @MafiaAzBot_news
+
+rules-text =
+    📖 <b>Mafia o'yin qoidalari</b>
+
+    🎯 <b>Maqsad:</b> Tomoningizga g'olib bo'lish.
+
+    <b>3 ta asosiy tomon:</b>
+    🤵🏼 <b>Mafiya</b> — Tinch aholini yo'q qilish
+    👨‍👨‍👧‍👦 <b>Tinch aholilar</b> — Mafiya va Singleton'larni topish
+    🎯 <b>Singleton</b> — har biri o'ziga xos g'alaba sharti
+
+    <b>🔄 O'yin sikli:</b>
+    🌃 <b>Tun</b> (60s) — rollar maxsus harakatlar qiladi
+    ☀️ <b>Kun</b> (45s) — natijalar muhokama qilinadi
+    🗳 <b>Ovoz berish</b> (25s) — kimni osishni tanlash
+    👍/👎 (15s) — osishni tasdiqlash
+
+    ━━━━━━━━━━━━━━━━━━━━
+
+    👨‍👨‍👧‍👦 <b>Tinch aholilar (10):</b>
+    👨🏼 <b>Tinch aholi</b> — oddiy fuqaro
+    🕵🏻‍♂ <b>Komissar Kattani</b> — har tunda kim ekanligini tekshiradi
+    👮🏻‍♂ <b>Serjant</b> — Komissar yordamchisi
+    🎖 <b>Janob</b> — ovozi 2 baravar
+    👨🏻‍⚕ <b>Doktor</b> — har tunda 1 kishini davolaydi
+    💃 <b>Kezuvchi</b> — bir kishining tuni uxlaydi
+    🧙‍♂ <b>Daydi</b> — qotilni ko'ra oladi
+    🤞🏼 <b>Omadli</b> — 50% omon qolish
+    🤦🏼 <b>Suidsid</b> — osilsa yutadi
+    💣 <b>Afsungar</b> — osilganda kimnidir o'zi bilan ketadi
+
+    🤵🏼 <b>Mafiya (5):</b>
+    🤵🏻 <b>Don</b> — har tunda 1 kishini o'ldiradi
+    🤵🏼 <b>Mafiya</b> — Donni qo'llab-quvvatlaydi
+    👨‍💼 <b>Advokat</b> — Komissardan va osilishdan himoyalaydi
+    👩🏼‍💻 <b>Jurnalist</b> — Doktor/Daydi/Kezuvchini topa oladi
+    🥷 <b>Ninza</b> — barcha himoyalarni teshib o'tadi
+
+    🎯 <b>Singletonlar (6):</b>
+    🔪 <b>Qotil</b> — yakka g'olib (oxirgi tirik bo'lsa)
+    🐺 <b>Bo'ri</b> — hujumiga qarab boshqa rolga aylanadi
+    🧙 <b>Sehrgar</b> — oxirigacha tirik qolsa g'olib
+    🧟 <b>G'azabkor</b> — 3+ kishini o'ldirsa g'olib
+    🤹 <b>Aferist</b> — tirik qolsa g'olib (kun ovozini o'g'irlaydi)
+    🤓 <b>Sotqin</b> — Komissar bilan bir odamni tanlasa rolni oshkor qiladi
+
+    🛡 <b>Himoyalar (do'kondan sotib olinadi):</b>
+    🛡 Himoya — 1 marta o'ldirishdan saqlaydi
+    ⛑ Qotildan himoya — faqat Qotil zarbasidan
+    ⚖️ Ovoz himoyasi — osilishdan saqlaydi
+    🔫 Miltiq — barcha himoyalarni teshib o'tadi
+    🎭 Maska — Daydi va Sotqin ko'rmaydi
+    📁 Soxta hujjat — Komissarga "Tinch aholi" deb ko'rinadi
+
+language-picker-prompt = 🌐 Tilni tanlang:
+
+language-switched = ✅ Til o'zgartirildi
 
 help-private =
     ❓ Yordam (private chat):

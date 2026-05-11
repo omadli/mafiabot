@@ -16,6 +16,7 @@ def setup_routers(dp: Dispatcher) -> None:
     from app.bot.handlers.private import inventory as private_inventory
     from app.bot.handlers.private import last_words as private_last_words
     from app.bot.handlers.private import mafia_chat as private_mafia_chat
+    from app.bot.handlers.private import menu as private_menu
     from app.bot.handlers.private import payment as private_payment
     from app.bot.handlers.private import role_actions as private_role_actions
     from app.bot.handlers.private import special_actions as private_special
@@ -31,6 +32,7 @@ def setup_routers(dp: Dispatcher) -> None:
 
     # Routers (order matters: more specific first)
     dp.include_router(private_super_admin.router)  # before other private handlers
+    dp.include_router(private_menu.router)  # main menu callbacks (menu:*)
     dp.include_router(common_help.router)
     dp.include_router(group_onboarding.router)
     dp.include_router(group_stats.router)

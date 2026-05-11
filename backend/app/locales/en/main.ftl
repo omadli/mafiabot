@@ -43,14 +43,28 @@ perm-pin-messages = Pin messages
 # ===========================================================
 
 start-welcome =
-    👋 Hello, { $username }!
-    Welcome to Mafia Baku Black.
-    Add this bot to your Telegram group to start a game.
+    👋 Hi, <b>{ $username }</b>!
+
+    🎭 Welcome to <b>Mafia Baku Black</b>!
+
+    Here you can:
+    • 🎮 Play Mafia in your Telegram groups
+    • 💎 Earn diamonds, 💵 dollars, ⭐ XP
+    • 🏆 Unlock achievements and climb the ELO ladder
+    • 👑 Get premium status
+
+    Pick an action:
 
 btn-profile = 👤 Profile
 btn-inventory = 🎒 Inventory
 btn-buy-diamonds = 💎 Buy Diamonds
 btn-help = ❓ Help
+
+btn-add-to-group = ➕ Add to group
+
+btn-language = 🌐 Language
+
+btn-rules = 📖 Game rules
 
 
 # ===========================================================
@@ -726,6 +740,64 @@ snitch-reveal-broadcast = 📢 Snitch report: { $target }'s role is — { $role 
 # ===========================================================
 # HELP AND RULES
 # ===========================================================
+
+help-text =
+    ❓ <b>Help</b>
+
+    <b>Main commands (private chat):</b>
+    /start — Main menu
+    /profile — Profile + inventory + stats
+    /exchange — 💎 diamonds ↔ 💵 dollars
+
+    <b>Group commands (after adding bot as admin):</b>
+    /game — Start a new game
+    /join — Join a game
+    /leave — Leave a game
+    /vote &lt;number&gt; — Cast your vote
+    /stats — Group statistics
+
+    <b>Premium:</b>
+    • 👑 Premium status: /buy_premium
+    • 🎁 Gift diamonds: <code>/give &lt;amount&gt;</code> (as reply)
+
+    📢 News channel: @MafiaAzBot_news
+
+rules-text =
+    📖 <b>Mafia Game Rules</b>
+
+    🎯 <b>Goal:</b> Win as your team.
+
+    <b>3 main teams:</b>
+    🤵🏼 <b>Mafia</b> — eliminate civilians
+    👨‍👨‍👧‍👦 <b>Civilians</b> — find mafia and singletons
+    🎯 <b>Singletons</b> — each has unique win conditions
+
+    <b>🔄 Game cycle:</b>
+    🌃 <b>Night</b> (60s) — roles take actions
+    ☀️ <b>Day</b> (45s) — discuss results
+    🗳 <b>Vote</b> (25s) — pick who to hang
+    👍/👎 (15s) — confirmation
+
+    ━━━━━━━━━━━━━━━━━━━━
+
+    👨‍👨‍👧‍👦 <b>Civilians (10):</b>
+    👨🏼 Citizen · 🕵🏻‍♂ Detective · 👮🏻‍♂ Sergeant · 🎖 Mayor (×2 vote)
+    👨🏻‍⚕ Doctor · 💃 Hooker · 🧙‍♂ Hobo · 🤞🏼 Lucky
+    🤦🏼 Suicide · 💣 Kamikaze
+
+    🤵🏼 <b>Mafia (5):</b>
+    🤵🏻 Don · 🤵🏼 Mafia · 👨‍💼 Lawyer · 👩🏼‍💻 Journalist · 🥷 Ninja
+
+    🎯 <b>Singletons (6):</b>
+    🔪 Maniac · 🐺 Werewolf · 🧙 Mage · 🧟 Arsonist · 🤹 Crook · 🤓 Snitch
+
+    🛡 <b>Items (from shop):</b>
+    🛡 Shield · ⛑ Killer shield · ⚖️ Vote shield · 🔫 Rifle
+    🎭 Mask · 📁 Fake document
+
+language-picker-prompt = 🌐 Pick a language:
+
+language-switched = ✅ Language switched
 
 help-private =
     ❓ Help (private chat):
