@@ -94,19 +94,28 @@ async def onboarding_set_language(query: CallbackQuery, bot: Bot) -> None:
     chat_id = query.message.chat.id
 
     # Verify caller is admin
-    member = await bot.get_chat_member(chat_id, query.from_user.id)
+    try:
+        member = await bot.get_chat_member(chat_id, query.from_user.id)
+    except Exception as e:
+        logger.warning(f"onboarding: get_chat_member failed: {e}")
+        await query.answer("⚠️ Could not verify your status", show_alert=True)
+        return
     if member.status not in ("creator", "administrator"):
         _t = get_translator(lang)
         await query.answer(_t("onboarding-only-admins-can-pick"), show_alert=True)
         return
 
-    group = await Group.get_or_none(id=chat_id).prefetch_related("settings")
-    if group is None or group.settings is None:
+    group = await Group.get_or_none(id=chat_id)
+    if group is None:
         await query.answer("Group not found", show_alert=True)
         return
+    s = await GroupSettings.get_or_none(group_id=chat_id)
+    if s is None:
+        await query.answer("Settings not found", show_alert=True)
+        return
 
-    group.settings.language = lang
-    await group.settings.save(update_fields=["language"])
+    s.language = lang
+    await s.save(update_fields=["language"])
 
     _t = get_translator(lang)
     keyboard = InlineKeyboardMarkup(
@@ -114,10 +123,13 @@ async def onboarding_set_language(query: CallbackQuery, bot: Bot) -> None:
             [InlineKeyboardButton(text=_t("btn-check-perms"), callback_data="onboarding:check")]
         ]
     )
-    await query.message.edit_text(
-        _t("onboarding-grant-admin-perms", bot_username=(await bot.me()).username),
-        reply_markup=keyboard,
-    )
+    try:
+        await query.message.edit_text(
+            _t("onboarding-grant-admin-perms", bot_username=(await bot.me()).username),
+            reply_markup=keyboard,
+        )
+    except Exception as e:
+        logger.warning(f"onboarding: edit_text failed: {e}")
     await query.answer()
 
 
@@ -130,7 +142,12 @@ async def onboarding_check_perms(query: CallbackQuery, bot: Bot) -> None:
 
     chat_id = query.message.chat.id
     me = await bot.me()
-    bot_member = await bot.get_chat_member(chat_id, me.id)
+    try:
+        bot_member = await bot.get_chat_member(chat_id, me.id)
+    except Exception as e:
+        logger.warning(f"onboarding:check get_chat_member failed: {e}")
+        await query.answer("⚠️ Cannot verify bot status", show_alert=True)
+        return
 
     has_perms = bot_member.status == "administrator"
     if has_perms:
@@ -140,12 +157,13 @@ async def onboarding_check_perms(query: CallbackQuery, bot: Bot) -> None:
     else:
         delete = restrict = pin = False
 
-    group = await Group.get_or_none(id=chat_id).prefetch_related("settings")
+    group = await Group.get_or_none(id=chat_id)
     if group is None:
         await query.answer("Group not found", show_alert=True)
         return
-
-    _t = get_translator(group.settings.language if group.settings else "uz")
+    s = await GroupSettings.get_or_none(group_id=chat_id)
+    locale = s.language if s else "uz"
+    _t = get_translator(locale)
 
     if delete and restrict and pin:
         # Save perms and complete onboarding
@@ -165,7 +183,10 @@ async def onboarding_check_perms(query: CallbackQuery, bot: Bot) -> None:
         except Exception as e:
             logger.warning(f"Could not export invite link: {e}")
 
-        await query.message.edit_text(_t("onboarding-completed"))
+        try:
+            await query.message.edit_text(_t("onboarding-completed"))
+        except Exception as e:
+            logger.warning(f"onboarding-completed edit_text failed: {e}")
         await query.answer(_t("onboarding-success-toast"), show_alert=False)
     else:
         # Show what's missing
