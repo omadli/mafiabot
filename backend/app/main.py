@@ -241,11 +241,26 @@ app = create_app()
 
 
 def main() -> None:
-    """Entry point for `python -m app.main`."""
+    """Entry point for `python -m app.main`.
+
+    Port resolution:
+      - INTERNAL_PORT (if set) — used inside Docker container (always 8000)
+      - settings.backend_port — local dev override (from BACKEND_PORT env)
+      - 8000 — final fallback
+
+    In production Docker setup, BACKEND_PORT is the HOST port (e.g. 8002)
+    that docker-compose maps to the container's internal port (8000).
+    Uvicorn must bind to the INTERNAL port, not the host port.
+    """
+    import os
+
+    internal_port_env = os.getenv("INTERNAL_PORT")
+    port = int(internal_port_env) if internal_port_env else (settings.backend_port or 8000)
+
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
-        port=settings.backend_port,
+        port=port,
         reload=settings.debug,
         log_config=None,
     )

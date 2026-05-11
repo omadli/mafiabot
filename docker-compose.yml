@@ -51,6 +51,11 @@ services:
       POSTGRES_PORT: 5432
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      # Force uvicorn to bind container-internal port 8000. The host-facing
+      # BACKEND_PORT (.env) only controls the docker-compose port mapping below;
+      # without this override uvicorn would also read BACKEND_PORT and bind to it,
+      # which breaks the container:8000 mapping → "Connection reset by peer".
+      INTERNAL_PORT: "8000"
     ports:
       - "${BACKEND_PORT}:8000"
     volumes:

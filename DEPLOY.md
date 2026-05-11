@@ -83,6 +83,49 @@ sudo visudo
 
 ## Troubleshooting
 
+### Nginx → backend "Connection reset by peer" on `/api/*` or `/health`
+
+```
+nginx error.log:
+  recv() failed (104: Connection reset by peer) while reading response header
+  from upstream, upstream: "http://127.0.0.1:8002/health"
+```
+
+**Root cause:** Backend uvicorn bound to the wrong port inside the container.
+
+Architecture:
+
+- Nginx → host `127.0.0.1:8002` (the `BACKEND_PORT` env var)
+- Docker maps host `8002` → container `8000` (per `ports: "${BACKEND_PORT}:8000"`)
+- Container uvicorn MUST bind to `8000` internally
+
+If uvicorn reads `BACKEND_PORT` from env (because `env_file: .env` is shared
+with the container), it would also bind to `8002` inside the container —
+breaking the port mapping. Result: TCP handshake succeeds (docker accepts),
+but no process listens on container:8000 → RST sent back.
+
+**Fix (already applied since commit XXXXXXX):**
+
+- `docker-compose.yml` backend service sets `INTERNAL_PORT: "8000"` explicitly
+- `backend/app/main.py` reads `INTERNAL_PORT` first, falls back to
+  `settings.backend_port` for local-dev (no Docker)
+
+Verification:
+
+```bash
+docker compose exec backend ss -tlnp | grep -E "8000|8002"
+# Expected: only one line, listening on 0.0.0.0:8000
+
+docker compose exec backend curl -sf http://localhost:8000/health
+# Expected: {"status": "ok"}
+```
+
+If still failing, check the backend logs for crashes during lifespan:
+
+```bash
+docker compose logs backend --tail 100
+```
+
 ### `aerich init-db` fails with "Inited models already"
 
 This is expected. Use `aerich upgrade` instead — it applies pending migrations to existing DB.
