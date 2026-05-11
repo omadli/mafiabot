@@ -132,15 +132,67 @@ async def setup_bot() -> tuple[Bot, Dispatcher]:
 
 
 async def _start_webhook(bot_instance: Bot, dp_instance: Dispatcher) -> None:
-    """Production: webhook orqali Telegram update'lar qabul qilish."""
-    webhook_info = await bot_instance.get_webhook_info()
-    if webhook_info.url != settings.webhook_url:
-        await bot_instance.set_webhook(
-            url=settings.webhook_url,
-            allowed_updates=dp_instance.resolve_used_update_types(),
-            drop_pending_updates=True,
+    """Production: webhook orqali Telegram update'lar qabul qilish.
+
+    Strict mode — if anything fails (network error, invalid token, SSL issue,
+    Telegram rejects the URL), the exception propagates out of lifespan and
+    the FastAPI app fails to start. Operator must fix the config.
+
+    Pre-flight checks:
+      - webhook_base_url must be HTTPS (Telegram requirement)
+      - webhook_secret must not be the development default
+    """
+    target_url = settings.webhook_url
+
+    if not settings.webhook_base_url.startswith("https://"):
+        raise RuntimeError(
+            f"BOT_MODE=webhook requires HTTPS for webhook_base_url, got: "
+            f"{settings.webhook_base_url!r}. Telegram refuses non-HTTPS webhooks."
         )
-        logger.info(f"Webhook set to {settings.webhook_url}")
+    if settings.webhook_secret.get_secret_value() in (
+        "dev-secret",
+        "",
+        "change_me_to_random_string",
+    ):
+        raise RuntimeError(
+            "BOT_MODE=webhook requires a non-default WEBHOOK_SECRET in .env. "
+            "Generate one: `openssl rand -hex 32`"
+        )
+
+    # Show current state for diagnostics
+    current = await bot_instance.get_webhook_info()
+    logger.info(
+        f"Webhook current state: url={current.url!r}, "
+        f"pending_update_count={current.pending_update_count}, "
+        f"last_error_date={current.last_error_date}, "
+        f"last_error_message={current.last_error_message!r}"
+    )
+
+    # Always (re)set the webhook on startup — cheap call, ensures Telegram is in
+    # sync with our config even after token rotations or URL changes.
+    set_ok = await bot_instance.set_webhook(
+        url=target_url,
+        allowed_updates=dp_instance.resolve_used_update_types(),
+        drop_pending_updates=True,
+        secret_token=None,  # secret is part of URL path; alternative scheme not used
+    )
+    if not set_ok:
+        raise RuntimeError(f"Telegram rejected setWebhook for {target_url}")
+
+    # Verify Telegram acknowledged our URL
+    verified = await bot_instance.get_webhook_info()
+    if verified.url != target_url:
+        raise RuntimeError(
+            f"Webhook verification failed: Telegram reports url={verified.url!r}, "
+            f"expected {target_url!r}"
+        )
+
+    logger.info(f"✅ Webhook registered with Telegram: {target_url}")
+    if verified.last_error_message:
+        logger.warning(
+            f"⚠️  Telegram reports last webhook error: {verified.last_error_message} "
+            f"(at {verified.last_error_date}). New deliveries may still succeed."
+        )
 
 
 async def _start_polling_task(bot_instance: Bot, dp_instance: Dispatcher) -> asyncio.Task:
