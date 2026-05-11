@@ -38,6 +38,31 @@ router = Router(name="private_super_admin")
 router.message.filter(F.chat.type == "private", IsSuperAdmin())
 
 
+# === /sa_dashboard — open WebApp ===
+
+
+@router.message(Command("sa_dashboard", "sa_webapp", "sa_open"))
+async def sa_dashboard(message: Message) -> None:
+    """Send a WebApp button that opens the SuperAdmin dashboard."""
+    from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+
+    from app.config import settings
+
+    url = f"https://{settings.public_domain}/webapp/sa"
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="🛡 SuperAdmin Dashboard", web_app=WebAppInfo(url=url))],
+        ]
+    )
+    await message.answer(
+        "<b>🛡 SuperAdmin paneli</b>\n\n"
+        "WebApp orqali kirib barcha statistika, foydalanuvchilar, "
+        "guruhlar va tizim sozlamalari bilan ishlang.",
+        reply_markup=kb,
+        parse_mode="HTML",
+    )
+
+
 # === /sa_help ===
 
 
@@ -45,6 +70,8 @@ router.message.filter(F.chat.type == "private", IsSuperAdmin())
 async def sa_help(message: Message) -> None:
     text = (
         "<b>🛡 Super admin komandalar</b>\n\n"
+        "<u>🌐 WebApp dashboard:</u>\n"
+        "<code>/sa_dashboard</code> — WebApp panelini ochish\n\n"
         "<u>Foydalanuvchi boshqaruvi:</u>\n"
         "<code>/sa_grant &lt;user_id&gt; &lt;amount&gt;</code> — olmos berish\n"
         "<code>/sa_revoke &lt;user_id&gt; &lt;amount&gt;</code> — olmos olib qo'yish\n"
