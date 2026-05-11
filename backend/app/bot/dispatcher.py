@@ -11,8 +11,10 @@ def setup_routers(dp: Dispatcher) -> None:
     from app.bot.handlers.group import game as group_game
     from app.bot.handlers.group import giveaway as group_giveaway
     from app.bot.handlers.group import onboarding as group_onboarding
+    from app.bot.handlers.group import settings as group_settings
     from app.bot.handlers.group import stats as group_stats
     from app.bot.handlers.group import voting as group_voting
+    from app.bot.handlers.private import group_settings as private_group_settings
     from app.bot.handlers.private import inventory as private_inventory
     from app.bot.handlers.private import last_words as private_last_words
     from app.bot.handlers.private import mafia_chat as private_mafia_chat
@@ -32,6 +34,7 @@ def setup_routers(dp: Dispatcher) -> None:
 
     # Routers (order matters: more specific first)
     dp.include_router(private_super_admin.router)  # before other private handlers
+    dp.include_router(private_group_settings.router)  # settings:* callbacks
     dp.include_router(private_menu.router)  # main menu callbacks (menu:*)
     dp.include_router(common_help.router)
     dp.include_router(group_onboarding.router)
@@ -39,6 +42,7 @@ def setup_routers(dp: Dispatcher) -> None:
     dp.include_router(group_giveaway.router)
     dp.include_router(group_voting.router)
     dp.include_router(group_atmosphere.router)
+    dp.include_router(group_settings.router)  # /settings group command
     dp.include_router(group_game.router)
     dp.include_router(private_inventory.router)
     dp.include_router(private_payment.router)

@@ -897,3 +897,137 @@ game-end-winners-section = <b>Winners:</b>
 game-end-losers-section = <b>Other players:</b>
 
 game-end-duration = <i>Game lasted { $minutes } minutes</i>
+
+
+# === Group settings menu ===
+
+# --- Section A: /settings command responses ---
+
+settings-admin-only = 🚫 This command is admin-only.
+
+settings-sent-to-dm = ✉️ Settings sent to your private chat.
+
+settings-cannot-dm = ❌ Cannot DM you. Please send /start to the bot first.
+
+settings-dm-failed = ❌ Failed to send settings. Try again later.
+
+settings-group-not-configured = ❌ This group is not configured yet.
+
+# --- Section B: Settings home ---
+
+settings-home =
+    🛠 <b>{ $group_title }</b> settings
+
+    Use the WebApp for full controls or quick toggles below:
+
+btn-settings-webapp = 🌐 Full settings
+
+btn-settings-history = 📊 Game history
+
+btn-settings-roles = 🎭 Roles
+
+btn-settings-timings = ⏱ Phase timings
+
+btn-settings-items = 🛡 Items
+
+btn-settings-silence = 🔇 Silence
+
+btn-settings-gameplay = 🎮 Gameplay
+
+btn-settings-lang = 🌐 Language
+
+btn-settings-atmosphere = 📺 Atmosphere media
+
+# --- Section C: Roles sub-menu ---
+
+settings-roles-prompt =
+    🎭 <b>Manage roles</b>
+
+    Pick which roles can appear in games:
+
+settings-team-civilians = 👨‍👨‍👧‍👦 Civilians
+
+settings-team-mafia = 🤵🏼 Mafia
+
+settings-team-singletons = 🎯 Singletons
+
+# --- Section D: Timings sub-menu ---
+
+settings-timings-prompt = ⏱ <b>Phase durations (in seconds)</b>
+
+timing-registration = Registration
+
+timing-night = Night
+
+timing-day = Day
+
+timing-mafia_vote = Mafia vote
+
+timing-hanging_vote = Hanging vote
+
+timing-hanging_confirm = Confirmation
+
+timing-last_words = Last words
+
+timing-afsungar_carry = Kamikaze choice
+
+# --- Section E: Items sub-menu ---
+
+settings-items-prompt =
+    🛡 <b>Allowed items</b>
+
+    Which protections are available in the shop and during games:
+
+# --- Section F: Silence sub-menu ---
+
+settings-silence-prompt =
+    🔇 <b>Silence rules</b>
+
+    Who can write and when:
+
+silence-dead_players = Dead are silent
+
+silence-sleeping_players = Sleeping are silent
+
+silence-non_players = Non-players silent
+
+silence-night_chat = Silent at night
+
+# --- Section G: Gameplay sub-menu ---
+
+settings-gameplay-status =
+    🎮 <b>Gameplay settings</b>
+
+    Mafia ratio: <b>{ $ratio }</b>
+    Players: <b>{ $min_players }-{ $max_players }</b>
+
+    Allow skip day vote: { $skip_day_vote }
+    Allow skip night action: { $skip_night_action }
+
+gameplay-ratio-low = Low (1/4)
+
+gameplay-ratio-high = High (1/3)
+
+gameplay-skip-day = Skip day vote
+
+gameplay-skip-night = Skip night action
+
+# --- Section H: Language sub-menu ---
+
+settings-lang-prompt =
+    🌐 <b>Group language</b>
+
+    Bot messages will use this language:
+
+# --- Section I: Atmosphere info ---
+
+settings-atmosphere-info =
+    📺 <b>Atmosphere media</b>
+
+    🟢 = set, ⚪ = empty
+
+    To set media, reply to a GIF/video in the group and send:
+    <code>/setatmosphere &lt;slot&gt;</code>
+
+    Slots: <code>night</code>, <code>day</code>, <code>voting</code>,
+    <code>win_civilian</code>, <code>win_mafia</code>, <code>win_singleton</code>

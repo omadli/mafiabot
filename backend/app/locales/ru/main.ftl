@@ -897,3 +897,137 @@ game-end-winners-section = <b>Победители:</b>
 game-end-losers-section = <b>Остальные игроки:</b>
 
 game-end-duration = <i>Игра длилась { $minutes } минут</i>
+
+
+# === Group settings menu ===
+
+# --- Section A: Ответы на /settings ---
+
+settings-admin-only = 🚫 Эта команда только для администраторов группы.
+
+settings-sent-to-dm = ✉️ Настройки отправлены в личный чат.
+
+settings-cannot-dm = ❌ Не могу отправить вам ЛС. Сначала отправьте боту /start.
+
+settings-dm-failed = ❌ Ошибка при отправке настроек. Попробуйте позже.
+
+settings-group-not-configured = ❌ Эта группа ещё не настроена.
+
+# --- Section B: Settings home ---
+
+settings-home =
+    🛠 Настройки группы <b>{ $group_title }</b>
+
+    Полное меню в WebApp или быстрые настройки в боте:
+
+btn-settings-webapp = 🌐 Полные настройки
+
+btn-settings-history = 📊 История игр
+
+btn-settings-roles = 🎭 Роли
+
+btn-settings-timings = ⏱ Время фаз
+
+btn-settings-items = 🛡 Защиты
+
+btn-settings-silence = 🔇 Тишина
+
+btn-settings-gameplay = 🎮 Игровые параметры
+
+btn-settings-lang = 🌐 Язык
+
+btn-settings-atmosphere = 📺 Атмосфера
+
+# --- Section C: Roles sub-menu ---
+
+settings-roles-prompt =
+    🎭 <b>Управление ролями</b>
+
+    Выберите роли, которые будут участвовать в игре:
+
+settings-team-civilians = 👨‍👨‍👧‍👦 Мирные
+
+settings-team-mafia = 🤵🏼 Мафия
+
+settings-team-singletons = 🎯 Одиночки
+
+# --- Section D: Timings sub-menu ---
+
+settings-timings-prompt = ⏱ <b>Время фаз (в секундах)</b>
+
+timing-registration = Регистрация
+
+timing-night = Ночь
+
+timing-day = День
+
+timing-mafia_vote = Голос мафии
+
+timing-hanging_vote = Голос казни
+
+timing-hanging_confirm = Подтверждение
+
+timing-last_words = Последнее слово
+
+timing-afsungar_carry = Выбор камикадзе
+
+# --- Section E: Items sub-menu ---
+
+settings-items-prompt =
+    🛡 <b>Разрешённые защиты</b>
+
+    Какие защиты продаются в магазине и используются в игре:
+
+# --- Section F: Silence sub-menu ---
+
+settings-silence-prompt =
+    🔇 <b>Правила тишины</b>
+
+    Кто и когда может писать:
+
+silence-dead_players = Мёртвые молчат
+
+silence-sleeping_players = Спящие молчат
+
+silence-non_players = Зрители молчат
+
+silence-night_chat = Тишина ночью
+
+# --- Section G: Gameplay sub-menu ---
+
+settings-gameplay-status =
+    🎮 <b>Игровые параметры</b>
+
+    Доля мафии: <b>{ $ratio }</b>
+    Игроки: <b>{ $min_players }-{ $max_players }</b>
+
+    Пропуск дневного голоса: { $skip_day_vote }
+    Пропуск ночного действия: { $skip_night_action }
+
+gameplay-ratio-low = Низкая (1/4)
+
+gameplay-ratio-high = Высокая (1/3)
+
+gameplay-skip-day = Пропуск дневного голоса
+
+gameplay-skip-night = Пропуск ночного действия
+
+# --- Section H: Language sub-menu ---
+
+settings-lang-prompt =
+    🌐 <b>Язык группы</b>
+
+    Сообщения бота будут на этом языке:
+
+# --- Section I: Atmosphere info ---
+
+settings-atmosphere-info =
+    📺 <b>Атмосфера медиа</b>
+
+    🟢 = настроено, ⚪ = пусто
+
+    Чтобы задать медиа, ответьте на GIF/видео в группе и отправьте:
+    <code>/setatmosphere &lt;slot&gt;</code>
+
+    Слоты: <code>night</code>, <code>day</code>, <code>voting</code>,
+    <code>win_civilian</code>, <code>win_mafia</code>, <code>win_singleton</code>

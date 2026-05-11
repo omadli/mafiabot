@@ -912,3 +912,137 @@ game-end-winners-section = <b>G'oliblar:</b>
 game-end-losers-section = <b>Qolgan o'yinchilar:</b>
 
 game-end-duration = <i>O'yin: { $minutes } minut davom etdi</i>
+
+
+# === Group settings menu ===
+
+# --- Section A: /settings buyrug'i javoblari ---
+
+settings-admin-only = 🚫 Bu buyruq faqat guruh adminlari uchun.
+
+settings-sent-to-dm = ✉️ Sozlamalar shaxsiy chatga yuborildi.
+
+settings-cannot-dm = ❌ Sizga shaxsiy xabar yubora olmadim. Avval botga /start yuboring.
+
+settings-dm-failed = ❌ Sozlamalarni yuborishda xato. Keyinroq qayta urinib ko'ring.
+
+settings-group-not-configured = ❌ Bu guruh hali to'liq sozlanmagan.
+
+# --- Section B: Settings home ---
+
+settings-home =
+    🛠 <b>{ $group_title }</b> sozlamalari
+
+    WebApp orqali to'liq menyu yoki bot ichida tezkor sozlash:
+
+btn-settings-webapp = 🌐 To'liq sozlamalar
+
+btn-settings-history = 📊 O'yinlar tarixi
+
+btn-settings-roles = 🎭 Rollar
+
+btn-settings-timings = ⏱ Vaqt sozlamalari
+
+btn-settings-items = 🛡 Himoyalar
+
+btn-settings-silence = 🔇 Jimlik
+
+btn-settings-gameplay = 🎮 O'yin variantlari
+
+btn-settings-lang = 🌐 Til
+
+btn-settings-atmosphere = 📺 Atmosfera media
+
+# --- Section C: Roles sub-menu ---
+
+settings-roles-prompt =
+    🎭 <b>Rollarni boshqarish</b>
+
+    O'yinda ishtirok etadigan rollarni tanlang:
+
+settings-team-civilians = 👨‍👨‍👧‍👦 Tinch aholilar
+
+settings-team-mafia = 🤵🏼 Mafiya
+
+settings-team-singletons = 🎯 Singletonlar
+
+# --- Section D: Timings sub-menu ---
+
+settings-timings-prompt = ⏱ <b>Faza vaqtlari (sekundlarda)</b>
+
+timing-registration = Ro'yxat
+
+timing-night = Tun
+
+timing-day = Kun
+
+timing-mafia_vote = Mafia ovozi
+
+timing-hanging_vote = Osish ovozi
+
+timing-hanging_confirm = Tasdiq
+
+timing-last_words = So'nggi so'z
+
+timing-afsungar_carry = Afsungar tanlovi
+
+# --- Section E: Items sub-menu ---
+
+settings-items-prompt =
+    🛡 <b>Himoyalarni ruxsat berish</b>
+
+    Qaysi himoyalar do'konda sotiladi va o'yinda ishlatiladi:
+
+# --- Section F: Silence sub-menu ---
+
+settings-silence-prompt =
+    🔇 <b>Jimlik qoidalari</b>
+
+    Kim qachon yozish mumkinligini boshqaring:
+
+silence-dead_players = O'lganlar jim
+
+silence-sleeping_players = Uxlovchilar jim
+
+silence-non_players = Tashqari odamlar jim
+
+silence-night_chat = Tunda yozish yo'q
+
+# --- Section G: Gameplay sub-menu ---
+
+settings-gameplay-status =
+    🎮 <b>O'yin variantlari</b>
+
+    Mafia nisbati: <b>{ $ratio }</b>
+    O'yinchilar: <b>{ $min_players }-{ $max_players }</b>
+
+    Kun ovozini o'tkazib yuborish: { $skip_day_vote }
+    Tun harakatini o'tkazib yuborish: { $skip_night_action }
+
+gameplay-ratio-low = Past (1/4)
+
+gameplay-ratio-high = Yuqori (1/3)
+
+gameplay-skip-day = Kun ovozini o'tkazib yuborish
+
+gameplay-skip-night = Tun harakatini o'tkazib yuborish
+
+# --- Section H: Language sub-menu ---
+
+settings-lang-prompt =
+    🌐 <b>Guruh tili</b>
+
+    Bot xabarlari shu tilda ko'rsatiladi:
+
+# --- Section I: Atmosphere info ---
+
+settings-atmosphere-info =
+    📺 <b>Atmosfera media</b>
+
+    🟢 = sozlangan, ⚪ = bo'sh
+
+    O'rnatish uchun guruhda GIF/video xabariga reply qilib quyidagi buyruqni yuboring:
+    <code>/setatmosphere &lt;slot&gt;</code>
+
+    Slotlar: <code>night</code>, <code>day</code>, <code>voting</code>,
+    <code>win_civilian</code>, <code>win_mafia</code>, <code>win_singleton</code>
