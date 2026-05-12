@@ -1,5 +1,6 @@
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 import { api } from "@shared/api/client";
 
@@ -74,6 +75,7 @@ const ROLE_EMOJI: Record<string, string> = {
 };
 
 export function GameReplayPage() {
+  const { t } = useTranslation();
   const { gameId } = useParams();
 
   const { data: game, isLoading } = useQuery({
@@ -84,7 +86,8 @@ export function GameReplayPage() {
   });
 
   if (isLoading) return <div className="admin-card">⏳</div>;
-  if (!game) return <div className="admin-card">Not found</div>;
+  if (!game)
+    return <div className="admin-card">{t("admin.common.game_not_found")}</div>;
 
   const playerById = new Map<number, Player>();
   (game.history.players || []).forEach((p) => playerById.set(p.user_id, p));
@@ -105,32 +108,46 @@ export function GameReplayPage() {
     <>
       <div style={{ marginBottom: "1rem" }}>
         <Link to="/admin/games" style={{ color: "var(--muted)" }}>
-          ← O'yinlar
+          {t("admin.game_replay_extra.back")}
         </Link>
       </div>
-      <h1 className="admin-page-title">🎬 Game replay</h1>
+      <h1 className="admin-page-title">{t("admin.game_replay_extra.title")}</h1>
 
       <div className="admin-grid" style={{ marginBottom: "1.5rem" }}>
-        <KPI label="Status" value={game.status} />
-        <KPI label="Winner" value={game.winner_team || "—"} />
-        <KPI label="Group" value={game.group_id} />
-        <KPI label="Davomiyligi" value={duration ? `${duration} daq` : "—"} />
+        <KPI label={t("admin.game_replay_extra.status")} value={game.status} />
+        <KPI label={t("admin.game_replay_extra.winner")} value={game.winner_team || "—"} />
+        <KPI label={t("admin.game_replay_extra.group")} value={game.group_id} />
+        <KPI
+          label={t("admin.game_replay_extra.duration")}
+          value={
+            duration ? `${duration} ${t("admin.game_replay_extra.duration_unit")}` : "—"
+          }
+        />
         {game.bounty_per_winner && (
-          <KPI label="Bounty" value={`💎 ${game.bounty_per_winner}`} sub={`pool ${game.bounty_pool}`} />
+          <KPI
+            label={t("admin.game_replay_extra.bounty")}
+            value={`💎 ${game.bounty_per_winner}`}
+            sub={`${t("admin.game_replay_extra.pool")} ${game.bounty_pool}`}
+          />
         )}
       </div>
 
-      <h3 style={{ color: "var(--muted)" }}>O'yinchilar ({game.history.players?.length || 0})</h3>
-      <div className="admin-card" style={{ padding: 0, overflow: "hidden", marginBottom: "1.5rem" }}>
+      <h3 style={{ color: "var(--muted)" }}>
+        {t("admin.game_replay_extra.players_count")} ({game.history.players?.length || 0})
+      </h3>
+      <div
+        className="admin-card"
+        style={{ padding: 0, overflow: "hidden", marginBottom: "1.5rem" }}
+      >
         <table className="admin-table">
           <thead>
             <tr>
-              <th>#</th>
-              <th>O'yinchi</th>
-              <th>Rol</th>
-              <th>Tomon</th>
-              <th>Holat</th>
-              <th>O'lim sababi</th>
+              <th>{t("admin.game_replay.col_order")}</th>
+              <th>{t("admin.game_replay.col_player")}</th>
+              <th>{t("admin.game_replay.col_role")}</th>
+              <th>{t("admin.game_replay.col_team")}</th>
+              <th>{t("admin.game_replay.col_state")}</th>
+              <th>{t("admin.game_replay.col_death_reason")}</th>
             </tr>
           </thead>
           <tbody>
@@ -149,7 +166,7 @@ export function GameReplayPage() {
                   <td>{p.team}</td>
                   <td>
                     {p.alive ? (
-                      <span className="badge green">ALIVE</span>
+                      <span className="badge green">{t("admin.game_replay.alive")}</span>
                     ) : (
                       <span className="badge red">💀 R{p.died_at_round}</span>
                     )}
@@ -163,14 +180,20 @@ export function GameReplayPage() {
         </table>
       </div>
 
-      <h3 style={{ color: "var(--muted)" }}>Tunlar ({game.history.rounds?.length || 0})</h3>
+      <h3 style={{ color: "var(--muted)" }}>
+        {t("admin.game_replay_extra.rounds_count")} ({game.history.rounds?.length || 0})
+      </h3>
       {(game.history.rounds || []).map((round) => (
         <div key={round.round_num} className="admin-card" style={{ marginBottom: "1rem" }}>
-          <h3 style={{ marginTop: 0, color: "var(--accent)" }}>🌃 Tun #{round.round_num}</h3>
+          <h3 style={{ marginTop: 0, color: "var(--accent)" }}>
+            {t("admin.game_replay_extra.round_label")} #{round.round_num}
+          </h3>
 
           {round.night_actions && round.night_actions.length > 0 && (
             <>
-              <h4 style={{ color: "var(--muted)", margin: "0.5rem 0" }}>Harakatlar</h4>
+              <h4 style={{ color: "var(--muted)", margin: "0.5rem 0" }}>
+                {t("admin.game_replay_extra.actions")}
+              </h4>
               <ul style={{ margin: 0, paddingLeft: "1.5rem", fontSize: "0.9rem" }}>
                 {round.night_actions.map((a, idx) => (
                   <li key={idx}>
@@ -185,7 +208,9 @@ export function GameReplayPage() {
 
           {round.night_deaths && round.night_deaths.length > 0 && (
             <>
-              <h4 style={{ color: "#e74c3c", margin: "0.5rem 0" }}>💀 O'limlar</h4>
+              <h4 style={{ color: "#e74c3c", margin: "0.5rem 0" }}>
+                {t("admin.game_replay_extra.deaths")}
+              </h4>
               <ul style={{ margin: 0, paddingLeft: "1.5rem", fontSize: "0.9rem" }}>
                 {round.night_deaths.map((id) => (
                   <li key={id}>{playerName(id)}</li>
@@ -196,11 +221,16 @@ export function GameReplayPage() {
 
           {round.day_votes && round.day_votes.length > 0 && (
             <>
-              <h4 style={{ color: "var(--muted)", margin: "0.5rem 0" }}>🗳 Ovozlar</h4>
+              <h4 style={{ color: "var(--muted)", margin: "0.5rem 0" }}>
+                {t("admin.game_replay_extra.votes")}
+              </h4>
               <ul style={{ margin: 0, paddingLeft: "1.5rem", fontSize: "0.9rem" }}>
                 {round.day_votes.map((v, idx) => (
                   <li key={idx}>
-                    {playerName(v.voter_id)} → {v.target_id ? playerName(v.target_id) : "Hech kim"}{" "}
+                    {playerName(v.voter_id)} →{" "}
+                    {v.target_id
+                      ? playerName(v.target_id)
+                      : t("admin.game_replay_extra.nobody")}{" "}
                     {v.weight > 1 && `(×${v.weight})`}
                   </li>
                 ))}
@@ -210,13 +240,15 @@ export function GameReplayPage() {
 
           {round.hanged && (
             <div style={{ marginTop: "0.5rem", color: "#f0a020" }}>
-              ⚖️ Osildi: {playerName(round.hanged)}
+              {t("admin.game_replay_extra.hanged_label")}: {playerName(round.hanged)}
             </div>
           )}
 
           {round.last_words && Object.keys(round.last_words).length > 0 && (
             <>
-              <h4 style={{ color: "var(--muted)", margin: "0.5rem 0" }}>🪦 So'nggi so'zlar</h4>
+              <h4 style={{ color: "var(--muted)", margin: "0.5rem 0" }}>
+                {t("admin.game_replay_extra.last_words")}
+              </h4>
               {Object.entries(round.last_words).map(([uid, words]) => (
                 <blockquote
                   key={uid}

@@ -26,6 +26,14 @@ async def track_phase_inactivity(bot: Bot, state: GameState, ended_phase: Phase)
 
     to_kick: list[int] = []
 
+    # Whom did Kezuvchi (Hooker) put to sleep this night? Sleeping players
+    # are physically unable to act and must NOT count toward AFK strikes.
+    slept_user_ids: set[int] = set()
+    if ended_phase == Phase.NIGHT:
+        for action in state.current_actions.values():
+            if action.role == "hooker" and action.action_type == "sleep" and action.target_id:
+                slept_user_ids.add(action.target_id)
+
     for player in state.alive_players():
         # Did player act this phase?
         acted = False
@@ -42,6 +50,10 @@ async def track_phase_inactivity(bot: Bot, state: GameState, ended_phase: Phase)
 
             role = get_role(player.role)
             if ended_phase == Phase.NIGHT and not role.has_night_action:
+                continue
+
+            # Hooker-slept players couldn't act — don't penalise them
+            if ended_phase == Phase.NIGHT and player.user_id in slept_user_ids:
                 continue
 
             player.skipped_phases += 1
@@ -77,21 +89,14 @@ async def _kick_afk_player(
 
     await game_service.set_user_active_game(user_id, None)
 
-    # Reference parity (@MafiaAzBot): leave message reveals role
-    show_role_on_death = state.settings.get("display", {}).get("show_role_on_death", True)
+    # Comedic last-words broadcast (rumor style — @MafiaAzBot parity):
+    #   "Aholidan kimdir 🤵🏻 Don <mention> o'limidan oldin:
+    #    Men o'yin paytida boshqa uxlamayma-a-a-a-a-a-an! deb qichqirganini eshitgan."
     mention = player_mention(user_id, player.first_name)
-    if show_role_on_death and player.role:
-        role_label = role_emoji_name(player.role, locale)
-        role_parts = role_label.split(" ", 1)
-        role_emoji = role_parts[0] if role_parts else "❓"
-        role_name = role_parts[1] if len(role_parts) > 1 else player.role
-        text = _(
-            "leave-broadcast-with-role",
-            mention=mention,
-            role_emoji=role_emoji,
-            role_name=role_name,
-        )
-    else:
-        text = _("afk-kicked", mention=mention)
+    show_role_on_death = state.settings.get("display", {}).get("show_role_on_death", True)
+    role_label = (
+        role_emoji_name(player.role, locale) if (show_role_on_death and player.role) else ""
+    )
+    text = _("afk-last-words", role=role_label, mention=mention)
     await _safe_send(bot, state.chat_id, text)
     logger.info(f"AFK kicked user {user_id} from game {state.id}")

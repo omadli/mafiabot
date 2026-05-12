@@ -274,7 +274,7 @@ extend-not-in-registration = Faqat ro'yxatdan o'tish fazasida uzaytirsa bo'ladi.
 
 extend-success = ⏱ Vaqt { $seconds } sekundga uzaytirildi.
 
-extend-indefinite = ⏳ Ro'yxatdan o'tish cheksiz uzaytirildi. O'yinni boshlash uchun /start buyrug'idan foydalaning.
+extend-indefinite = ⏳ Ro'yxatdan o'tish uzaytirildi.
 
 game-launched-by-admin = 🚀 O'yin boshlandi!
 
@@ -1099,3 +1099,49 @@ role-desc-mage = Oxirgacha tirik qolsangiz, yakka g'olib bo'lasiz.
 role-desc-arsonist = 3+ o'yinchini o'ldirsangiz, yakka g'olib bo'lasiz.
 role-desc-crook = Tirik qolsangiz, yakka g'olib bo'lasiz. Kunduzi boshqa o'yinchi nomidan ovoz bera olasiz.
 role-desc-snitch = Komissar bilan bir odamni tanlasangiz, rolini guruhga oshkor qilasiz.
+
+# ===========================================================
+# DM-based voting (Wave 6 — voting moved out of group chat)
+# ===========================================================
+
+voting-group-prompt-short =
+    ⚖️ Aybdorlarni aniqlash va jazolash vaqti keldi.
+    Ovoz berish uchun { $seconds } sekund.
+
+voting-go-button = 🗳 Ovoz berish
+
+voting-dm-prompt =
+    ⚖️ <b>Aybdorlarni topish va jazolash vaqti keldi!</b>
+
+    Kimni osish kerak deb hisoblaysiz?
+
+vote-recorded-dm-confirm = ✅ Sizning ovozingiz: <b>{ $target }</b>
+
+vote-skipped-confirm = ✅ Siz "Hech kim" tanladingiz.
+
+# Comedic rumor-style alerts for invalid voters in HANGING_CONFIRM
+vote-dead-alert = 💀 Sen o'lgansan, ovoz berolmaysan! Ruhing ham jim turibdi-da.
+vote-not-in-game-alert = 😴 Siz bu o'yinda emassiz. Keyingi o'yinda sizni ham chaqiramiz!
+vote-already-voted-alert = ✋ Siz allaqachon ovoz bergansiz!
+
+# AFK comedic last-words (rumor format) — replaces afk-kicked
+afk-last-words =
+    Aholidan kimdir { $role } { $mention } o'limidan oldin:
+    "Men o'yin paytida boshqa uxlamayma-a-a-a-a-a-an!" deb qichqirganini eshitgan.
+
+# Per-player game-end DM
+game-end-dm-win =
+    🏆 <b>Tabriklaymiz, siz g'olibsiz!</b>
+
+    🎭 Rolingiz: { $role }
+    ⭐ XP: +{ $xp }
+    📊 ELO: { $elo_delta }
+    💵 Mukofot: { $dollars }$
+
+game-end-dm-loss =
+    💀 <b>Bu safar omadingiz chopmadi.</b>
+
+    🎭 Rolingiz: { $role }
+    ⭐ XP: +{ $xp }
+    📊 ELO: { $elo_delta }
+    💵 Pul: { $dollars }$

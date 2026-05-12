@@ -36,6 +36,15 @@ async def start_with_deeplink(
         await _handle_join(message, user, group_id, _)
         return
 
+    if payload.startswith("vote_"):
+        try:
+            group_id = int(payload.removeprefix("vote_"))
+        except ValueError:
+            await message.answer(_("deeplink-invalid"))
+            return
+        await _handle_vote_deeplink(message, user, group_id, _)
+        return
+
     if payload.startswith("admin_"):
         # Super admin 1-time login token
         await message.answer(_("admin-login-deeplink-todo"))
@@ -57,6 +66,21 @@ async def start_default(message: Message, user: User, _: Translator) -> None:
         reply_markup=main_menu_keyboard(_),
         parse_mode="HTML",
     )
+
+
+async def _handle_vote_deeplink(message: Message, user: User, group_id: int, _: Translator) -> None:
+    """User clicked 'Ovoz berish' URL button in group during VOTING phase."""
+    from app.bot.handlers.group.voting import send_vote_dm_for_deeplink
+
+    state = await game_service.load_state(group_id)
+    if state is None:
+        await message.answer(_("vote-not-in-voting"))
+        return
+
+    bot: Bot = message.bot  # type: ignore[assignment]
+    error_key = await send_vote_dm_for_deeplink(bot, user, state, _)
+    if error_key:
+        await message.answer(_(error_key))
 
 
 async def _handle_join(message: Message, user: User, group_id: int, _: Translator) -> None:

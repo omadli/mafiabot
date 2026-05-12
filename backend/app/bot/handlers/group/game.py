@@ -39,11 +39,22 @@ router.message.filter(F.chat.type.in_({"group", "supergroup"}))
 async def cmd_game(
     message: Message, user: User, _: Translator, command: CommandObject, bot: Bot
 ) -> None:
-    """Boshlash: ro'yxatdan o'tish fazasi."""
+    """Boshlash: ro'yxatdan o'tish fazasi.
+
+    Existing WAITING game → re-broadcast the registration post (delete old,
+    post fresh). Existing in-game (NIGHT/DAY/VOTING) → reject.
+    """
     chat_id = message.chat.id
     group = await Group.get_or_none(id=chat_id).prefetch_related("settings")
     if group is None or not group.onboarding_completed:
         await message.answer(_("game-onboarding-required"))
+        return
+
+    # If a registration is already open, just refresh it instead of
+    # erroring out with "game already running".
+    existing = await game_service.load_state(chat_id)
+    if existing is not None and existing.phase == Phase.WAITING:
+        await _re_announce_registration(bot, existing, _)
         return
 
     # Permission check
@@ -363,10 +374,19 @@ async def cmd_start(
                 await message.reply(_(str(e)))
                 return
             await game_service.save_state(state)
-            await message.reply(_("game-launched-by-admin"))
-            # Phase manager loop is already running; it will pick up the
-            # new NIGHT phase on its next 5s tick (or immediately if
-            # phase_ends_at has passed).
+
+            # Clean up the stale registration message — the upcoming
+            # "game started" announcement makes it obsolete.
+            await _delete_registration_message(bot, state)
+
+            # Manually fire the NIGHT phase-change hook. The phase manager
+            # was sleeping on phase_ends_at=None (post-/extend) and will not
+            # invoke on_phase_change for this NIGHT transition. Without
+            # this call, players never receive role DMs / night prompts.
+            try:
+                await _on_phase_change(bot, state)
+            except Exception as e:
+                logger.exception(f"on_phase_change after /start failed: {e}")
             return
 
         # Non-admin, non-creator → just re-announce
@@ -394,6 +414,20 @@ async def cmd_start(
 
     # Defer to /game handler (creates state + announces)
     await cmd_game(message, user, _, command, bot)
+
+
+async def _delete_registration_message(bot: Bot, state) -> None:
+    """Unpin + delete the stale registration message (best-effort)."""
+    if state.registration_message_id is None:
+        return
+    with contextlib.suppress(Exception):
+        await bot.unpin_chat_message(
+            chat_id=state.chat_id, message_id=state.registration_message_id
+        )
+    with contextlib.suppress(Exception):
+        await bot.delete_message(chat_id=state.chat_id, message_id=state.registration_message_id)
+    state.registration_message_id = None
+    await game_service.save_state(state)
 
 
 async def _re_announce_registration(bot: Bot, state, _: Translator) -> None:

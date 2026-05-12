@@ -255,6 +255,17 @@ async def finish_game(state: GameState, winner: Team | None) -> None:
     except Exception as e:
         logger.exception(f"Stats finalization failed for game {state.id}: {e}")
 
+    # Per-player game-end DM (role, won/lost, XP/ELO/$). Best-effort —
+    # any failure here MUST NOT block bounty payout or state cleanup.
+    try:
+        from app.main import bot
+        from app.services.game_end_dm import send_per_player_game_end_dm
+
+        if bot is not None:
+            await send_per_player_game_end_dm(bot, state)
+    except Exception as e:
+        logger.exception(f"Game-end DM dispatch failed for game {state.id}: {e}")
+
     # Bounty payout (if /game N was used)
     if state.bounty_pool and state.bounty_per_winner and state.winner_user_ids:
         try:
@@ -306,6 +317,7 @@ async def _resolve_active_items(user_id: int, items_allowed: dict) -> list[str]:
         "fake_document",
     ]
 
+    decremented: dict[str, int] = {}
     for field in item_fields:
         # Group must allow it
         if not items_allowed.get(field, True):
@@ -320,10 +332,15 @@ async def _resolve_active_items(user_id: int, items_allowed: dict) -> list[str]:
             continue
         # Activate + decrement
         active.append(field)
-        setattr(inv, field, qty - 1)
+        new_qty = qty - 1
+        setattr(inv, field, new_qty)
+        decremented[field] = new_qty
 
-    if active:
-        await inv.save()
+    if decremented:
+        # Workaround: UserInventory.user is OneToOneField(pk=True), so
+        # `inv.save()` hits the same Tortoise 0.21 bug as GroupSettings.
+        # Use filter().update() with explicit column kwargs.
+        await UserInventory.filter(user_id=user_id).update(**decremented)
 
     return active
 

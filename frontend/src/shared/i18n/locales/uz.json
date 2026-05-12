@@ -148,7 +148,89 @@
       "col_actor": "Aktyor",
       "col_action": "Amal",
       "col_target": "Obyekt",
-      "col_payload": "Tafsilot"
+      "col_payload": "Tafsilot",
+      "col_ip": "IP"
+    },
+    "common": {
+      "not_found": "Topilmadi",
+      "user_not_found": "Foydalanuvchi topilmadi",
+      "game_not_found": "O'yin topilmadi",
+      "page": "Sahifa",
+      "result_win": "G'olib",
+      "result_loss": "Yutqazgan",
+      "type": "Turi",
+      "item": "Item",
+      "status": "Status",
+      "note": "Izoh"
+    },
+    "prompts": {
+      "ban_reason": "Sabab?",
+      "block_reason": "Bloklash sababi?",
+      "default_reason": "Spam"
+    },
+    "users_extra": {
+      "col_lvl": "LVL",
+      "col_elo": "ELO",
+      "col_diamonds": "💎",
+      "col_dollars": "💵"
+    },
+    "user_detail_extra": {
+      "back": "← Foydalanuvchilar",
+      "id": "ID",
+      "username": "Username",
+      "level": "Level",
+      "diamonds": "💎 Olmos",
+      "dollars": "💵 Dollar",
+      "xp": "⭐ XP",
+      "tx_time": "Vaqt",
+      "tx_type": "Turi",
+      "tx_item": "Item",
+      "tx_status": "Holat",
+      "tx_note": "Izoh",
+      "games_time": "Vaqt",
+      "games_game": "O'yin",
+      "games_role": "Rol",
+      "games_team": "Tomon",
+      "games_result": "Natija",
+      "games_elo": "ELO",
+      "games_xp": "+XP",
+      "result_win": "WIN",
+      "result_loss": "LOSS",
+      "alive": "ALIVE",
+      "premium_badge": "PREMIUM",
+      "ban_badge": "BAN",
+      "tab_overview": "📊 Umumiy",
+      "tab_games": "🎲 O'yinlar",
+      "tab_achievements": "🏆 Yutuqlar",
+      "tab_transactions": "💎 Tranzaksiyalar",
+      "ban_reason_label": "🚫 Ban sababi"
+    },
+    "games_extra": {
+      "col_bounty": "Bounty"
+    },
+    "game_replay_extra": {
+      "back": "← O'yinlar",
+      "title": "🎬 O'yin takrori",
+      "status": "Status",
+      "winner": "G'olib",
+      "group": "Guruh",
+      "duration": "Davomiyligi",
+      "duration_unit": "daq",
+      "bounty": "Bounty",
+      "pool": "fond",
+      "players_count": "O'yinchilar",
+      "rounds_count": "Tunlar",
+      "round_label": "🌃 Tun",
+      "actions": "Harakatlar",
+      "deaths": "💀 O'limlar",
+      "votes": "🗳 Ovozlar",
+      "nobody": "Hech kim",
+      "hanged_label": "⚖️ Osildi",
+      "last_words": "🪦 So'nggi so'zlar"
+    },
+    "login_extra": {
+      "one_time_invalid": "Bir martalik token noto'g'ri yoki muddati o'tgan",
+      "bot_hint": "Yoki Telegram bot orqali"
     }
   },
 

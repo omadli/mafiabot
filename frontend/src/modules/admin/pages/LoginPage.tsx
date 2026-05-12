@@ -44,7 +44,7 @@ export function LoginPage() {
         navigate("/admin");
       })
       .catch(() => {
-        setError("One-time token invalid or expired");
+        setError(t("admin.login_extra.one_time_invalid"));
       });
   }
 
@@ -87,7 +87,7 @@ export function LoginPage() {
           </button>
         </form>
         <small className="login-hint">
-          Yoki Telegram bot orqali: <code>/admin_login</code>
+          {t("admin.login_extra.bot_hint")}: <code>/admin_login</code>
         </small>
       </div>
       <style>{`

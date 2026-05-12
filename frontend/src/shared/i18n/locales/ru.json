@@ -148,7 +148,89 @@
       "col_actor": "Актор",
       "col_action": "Действие",
       "col_target": "Объект",
-      "col_payload": "Детали"
+      "col_payload": "Детали",
+      "col_ip": "IP"
+    },
+    "common": {
+      "not_found": "Не найдено",
+      "user_not_found": "Пользователь не найден",
+      "game_not_found": "Игра не найдена",
+      "page": "Страница",
+      "result_win": "Победа",
+      "result_loss": "Поражение",
+      "type": "Тип",
+      "item": "Item",
+      "status": "Статус",
+      "note": "Заметка"
+    },
+    "prompts": {
+      "ban_reason": "Причина?",
+      "block_reason": "Причина блокировки?",
+      "default_reason": "Спам"
+    },
+    "users_extra": {
+      "col_lvl": "LVL",
+      "col_elo": "ELO",
+      "col_diamonds": "💎",
+      "col_dollars": "💵"
+    },
+    "user_detail_extra": {
+      "back": "← Пользователи",
+      "id": "ID",
+      "username": "Username",
+      "level": "Уровень",
+      "diamonds": "💎 Алмазы",
+      "dollars": "💵 Доллары",
+      "xp": "⭐ XP",
+      "tx_time": "Время",
+      "tx_type": "Тип",
+      "tx_item": "Item",
+      "tx_status": "Статус",
+      "tx_note": "Заметка",
+      "games_time": "Время",
+      "games_game": "Игра",
+      "games_role": "Роль",
+      "games_team": "Команда",
+      "games_result": "Результат",
+      "games_elo": "ELO",
+      "games_xp": "+XP",
+      "result_win": "WIN",
+      "result_loss": "LOSS",
+      "alive": "ALIVE",
+      "premium_badge": "PREMIUM",
+      "ban_badge": "BAN",
+      "tab_overview": "📊 Обзор",
+      "tab_games": "🎲 Игры",
+      "tab_achievements": "🏆 Достижения",
+      "tab_transactions": "💎 Транзакции",
+      "ban_reason_label": "🚫 Причина бана"
+    },
+    "games_extra": {
+      "col_bounty": "Bounty"
+    },
+    "game_replay_extra": {
+      "back": "← Игры",
+      "title": "🎬 Реплей игры",
+      "status": "Статус",
+      "winner": "Победитель",
+      "group": "Группа",
+      "duration": "Длительность",
+      "duration_unit": "мин",
+      "bounty": "Bounty",
+      "pool": "пул",
+      "players_count": "Игроки",
+      "rounds_count": "Ночи",
+      "round_label": "🌃 Ночь",
+      "actions": "Действия",
+      "deaths": "💀 Смерти",
+      "votes": "🗳 Голоса",
+      "nobody": "Никто",
+      "hanged_label": "⚖️ Повешен",
+      "last_words": "🪦 Последние слова"
+    },
+    "login_extra": {
+      "one_time_invalid": "Одноразовый токен недействителен или просрочен",
+      "bot_hint": "Или через Telegram-бота"
     }
   },
 

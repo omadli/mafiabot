@@ -148,7 +148,89 @@
       "col_actor": "Actor",
       "col_action": "Action",
       "col_target": "Target",
-      "col_payload": "Payload"
+      "col_payload": "Payload",
+      "col_ip": "IP"
+    },
+    "common": {
+      "not_found": "Not found",
+      "user_not_found": "User not found",
+      "game_not_found": "Game not found",
+      "page": "Page",
+      "result_win": "Win",
+      "result_loss": "Loss",
+      "type": "Type",
+      "item": "Item",
+      "status": "Status",
+      "note": "Note"
+    },
+    "prompts": {
+      "ban_reason": "Reason?",
+      "block_reason": "Block reason?",
+      "default_reason": "Spam"
+    },
+    "users_extra": {
+      "col_lvl": "LVL",
+      "col_elo": "ELO",
+      "col_diamonds": "💎",
+      "col_dollars": "💵"
+    },
+    "user_detail_extra": {
+      "back": "← Users",
+      "id": "ID",
+      "username": "Username",
+      "level": "Level",
+      "diamonds": "💎 Diamonds",
+      "dollars": "💵 Dollars",
+      "xp": "⭐ XP",
+      "tx_time": "Time",
+      "tx_type": "Type",
+      "tx_item": "Item",
+      "tx_status": "Status",
+      "tx_note": "Note",
+      "games_time": "Time",
+      "games_game": "Game",
+      "games_role": "Role",
+      "games_team": "Team",
+      "games_result": "Result",
+      "games_elo": "ELO",
+      "games_xp": "+XP",
+      "result_win": "WIN",
+      "result_loss": "LOSS",
+      "alive": "ALIVE",
+      "premium_badge": "PREMIUM",
+      "ban_badge": "BAN",
+      "tab_overview": "📊 Overview",
+      "tab_games": "🎲 Games",
+      "tab_achievements": "🏆 Achievements",
+      "tab_transactions": "💎 Transactions",
+      "ban_reason_label": "🚫 Ban reason"
+    },
+    "games_extra": {
+      "col_bounty": "Bounty"
+    },
+    "game_replay_extra": {
+      "back": "← Games",
+      "title": "🎬 Game replay",
+      "status": "Status",
+      "winner": "Winner",
+      "group": "Group",
+      "duration": "Duration",
+      "duration_unit": "min",
+      "bounty": "Bounty",
+      "pool": "pool",
+      "players_count": "Players",
+      "rounds_count": "Nights",
+      "round_label": "🌃 Night",
+      "actions": "Actions",
+      "deaths": "💀 Deaths",
+      "votes": "🗳 Votes",
+      "nobody": "Nobody",
+      "hanged_label": "⚖️ Hanged",
+      "last_words": "🪦 Last words"
+    },
+    "login_extra": {
+      "one_time_invalid": "One-time token invalid or expired",
+      "bot_hint": "Or via Telegram bot"
     }
   },
 

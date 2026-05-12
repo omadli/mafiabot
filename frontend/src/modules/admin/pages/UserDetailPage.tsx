@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 import { api } from "@shared/api/client";
 
@@ -33,6 +34,7 @@ interface UserDetail {
 type Tab = "overview" | "transactions" | "games" | "achievements";
 
 export function UserDetailPage() {
+  const { t } = useTranslation();
   const { userId } = useParams();
   const uid = parseInt(userId || "0");
   const [tab, setTab] = useState<Tab>("overview");
@@ -43,27 +45,43 @@ export function UserDetailPage() {
     enabled: !!uid,
   });
 
-  if (isLoading) return <div className="admin-card">⏳ Yuklanmoqda...</div>;
-  if (!user) return <div className="admin-card">User not found</div>;
+  if (isLoading) return <div className="admin-card">⏳ {t("loading")}...</div>;
+  if (!user) return <div className="admin-card">{t("admin.common.user_not_found")}</div>;
 
   return (
     <>
       <div style={{ marginBottom: "1rem" }}>
         <Link to="/admin/users" style={{ color: "var(--muted)" }}>
-          ← Foydalanuvchilar
+          {t("admin.user_detail_extra.back")}
         </Link>
       </div>
       <h1 className="admin-page-title">
         👤 {user.first_name} {user.last_name || ""}
-        {user.is_premium && <span className="badge yellow" style={{ marginLeft: "1rem" }}>PREMIUM</span>}
-        {user.is_banned && <span className="badge red" style={{ marginLeft: "0.5rem" }}>BAN</span>}
+        {user.is_premium && (
+          <span className="badge yellow" style={{ marginLeft: "1rem" }}>
+            {t("admin.user_detail_extra.premium_badge")}
+          </span>
+        )}
+        {user.is_banned && (
+          <span className="badge red" style={{ marginLeft: "0.5rem" }}>
+            {t("admin.user_detail_extra.ban_badge")}
+          </span>
+        )}
       </h1>
 
       <div className="webapp-tabs" style={{ marginBottom: "1rem" }}>
-        <TabBtn id="overview" current={tab} setTab={setTab}>📊 Umumiy</TabBtn>
-        <TabBtn id="games" current={tab} setTab={setTab}>🎲 O'yinlar</TabBtn>
-        <TabBtn id="achievements" current={tab} setTab={setTab}>🏆 Yutuqlar</TabBtn>
-        <TabBtn id="transactions" current={tab} setTab={setTab}>💎 Tranzaksiyalar</TabBtn>
+        <TabBtn id="overview" current={tab} setTab={setTab}>
+          {t("admin.user_detail_extra.tab_overview")}
+        </TabBtn>
+        <TabBtn id="games" current={tab} setTab={setTab}>
+          {t("admin.user_detail_extra.tab_games")}
+        </TabBtn>
+        <TabBtn id="achievements" current={tab} setTab={setTab}>
+          {t("admin.user_detail_extra.tab_achievements")}
+        </TabBtn>
+        <TabBtn id="transactions" current={tab} setTab={setTab}>
+          {t("admin.user_detail_extra.tab_transactions")}
+        </TabBtn>
       </div>
 
       {tab === "overview" && <Overview user={user} />}
@@ -96,24 +114,28 @@ function TabBtn({
 }
 
 function Overview({ user }: { user: UserDetail }) {
+  const { t } = useTranslation();
   return (
     <>
       <div className="admin-grid" style={{ marginBottom: "1.5rem" }}>
-        <KPI label="ID" value={user.id} />
-        <KPI label="Username" value={user.username ? `@${user.username}` : "—"} />
-        <KPI label="Level" value={user.level} />
-        <KPI label="💎 Olmos" value={user.diamonds} />
-        <KPI label="💵 Dollar" value={user.dollars} />
-        <KPI label="⭐ XP" value={user.xp} />
+        <KPI label={t("admin.user_detail_extra.id")} value={user.id} />
+        <KPI
+          label={t("admin.user_detail_extra.username")}
+          value={user.username ? `@${user.username}` : "—"}
+        />
+        <KPI label={t("admin.user_detail_extra.level")} value={user.level} />
+        <KPI label={t("admin.user_detail_extra.diamonds")} value={user.diamonds} />
+        <KPI label={t("admin.user_detail_extra.dollars")} value={user.dollars} />
+        <KPI label={t("admin.user_detail_extra.xp")} value={user.xp} />
       </div>
 
       {user.stats ? (
         <>
-          <h3 style={{ color: "var(--muted)" }}>Statistika</h3>
+          <h3 style={{ color: "var(--muted)" }}>{t("admin.user_detail.stats")}</h3>
           <div className="admin-grid" style={{ marginBottom: "1.5rem" }}>
-            <KPI label="O'yinlar" value={user.stats.games_total} />
+            <KPI label={t("admin.user_detail.games_total")} value={user.stats.games_total} />
             <KPI
-              label="G'alabalar"
+              label={t("admin.user_detail.wins")}
               value={user.stats.games_won}
               sub={`WR ${
                 user.stats.games_total
@@ -121,27 +143,39 @@ function Overview({ user }: { user: UserDetail }) {
                   : 0
               }%`}
             />
-            <KPI label="ELO" value={user.stats.elo} />
-            <KPI label="Eng uzun streak" value={user.stats.longest_win_streak} />
+            <KPI label={t("admin.user_detail.elo")} value={user.stats.elo} />
+            <KPI
+              label={t("admin.user_detail.longest_streak")}
+              value={user.stats.longest_win_streak}
+            />
           </div>
 
-          <h3 style={{ color: "var(--muted)" }}>Tomon bo'yicha</h3>
+          <h3 style={{ color: "var(--muted)" }}>{t("admin.user_detail.by_team")}</h3>
           <div className="admin-grid" style={{ marginBottom: "1.5rem" }}>
-            <KPI label="👨🏼 Tinch" value={user.stats.citizen_wins} />
-            <KPI label="🤵🏼 Mafia" value={user.stats.mafia_wins} />
-            <KPI label="🎯 Singleton" value={user.stats.singleton_wins} />
+            <KPI
+              label={`👨🏼 ${t("admin.user_detail.team_civilian")}`}
+              value={user.stats.citizen_wins}
+            />
+            <KPI
+              label={`🤵🏼 ${t("admin.user_detail.team_mafia")}`}
+              value={user.stats.mafia_wins}
+            />
+            <KPI
+              label={`🎯 ${t("admin.user_detail.team_singleton")}`}
+              value={user.stats.singleton_wins}
+            />
           </div>
 
-          <h3 style={{ color: "var(--muted)" }}>Rol bo'yicha</h3>
+          <h3 style={{ color: "var(--muted)" }}>{t("admin.user_detail.by_role")}</h3>
           <div className="admin-card" style={{ padding: 0, overflow: "hidden" }}>
             <table className="admin-table">
               <thead>
                 <tr>
-                  <th>Rol</th>
-                  <th>O'yinlar</th>
-                  <th>Wins</th>
+                  <th>{t("admin.user_detail_extra.games_role")}</th>
+                  <th>{t("admin.user_detail.games_total")}</th>
+                  <th>{t("admin.user_detail.wins")}</th>
                   <th>WR</th>
-                  <th>ELO</th>
+                  <th>{t("admin.user_detail.elo")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -159,7 +193,7 @@ function Overview({ user }: { user: UserDetail }) {
           </div>
         </>
       ) : (
-        <div className="admin-card">Hali o'yinlar yo'q</div>
+        <div className="admin-card">{t("admin.user_detail.no_games")}</div>
       )}
 
       {user.is_banned && user.ban_reason && (
@@ -167,7 +201,7 @@ function Overview({ user }: { user: UserDetail }) {
           className="admin-card"
           style={{ marginTop: "1rem", borderColor: "#c0392b", color: "#e74c3c" }}
         >
-          🚫 Ban sababi: {user.ban_reason}
+          {t("admin.user_detail_extra.ban_reason_label")}: {user.ban_reason}
         </div>
       )}
     </>
@@ -187,6 +221,7 @@ function KPI({ label, value, sub }: { label: string; value: string | number; sub
 }
 
 function Transactions({ userId }: { userId: number }) {
+  const { t } = useTranslation();
   const { data, isLoading } = useQuery({
     queryKey: ["user-transactions", userId],
     queryFn: async () =>
@@ -200,14 +235,14 @@ function Transactions({ userId }: { userId: number }) {
       <table className="admin-table">
         <thead>
           <tr>
-            <th>Vaqt</th>
-            <th>Type</th>
+            <th>{t("admin.user_detail_extra.tx_time")}</th>
+            <th>{t("admin.user_detail_extra.tx_type")}</th>
             <th>💎</th>
             <th>💵</th>
             <th>⭐</th>
-            <th>Item</th>
-            <th>Status</th>
-            <th>Note</th>
+            <th>{t("admin.user_detail_extra.tx_item")}</th>
+            <th>{t("admin.user_detail_extra.tx_status")}</th>
+            <th>{t("admin.user_detail_extra.tx_note")}</th>
           </tr>
         </thead>
         <tbody>
@@ -240,6 +275,7 @@ function Transactions({ userId }: { userId: number }) {
 }
 
 function Games({ userId }: { userId: number }) {
+  const { t } = useTranslation();
   const { data, isLoading } = useQuery({
     queryKey: ["user-games", userId],
     queryFn: async () =>
@@ -253,13 +289,13 @@ function Games({ userId }: { userId: number }) {
       <table className="admin-table">
         <thead>
           <tr>
-            <th>Vaqt</th>
-            <th>Game</th>
-            <th>Rol</th>
-            <th>Tomon</th>
-            <th>Result</th>
-            <th>ELO</th>
-            <th>+XP</th>
+            <th>{t("admin.user_detail_extra.games_time")}</th>
+            <th>{t("admin.user_detail_extra.games_game")}</th>
+            <th>{t("admin.user_detail_extra.games_role")}</th>
+            <th>{t("admin.user_detail_extra.games_team")}</th>
+            <th>{t("admin.user_detail_extra.games_result")}</th>
+            <th>{t("admin.user_detail_extra.games_elo")}</th>
+            <th>{t("admin.user_detail_extra.games_xp")}</th>
           </tr>
         </thead>
         <tbody>
@@ -275,12 +311,18 @@ function Games({ userId }: { userId: number }) {
               <td>{g.team}</td>
               <td>
                 {g.won ? (
-                  <span className="badge green">WIN</span>
+                  <span className="badge green">
+                    {t("admin.user_detail_extra.result_win")}
+                  </span>
                 ) : (
-                  <span className="badge red">LOSS</span>
+                  <span className="badge red">
+                    {t("admin.user_detail_extra.result_loss")}
+                  </span>
                 )}
                 {g.survived && (
-                  <span className="badge" style={{ marginLeft: "0.3rem" }}>🛡 ALIVE</span>
+                  <span className="badge" style={{ marginLeft: "0.3rem" }}>
+                    🛡 {t("admin.user_detail_extra.alive")}
+                  </span>
                 )}
               </td>
               <td style={{ color: g.elo_change >= 0 ? "#4ade80" : "#e74c3c" }}>
@@ -297,6 +339,7 @@ function Games({ userId }: { userId: number }) {
 }
 
 function Achievements({ userId }: { userId: number }) {
+  const { t } = useTranslation();
   const { data, isLoading } = useQuery({
     queryKey: ["user-achievements", userId],
     queryFn: async () =>
@@ -304,7 +347,8 @@ function Achievements({ userId }: { userId: number }) {
   });
 
   if (isLoading) return <div className="admin-card">⏳</div>;
-  if (!data?.items.length) return <div className="admin-card">Hali yutuqlar yo'q</div>;
+  if (!data?.items.length)
+    return <div className="admin-card">{t("admin.user_detail.no_achievements")}</div>;
 
   return (
     <div className="admin-grid">

@@ -38,7 +38,7 @@ export function GamesPage() {
                 <th>{t("admin.games.col_winner")}</th>
                 <th>{t("admin.games.col_started")}</th>
                 <th>{t("admin.games.col_duration")}</th>
-                <th>Bounty</th>
+                <th>{t("admin.games_extra.col_bounty")}</th>
               </tr>
             </thead>
             <tbody>

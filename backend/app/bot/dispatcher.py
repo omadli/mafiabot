@@ -26,11 +26,15 @@ def setup_routers(dp: Dispatcher) -> None:
     from app.bot.handlers.private import super_admin as private_super_admin
 
     # Middlewares
+    from app.bot.middlewares.command_cleanup import CommandCleanupMiddleware
     from app.bot.middlewares.i18n import I18nMiddleware
     from app.bot.middlewares.user_loader import UserLoaderMiddleware
 
     dp.update.outer_middleware(UserLoaderMiddleware())
     dp.update.outer_middleware(I18nMiddleware())
+    # Inner: runs around individual message handlers, so it can delete
+    # the /command message AFTER the handler completes.
+    dp.message.middleware(CommandCleanupMiddleware())
 
     # Routers (order matters: more specific first)
     dp.include_router(private_super_admin.router)  # before other private handlers

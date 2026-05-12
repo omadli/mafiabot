@@ -39,7 +39,7 @@ export function AuditPage() {
                 <th>{t("admin.audit.col_action")}</th>
                 <th>{t("admin.audit.col_target")}</th>
                 <th>{t("admin.audit.col_payload")}</th>
-                <th>IP</th>
+                <th>{t("admin.audit.col_ip")}</th>
               </tr>
             </thead>
             <tbody>

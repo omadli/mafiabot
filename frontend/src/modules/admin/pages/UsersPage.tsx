@@ -86,10 +86,10 @@ export function UsersPage() {
               <tr>
                 <th>{t("admin.users.col_id")}</th>
                 <th>{t("admin.users.col_name")}</th>
-                <th>💎</th>
-                <th>💵</th>
-                <th>Lvl</th>
-                <th>ELO</th>
+                <th>{t("admin.users_extra.col_diamonds")}</th>
+                <th>{t("admin.users_extra.col_dollars")}</th>
+                <th>{t("admin.users_extra.col_lvl")}</th>
+                <th>{t("admin.users_extra.col_elo")}</th>
                 <th>{t("admin.users.col_balance")}</th>
                 <th>{t("admin.users.col_status")}</th>
                 <th>{t("admin.users.col_actions")}</th>
@@ -134,7 +134,10 @@ export function UsersPage() {
                       <button
                         className="admin-btn admin-btn-danger"
                         onClick={() => {
-                          const reason = prompt("Reason?", "Spam");
+                          const reason = prompt(
+                            t("admin.prompts.ban_reason"),
+                            t("admin.prompts.default_reason"),
+                          );
                           if (reason) banMutation.mutate({ userId: u.id, reason });
                         }}
                       >
@@ -177,6 +180,7 @@ function Pagination({
   totalPages: number;
   onChange: (p: number) => void;
 }) {
+  const { t } = useTranslation();
   if (totalPages <= 1) return null;
   return (
     <div style={{ marginTop: "1rem", display: "flex", gap: "0.5rem", alignItems: "center" }}>
@@ -184,7 +188,7 @@ function Pagination({
         ←
       </button>
       <span style={{ color: "var(--muted)" }}>
-        Page {page} / {totalPages}
+        {t("admin.common.page")} {page} / {totalPages}
       </span>
       <button
         className="admin-btn"

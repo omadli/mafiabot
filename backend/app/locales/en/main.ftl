@@ -274,7 +274,7 @@ extend-not-in-registration = You can only extend time during the registration ph
 
 extend-success = ⏱ Time extended by { $seconds } seconds.
 
-extend-indefinite = ⏳ Registration extended indefinitely. Use /start to launch the game.
+extend-indefinite = ⏳ Registration extended.
 
 game-launched-by-admin = 🚀 The game has begun!
 
@@ -1084,3 +1084,49 @@ role-desc-mage = Win if you survive to the very end.
 role-desc-arsonist = Win if you kill 3+ players.
 role-desc-crook = Win if you survive. By day you can vote in another player's name.
 role-desc-snitch = If you and the detective both target the same player, their role is revealed publicly.
+
+# ===========================================================
+# DM-based voting (Wave 6 — voting moved out of group chat)
+# ===========================================================
+
+voting-group-prompt-short =
+    ⚖️ Time to find the guilty and pass judgement.
+    Voting time: { $seconds } seconds.
+
+voting-go-button = 🗳 Cast vote
+
+voting-dm-prompt =
+    ⚖️ <b>Time to find the guilty!</b>
+
+    Who do you think should hang?
+
+vote-recorded-dm-confirm = ✅ Your vote: <b>{ $target }</b>
+
+vote-skipped-confirm = ✅ You chose "Nobody".
+
+# Comedic rumor-style alerts for invalid voters in HANGING_CONFIRM
+vote-dead-alert = 💀 You're dead, you cannot vote! Even your ghost is silent.
+vote-not-in-game-alert = 😴 You're not in this game. We'll call you for the next one!
+vote-already-voted-alert = ✋ You already voted!
+
+# AFK comedic last-words
+afk-last-words =
+    Someone in town heard { $role } { $mention } shout before dying:
+    "I'm never sleeping during the gaaaaaame again!"
+
+# Per-player game-end DM
+game-end-dm-win =
+    🏆 <b>Congratulations, you won!</b>
+
+    🎭 Role: { $role }
+    ⭐ XP: +{ $xp }
+    📊 ELO: { $elo_delta }
+    💵 Reward: { $dollars }$
+
+game-end-dm-loss =
+    💀 <b>No luck this time.</b>
+
+    🎭 Role: { $role }
+    ⭐ XP: +{ $xp }
+    📊 ELO: { $elo_delta }
+    💵 Money: { $dollars }$

@@ -110,7 +110,10 @@ export function GroupsPage() {
                       <button
                         className="admin-btn admin-btn-danger"
                         onClick={() => {
-                          const reason = prompt("Reason?", "Spam");
+                          const reason = prompt(
+                            t("admin.prompts.block_reason"),
+                            t("admin.prompts.default_reason"),
+                          );
                           if (reason)
                             blockMutation.mutate({ groupId: g.id, reason });
                         }}

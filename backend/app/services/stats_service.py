@@ -265,18 +265,40 @@ async def _update_user_stats(
     )
     role_entry["elo"] = elo_change.elo_after
     role_stats[player.role] = role_entry
-    stats.role_stats = role_stats
 
     # ELO/XP
-    stats.elo = elo_change.elo_after
-    stats.xp += xp_earned
-    stats.level = _compute_level(stats.xp)
-    stats.last_played_at = stats.last_played_at  # auto
+    new_elo = elo_change.elo_after
+    new_xp = stats.xp + xp_earned
+    new_level = _compute_level(new_xp)
     from datetime import datetime
 
-    stats.last_played_at = datetime.now(UTC)
+    now = datetime.now(UTC)
 
-    await stats.save()
+    # Workaround: UserStats has OneToOneField(pk=True) which breaks
+    # instance.save() on PostgreSQL (see group_settings_helper for details).
+    # Use filter().update() with explicit column kwargs instead.
+    await UserStats.filter(user_id=player.user_id).update(
+        games_total=stats.games_total,
+        games_won=stats.games_won,
+        games_lost=stats.games_lost,
+        current_win_streak=stats.current_win_streak,
+        longest_win_streak=stats.longest_win_streak,
+        current_loss_streak=stats.current_loss_streak,
+        citizen_games=stats.citizen_games,
+        citizen_wins=stats.citizen_wins,
+        mafia_games=stats.mafia_games,
+        mafia_wins=stats.mafia_wins,
+        singleton_games=stats.singleton_games,
+        singleton_wins=stats.singleton_wins,
+        times_survived=stats.times_survived,
+        times_killed_at_night=stats.times_killed_at_night,
+        times_voted_out=stats.times_voted_out,
+        role_stats=role_stats,
+        elo=new_elo,
+        xp=new_xp,
+        level=new_level,
+        last_played_at=now,
+    )
 
 
 async def _update_group_user_stats(
@@ -308,26 +330,34 @@ async def _update_group_stats(state: GameState, duration: int) -> None:
     """Rolling avg group stats."""
     gs, _ = await GroupStats.get_or_create(group_id=state.group_id)
     n_old = gs.total_games
-    gs.total_games += 1
+    new_total = n_old + 1
 
     # Rolling averages
-    gs.avg_game_duration_seconds = (
-        gs.avg_game_duration_seconds * n_old + duration
-    ) / gs.total_games
-    gs.avg_player_count = (gs.avg_player_count * n_old + len(state.players)) / gs.total_games
+    new_avg_duration = (gs.avg_game_duration_seconds * n_old + duration) / new_total
+    new_avg_player_count = (gs.avg_player_count * n_old + len(state.players)) / new_total
 
     # Team winrates
+    new_citizens_winrate = gs.citizens_winrate
+    new_mafia_winrate = gs.mafia_winrate
     if state.winner_team == Team.CITIZENS:
-        gs.citizens_winrate = (gs.citizens_winrate * n_old + 1.0) / gs.total_games
-        gs.mafia_winrate = (gs.mafia_winrate * n_old + 0.0) / gs.total_games
+        new_citizens_winrate = (gs.citizens_winrate * n_old + 1.0) / new_total
+        new_mafia_winrate = (gs.mafia_winrate * n_old + 0.0) / new_total
     elif state.winner_team == Team.MAFIA:
-        gs.mafia_winrate = (gs.mafia_winrate * n_old + 1.0) / gs.total_games
-        gs.citizens_winrate = (gs.citizens_winrate * n_old + 0.0) / gs.total_games
+        new_mafia_winrate = (gs.mafia_winrate * n_old + 1.0) / new_total
+        new_citizens_winrate = (gs.citizens_winrate * n_old + 0.0) / new_total
 
     from datetime import datetime
 
-    gs.last_game_at = datetime.now(UTC)
-    await gs.save()
+    # Workaround: GroupStats also uses OneToOneField(pk=True). Use
+    # filter().update() instead of save() to avoid the column-name bug.
+    await GroupStats.filter(group_id=state.group_id).update(
+        total_games=new_total,
+        avg_game_duration_seconds=new_avg_duration,
+        avg_player_count=new_avg_player_count,
+        citizens_winrate=new_citizens_winrate,
+        mafia_winrate=new_mafia_winrate,
+        last_game_at=datetime.now(UTC),
+    )
 
 
 def _compute_level(xp: int) -> int:
