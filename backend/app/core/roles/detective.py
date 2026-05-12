@@ -15,4 +15,7 @@ class DetectiveRole(BaseRole):
         return "night-prompt-detective"
 
     def can_target(self, state: GameState, actor: PlayerState, target: PlayerState) -> bool:
+        # Detective sees the Sergeant as a teammate and never targets them.
+        if target.role == "sergeant":
+            return False
         return target.alive and target.user_id != actor.user_id

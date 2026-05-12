@@ -69,10 +69,11 @@ def winner_user_ids(state: GameState, winner: Team) -> list[int]:
     """User IDs who win.
 
     For SINGLETON: include only specific singleton role(s) that satisfied their win condition.
-    For team wins: all team members (alive and dead).
+    For team wins: ONLY members of the winning team who are still ALIVE — dead
+    players are passengers, not winners. (Reference parity with @MafiaAzBot.)
     """
     if winner != Team.SINGLETON:
-        return [p.user_id for p in state.players if p.team == winner]
+        return [p.user_id for p in state.players if p.team == winner and p.alive]
 
     # Determine which singleton(s) actually won
     winners: list[int] = []

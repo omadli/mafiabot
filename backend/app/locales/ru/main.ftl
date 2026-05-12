@@ -228,11 +228,23 @@ btn-join-game = 🎮 Присоединиться к игре
 # СМЕНА ФАЗ
 # ===========================================================
 
-phase-night-start = 🌃 Ночь #{ $round } началась. Роли приступают к действию...
+phase-night-start = 🌃 Ночь #{ $round }. Ветер разносит ночные слухи по всему городу...
 
-phase-day-start = ☀️ День #{ $round } начался. Обсуждайте!
+phase-night-start-1 = 🌃 Ночь #{ $round }. Ветер разносит ночные слухи по всему городу...
+phase-night-start-2 = 🌑 Ночь #{ $round }. Город шепчет под луной — кто-то перестал дышать...
+phase-night-start-3 = 🌃 Ночь #{ $round }. Заприте двери — на улице слышны шаги...
+phase-night-start-4 = 🦉 Ночь #{ $round }. Сова бдит, но и она видит не всё...
+phase-night-start-5 = 🌌 Ночь #{ $round }. Звёзды свидетели — город ночью не спит, лишь притворяется.
 
-phase-voting-start = 🗳 Время голосования! /vote @user
+phase-day-start = ☀️ День #{ $round }. Солнце высушило кровь, пролитую ночью...
+
+phase-day-start-1 = ☀️ День #{ $round }. Солнце высушило кровь, пролитую ночью...
+phase-day-start-2 = 🌅 День #{ $round }. Город проснулся — но кто-то уже не проснётся.
+phase-day-start-3 = ☕ День #{ $round }. Время завтрака, но за столами стало пустее...
+phase-day-start-4 = 🐓 День #{ $round }. Петух прокричал — время считать.
+phase-day-start-5 = 🌤 День #{ $round }. Рассвет, но тени ночи всё ещё на углу.
+
+phase-voting-start = 🗳 Время голосования — кого-то надо повесить?
 
 
 # ===========================================================
@@ -294,6 +306,15 @@ night-prompt-detective = 🕵🏼 Комиссар, ваш выбор?
 night-prompt-detective-check-only = 🕵🏼 Комиссар, в 1-ю ночь можно только проверять. Кого проверяете?
 
 night-prompt-detective-both = 🕵🏼 Комиссар, кого проверяете или убиваете? 🔍 = проверить, 🔫 = убить
+
+night-prompt-detective-prior-header = 🕵🏼 <b>Ранее проверенные игроки:</b>
+night-prompt-detective-prior-line = • <b>{ $name }</b> — { $role }
+night-prompt-detective-chooser = 🕵🏼 Что делаем этой ночью?
+night-prompt-detective-target-list-check = 🔍 Кого проверим?
+night-prompt-detective-target-list-kill = 🔫 Кого устраним?
+btn-detective-check = 🔍 Проверить
+btn-detective-kill = 🔫 Убить
+night-no-targets = ❌ Сейчас некого выбрать.
 
 btn-skip = ⏭ Пропустить
 
@@ -399,13 +420,15 @@ night-prompt-snitch = 🤓 Стукач, кого, по-вашему, прове
 
 feedback-detective-result = 🕵🏼 Роль { $target } — { $role }.
 
-feedback-doctor-saved = 👨🏻‍⚕ Вы вылечили { $target }! Его ночные гости: { $visitors }
+feedback-doctor-saved = 👨🏻‍⚕ Вы — <b>{ $target }</b> вылечили :) Его гостем был { $visitors }.
 
-feedback-doctor-no-visitors = 👨🏻‍⚕ Вы вылечили { $target }. К нему никто не приходил.
+feedback-doctor-no-visitors = 👨🏻‍⚕ Доктор не смог помочь..
 
 feedback-hooker-confirm = 💃 Вы усыпили { $target }.
 
 feedback-hooker-target = Вот 💊 таблетка подействовала — теперь ты поспишь целый день...
+
+mafia-kill-broadcast = 🤵🏼 Во время голосования мафии { $mention } был безжалостно убит 🩸
 
 
 # ===========================================================
@@ -681,9 +704,23 @@ hanging-result-with-role = <b>{ $name }</b> повешен(а) на дневно
 hanging-result = <b>{ $name }</b> повешен(а) на дневном собрании!
 
 hanging-cancelled =
+    <b>Голосование завершено:</b>
+    Народ не пришёл к согласию... Из-за разногласий никто не был повешен...
+
+hanging-combined =
     <b>Результаты голосования:</b>
-    Народ не пришёл к согласию ({ $yes } 👍 | { $no } 👎)...
-    Из-за разногласий никто не был повешен...
+    { $yes } 👍 | { $no } 👎
+
+    { $mention } был(а) повешен(а) на дневном собрании!
+
+hanging-combined-with-role =
+    <b>Результаты голосования:</b>
+    { $yes } 👍 | { $no } 👎
+
+    { $mention } был(а) повешен(а) на дневном собрании!
+    Это был { $role_emoji } <b>{ $role }</b>..
+
+hanging-confirm-cannot-self = 😅 Нельзя голосовать за собственное повешение!
 
 
 # ===========================================================

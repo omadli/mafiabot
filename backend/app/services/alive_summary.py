@@ -65,7 +65,7 @@ def format_alive_summary(state: GameState) -> str:
     lines.append("")
 
     # Team breakdown — count roles per team
-    team_buckets: dict[Team, list[str]] = {Team.MAFIA: [], Team.SINGLETON: [], Team.CIVILIAN: []}
+    team_buckets: dict[Team, list[str]] = {Team.MAFIA: [], Team.SINGLETON: [], Team.CITIZENS: []}
     for p in alive:
         team_buckets.setdefault(p.team, []).append(p.role)
 
@@ -79,9 +79,9 @@ def format_alive_summary(state: GameState) -> str:
         lines.append(_format_role_counts(team_buckets[Team.SINGLETON]))
         lines.append("")
 
-    if team_buckets[Team.CIVILIAN]:
-        lines.append(f"🤝 <b>Tinch aholilar</b> - {len(team_buckets[Team.CIVILIAN])}")
-        lines.append(_format_role_counts(team_buckets[Team.CIVILIAN]))
+    if team_buckets[Team.CITIZENS]:
+        lines.append(f"🤝 <b>Tinch aholilar</b> - {len(team_buckets[Team.CITIZENS])}")
+        lines.append(_format_role_counts(team_buckets[Team.CITIZENS]))
         lines.append("")
 
     lines.append(f"<b>Jami:</b> {len(alive)}")

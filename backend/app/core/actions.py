@@ -338,6 +338,13 @@ class ActionResolver:
                     )
                 )
                 actor.extra.setdefault("checks", []).append(target.user_id)
+                # Remember revealed role so the next night's prompt can recap.
+                # JSON keys must be strings (state is round-tripped via Redis).
+                results: dict = actor.extra.setdefault("check_results", {})
+                results[str(target.user_id)] = {
+                    "name": target.first_name,
+                    "role": revealed,
+                }
 
         # 11. Journalist check
         from app.core.roles.journalist import JournalistRole

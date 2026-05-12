@@ -233,8 +233,13 @@ async def finish_game(state: GameState, winner: Team | None) -> None:
     state.winner_team = winner
     state.finished_at = int(time.time())
 
-    if winner is not None:
-        state.winner_user_ids = [p.user_id for p in state.players if p.team == winner]
+    if winner is not None and not state.winner_user_ids:
+        # Phase manager normally fills winner_user_ids via winner_user_ids().
+        # Fallback only fires when finish_game is called directly (rare):
+        # team wins → alive members only, dead are not winners.
+        from app.core.win_conditions import winner_user_ids as _wuids
+
+        state.winner_user_ids = _wuids(state, winner)
 
     # Persist to DB
     db_game = await Game.get_or_none(id=state.id)

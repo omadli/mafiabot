@@ -26,42 +26,37 @@ async def track_phase_inactivity(bot: Bot, state: GameState, ended_phase: Phase)
 
     to_kick: list[int] = []
 
+    # AFK tracking ONLY applies at NIGHT, and ONLY for roles that have a
+    # night action they were supposed to perform. Citizens and the day
+    # voting phase do not contribute strikes — voting is a social mechanic,
+    # not a "wake up and act" check.
+    if ended_phase != Phase.NIGHT:
+        return
+
     # Whom did Kezuvchi (Hooker) put to sleep this night? Sleeping players
     # are physically unable to act and must NOT count toward AFK strikes.
     slept_user_ids: set[int] = set()
-    if ended_phase == Phase.NIGHT:
-        for action in state.current_actions.values():
-            if action.role == "hooker" and action.action_type == "sleep" and action.target_id:
-                slept_user_ids.add(action.target_id)
+    for action in state.current_actions.values():
+        if action.role == "hooker" and action.action_type == "sleep" and action.target_id:
+            slept_user_ids.add(action.target_id)
+
+    from app.core.roles import get_role
 
     for player in state.alive_players():
-        # Did player act this phase?
-        acted = False
-        if ended_phase == Phase.NIGHT:
-            acted = player.user_id in state.current_actions
-        elif ended_phase == Phase.VOTING:
-            acted = player.user_id in state.current_votes
+        role = get_role(player.role)
+        if not role.has_night_action:
+            continue
+        if player.user_id in slept_user_ids:
+            continue
 
-        if acted:
+        if player.user_id in state.current_actions:
             player.skipped_phases = 0
-        else:
-            # Citizens at night don't have action — skip them
-            from app.core.roles import get_role
+            continue
 
-            role = get_role(player.role)
-            if ended_phase == Phase.NIGHT and not role.has_night_action:
-                continue
-
-            # Hooker-slept players couldn't act — don't penalise them
-            if ended_phase == Phase.NIGHT and player.user_id in slept_user_ids:
-                continue
-
-            player.skipped_phases += 1
-            logger.debug(
-                f"Player {player.user_id} skipped phase ({player.skipped_phases}/{threshold})"
-            )
-            if player.skipped_phases >= threshold:
-                to_kick.append(player.user_id)
+        player.skipped_phases += 1
+        logger.debug(f"Player {player.user_id} skipped night ({player.skipped_phases}/{threshold})")
+        if player.skipped_phases >= threshold:
+            to_kick.append(player.user_id)
 
     # Kick AFK players
     for user_id in to_kick:

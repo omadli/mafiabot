@@ -34,6 +34,53 @@ async def _back_to_group_kb(state: GameState, _: Translator) -> InlineKeyboardMa
     )
 
 
+@router.callback_query(F.data.startswith("night:detchoose:"))
+async def handle_detective_chooser(
+    query: CallbackQuery, user: User, _: Translator, bot: Bot
+) -> None:
+    """Detective picked 'check' or 'kill' — edit the chooser DM to show
+    the target keyboard. The actual target selection is then handled by
+    handle_night_pick via callback `night:detective:<action>:<target>`."""
+    if query.data is None or query.message is None:
+        await query.answer()
+        return
+    parts = query.data.split(":")
+    if len(parts) != 3 or parts[2] not in ("check", "kill"):
+        await query.answer("Invalid", show_alert=True)
+        return
+    action_kind = parts[2]
+
+    if user.active_game_id is None:
+        await query.answer(_("night-not-in-active-game"), show_alert=True)
+        return
+    state = await _find_state_by_game_id(user.active_game_id)
+    if state is None or state.phase != Phase.NIGHT:
+        await query.answer(_("night-not-in-night-phase"), show_alert=True)
+        return
+
+    actor = state.get_player(user.id)
+    if actor is None or not actor.alive or actor.role != "detective":
+        await query.answer(_("night-cannot-act"), show_alert=True)
+        return
+
+    from app.services.role_actions import send_detective_target_keyboard
+
+    locale = state.settings.get("language", "uz")
+    kb = await send_detective_target_keyboard(bot, state, actor, action_kind, locale)
+    if kb is None:
+        await query.answer(_("night-no-targets"), show_alert=True)
+        return
+
+    prompt = _(
+        "night-prompt-detective-target-list-check"
+        if action_kind == "check"
+        else "night-prompt-detective-target-list-kill"
+    )
+    with contextlib.suppress(Exception):
+        await query.message.edit_text(prompt, reply_markup=kb, parse_mode="HTML")
+    await query.answer()
+
+
 @router.callback_query(F.data.startswith("night:"))
 async def handle_night_pick(query: CallbackQuery, user: User, _: Translator, bot: Bot) -> None:
     if query.data is None:
@@ -114,6 +161,56 @@ async def handle_night_pick(query: CallbackQuery, user: User, _: Translator, bot
     # Lets the team coordinate / see each other's picks during night.
     if actor.team == Team.MAFIA:
         await _broadcast_to_mafia(bot, state, actor, target, action_kind)
+
+    # Atmospheric per-role broadcast to the GROUP (idempotent per round).
+    # Each role posts at most once per night — Mafia + Don share the
+    # "Don tanladi" message so the team is treated as one. Detective has
+    # two flavors depending on action_type.
+    await _broadcast_role_atmosphere(bot, state, actor, action_kind)
+
+
+_BROADCAST_KEY_OVERRIDES: dict[tuple[str, str], str] = {
+    # Detective branches:
+    ("detective", "check"): "night-action-msg-detective-check",
+    ("detective", "kill"): "night-action-msg-detective-shoot",
+    # Whole mafia team shares the "Don is choosing" line:
+    ("mafia", "kill"): "night-action-msg-don",
+    ("don", "kill"): "night-action-msg-don",
+}
+
+
+def _atmosphere_key(role_code: str, action_kind: str) -> str:
+    return _BROADCAST_KEY_OVERRIDES.get((role_code, action_kind), f"night-action-msg-{role_code}")
+
+
+async def _broadcast_role_atmosphere(
+    bot: Bot,
+    state: GameState,
+    actor: object,  # PlayerState
+    action_kind: str,
+) -> None:
+    """Post the role's atmospheric line to the group, at most once per round."""
+    role_code = getattr(actor, "role", None)
+    if not role_code:
+        return
+
+    key = _atmosphere_key(role_code, action_kind)
+    round_log = state.current_round()
+    posted: set[str] = set(round_log.__dict__.setdefault("broadcast_atmosphere_keys", []))
+    if key in posted:
+        return
+    posted.add(key)
+    round_log.__dict__["broadcast_atmosphere_keys"] = list(posted)
+    await game_service.save_state(state)
+
+    locale = state.settings.get("language", "uz")
+    t = get_translator(locale)
+    text = t(key)
+    # Fluent returns the key itself when missing — bail silently in that case.
+    if text == key:
+        return
+    with contextlib.suppress(Exception):
+        await bot.send_message(state.chat_id, text)
 
 
 async def _broadcast_to_mafia(

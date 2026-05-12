@@ -151,7 +151,7 @@ night-action-msg-detective-check = 🕵🏻‍♂ Komissar katani yovuzlarni qid
 
 night-action-msg-detective-shoot = 🕵🏻‍♂ Komissar katani pistoletini o'qladi...
 
-night-action-msg-doctor = 👨🏻‍⚕ Doktor kechki vizitiga otlandi...
+night-action-msg-doctor = 👨🏻‍⚕ Doktor tungi navbatchilikka ketti...
 
 night-action-msg-hooker = 💃 Kezuvchining qandaydir mehmoni bor ekan...
 
@@ -228,11 +228,23 @@ btn-join-game = 🎮 O'yinga qo'shilish
 # FAZA O'ZGARISHLARI
 # ===========================================================
 
-phase-night-start = 🌃 Tun #{ $round } boshlandi. Rollar harakatga o'tdi...
+phase-night-start = 🌃 Tun #{ $round }. Shamollar tundagi mish-mishlarni butun shaharga yetkazmoqda...
 
-phase-day-start = ☀️ Kun #{ $round } boshlandi. Muhokama qiling!
+phase-night-start-1 = 🌃 Tun #{ $round }. Shamollar tundagi mish-mishlarni butun shaharga yetkazmoqda...
+phase-night-start-2 = 🌑 Tun #{ $round }. Shahar oy nuri ostida pichirlay boshladi — kimdir nafas olishni unutdi...
+phase-night-start-3 = 🌃 Tun #{ $round }. Eshiklarni mahkamlang, ko'chada qadamlar eshitilmoqda...
+phase-night-start-4 = 🦉 Tun #{ $round }. Boyqush hushyor, lekin u ham hammasini ko'ra olmaydi...
+phase-night-start-5 = 🌌 Tun #{ $round }. Yulduzlar guvoh — kechasi shahar uxlamaydi, faqat o'zini uxlayotgandek ko'rsatadi.
 
-phase-voting-start = 🗳 Ovoz berish vaqti! /vote @user
+phase-day-start = ☀️ Kun #{ $round }. Quyosh chiqib tunda to'kilgan qonlarni quritdi...
+
+phase-day-start-1 = ☀️ Kun #{ $round }. Quyosh chiqib tunda to'kilgan qonlarni quritdi...
+phase-day-start-2 = 🌅 Kun #{ $round }. Shahar uyg'ondi — ammo kimdir endi uyg'onmaydi.
+phase-day-start-3 = ☕ Kun #{ $round }. Nonushta vaqti keldi, lekin ba'zi joylar bo'sh qoldi...
+phase-day-start-4 = 🐓 Kun #{ $round }. Xo'roz qichqirdi — hisob-kitob qilish vaqti.
+phase-day-start-5 = 🌤 Kun #{ $round }. Tong otdi, lekin tunning qora soyalari hali ham ko'cha boshida.
+
+phase-voting-start = 🗳 Ovoz berish vaqti — kimnidir osishimiz kerakmi?
 
 
 # ===========================================================
@@ -294,6 +306,15 @@ night-prompt-detective = 🕵🏼 Komissar, tanlovingiz?
 night-prompt-detective-check-only = 🕵🏼 Komissar, 1-tunda faqat tekshirish mumkin. Kimni tekshirasiz?
 
 night-prompt-detective-both = 🕵🏼 Komissar, kimni tekshirasiz yoki o'ldirasiz? 🔍 = tekshirish, 🔫 = o'ldirish
+
+night-prompt-detective-prior-header = 🕵🏼 <b>Avval tekshirgan o'yinchilar:</b>
+night-prompt-detective-prior-line = • <b>{ $name }</b> — { $role }
+night-prompt-detective-chooser = 🕵🏼 Bu tunda nima qilamiz?
+night-prompt-detective-target-list-check = 🔍 Kimni tekshirasiz?
+night-prompt-detective-target-list-kill = 🔫 Kimni otasiz?
+btn-detective-check = 🔍 Tekshirish
+btn-detective-kill = 🔫 O'ldirish
+night-no-targets = ❌ Hozir hech kimni tanlay olmaysiz.
 
 btn-skip = ⏭ O'tkazib yuborish
 
@@ -399,13 +420,15 @@ night-prompt-snitch = 🤓 Sotqin, kimni Komissar tekshiradi deb o'ylaysiz?
 
 feedback-detective-result = 🕵🏼 { $target } ning roli — { $role } ekan.
 
-feedback-doctor-saved = 👨🏻‍⚕ Siz { $target } ni davoladingiz! Uning mehmonlari edi: { $visitors }
+feedback-doctor-saved = 👨🏻‍⚕ Siz - <b>{ $target }</b> ni davoladingiz:) Uning mehmoni { $visitors } edi.
 
-feedback-doctor-no-visitors = 👨🏻‍⚕ Siz { $target } ni davoladingiz. Uning yoniga hech kim kelmadi.
+feedback-doctor-no-visitors = 👨🏻‍⚕ Doktor yordam berolmadi..
 
 feedback-hooker-confirm = 💃 Siz { $target } ni uxlatdingiz.
 
 feedback-hooker-target = Ana 💊 dori ta'sir qila boshladi endi sen bir kun uxlaysan...
+
+mafia-kill-broadcast = 🤵🏼 Mafianing ovoz berish jarayonida { $mention } shavqatsizlarcha o'ldirildi 🩸
 
 
 # ===========================================================
@@ -676,9 +699,23 @@ hanging-result-with-role = <b>{ $name }</b> O'tkazilgan kunduzgi yig'ilishda osi
 hanging-result = <b>{ $name }</b> O'tkazilgan kunduzgi yig'ilishda osildi!
 
 hanging-cancelled =
+    <b>Ovoz berish yakunlandi:</b>
+    Aholi kelisha olmadi... Kelisha olmaslik oqibatida hech kim osilmadi...
+
+hanging-combined =
     <b>Ovoz berish natijalari:</b>
-    Axoli kelisha olmadi ({ $yes } 👍 | { $no } 👎)...
-    Kelisha olmaslik oqibatida hech kim osilmadi...
+    { $yes } 👍 | { $no } 👎
+
+    { $mention } O'tkazilgan kunduzgi yig'ilishda osildi!
+
+hanging-combined-with-role =
+    <b>Ovoz berish natijalari:</b>
+    { $yes } 👍 | { $no } 👎
+
+    { $mention } O'tkazilgan kunduzgi yig'ilishda osildi!
+    U { $role_emoji } <b>{ $role }</b> edi..
+
+hanging-confirm-cannot-self = 😅 O'zingizning osilishingizga ovoz bera olmaysiz!
 
 
 # ===========================================================

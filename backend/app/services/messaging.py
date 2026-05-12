@@ -228,15 +228,22 @@ async def broadcast_phase_change(bot: Bot, state: GameState) -> None:
     media_key = media_key_map.get(state.phase)
     media_file_id = media.get(media_key) if media_key else None
 
-    text_key_map = {
-        Phase.NIGHT: ("phase-night-start", {"round": state.round_num}),
-        Phase.DAY: ("phase-day-start", {"round": state.round_num}),
-        Phase.VOTING: ("phase-voting-start", {}),
-    }
-    if state.phase not in text_key_map:
+    # Atmospheric variety: for NIGHT and DAY, pick one of 5 flavored
+    # variants at random. Fluent falls back to the base key for any locale
+    # that hasn't translated the variant yet.
+    variant_count = 5
+    if state.phase == Phase.NIGHT:
+        key = f"phase-night-start-{random.randint(1, variant_count)}"
+        params: dict[str, object] = {"round": state.round_num}
+    elif state.phase == Phase.DAY:
+        key = f"phase-day-start-{random.randint(1, variant_count)}"
+        params = {"round": state.round_num}
+    elif state.phase == Phase.VOTING:
+        key = "phase-voting-start"
+        params = {}
+    else:
         return
 
-    key, params = text_key_map[state.phase]
     caption = _(key, **params)
 
     if media_file_id:

@@ -177,12 +177,12 @@ async def callback_vote_cast(query: CallbackQuery, user: User, _: Translator, bo
 
     show_anon = state.settings.get("display", {}).get("anonymous_voting", False)
     display_voter = state.get_player(voter_id_for_record) or voter
-    voter_name_html = _safe_html(display_voter.first_name)
+    voter_mention = player_mention(display_voter.user_id, display_voter.first_name)
     if display_voter.role == "mayor":
         locale = state.settings.get("language", "uz")
-        voter_display = f"{role_emoji_name(display_voter.role, locale)} {voter_name_html}"
+        voter_display = f"{role_emoji_name(display_voter.role, locale)} {voter_mention}"
     else:
-        voter_display = voter_name_html
+        voter_display = voter_mention
 
     # Confirmation toast + DM edit
     if target_id == 0:
@@ -214,7 +214,7 @@ async def callback_vote_cast(query: CallbackQuery, user: User, _: Translator, bo
                     _(
                         "vote-broadcast",
                         voter=voter_display,
-                        target=_safe_html(target.first_name),
+                        target=player_mention(target.user_id, target.first_name),
                     ),
                     parse_mode="HTML",
                 )
@@ -255,6 +255,11 @@ async def callback_hanging_confirm(
         return
     if not voter.alive:
         await query.answer(_("vote-dead-alert"), show_alert=True)
+        return
+
+    # The person being hanged cannot vote in their own hanging confirm.
+    if voter.user_id == target_id:
+        await query.answer(_("hanging-confirm-cannot-self"), show_alert=True)
         return
 
     weight = 2 if voter.role == "mayor" else 1
@@ -344,7 +349,11 @@ async def announce_voting(bot: Bot, state: GameState) -> None:
 
 
 async def announce_hanging_confirm(bot: Bot, state: GameState, target_id: int) -> None:
-    """Eng ko'p ovoz olgan o'yinchi uchun 👍/👎 (live counts)."""
+    """Eng ko'p ovoz olgan o'yinchi uchun 👍/👎 (live counts).
+
+    Stores the sent message_id on the round log so it can be removed when
+    the timer expires and the verdict is broadcast.
+    """
     locale = state.settings.get("language", "uz")
     _ = get_translator(locale)
     target = state.get_player(target_id)
@@ -357,7 +366,9 @@ async def announce_hanging_confirm(bot: Bot, state: GameState, target_id: int) -
         target=player_mention(target_id, target.first_name),
     )
     try:
-        await bot.send_message(state.chat_id, text, reply_markup=keyboard, parse_mode="HTML")
+        sent = await bot.send_message(state.chat_id, text, reply_markup=keyboard, parse_mode="HTML")
+        state.current_round().__dict__["hanging_confirm_msg_id"] = sent.message_id
+        await game_service.save_state(state)
     except Exception as e:
         logger.warning(f"Hanging confirm message failed: {e}")
 

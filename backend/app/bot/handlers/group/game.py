@@ -21,7 +21,7 @@ from app.bot.handlers.shared.registration import (
 )
 from app.config import settings
 from app.core.phases.manager import PhaseManager
-from app.core.state import Phase, Vote
+from app.core.state import Phase
 from app.db.models import Group, User
 from app.services import game_service
 from app.services.i18n_service import Translator
@@ -223,60 +223,6 @@ async def cmd_extend(message: Message, user: User, _: Translator) -> None:
     state.phase_ends_at = None  # disable auto-timeout
     await game_service.save_state(state)
     await message.answer(_("extend-indefinite"))
-
-
-@router.message(Command("vote"))
-async def cmd_vote(message: Message, user: User, _: Translator, command: CommandObject) -> None:
-    """Kunduzgi ovoz: /vote @user yoki reply."""
-    state = await game_service.load_state(message.chat.id)
-    if state is None or state.phase != Phase.VOTING:
-        await message.answer(_("vote-not-in-voting"))
-        return
-
-    voter = state.get_player(user.id)
-    if voter is None or not voter.alive:
-        await message.answer(_("vote-not-alive"))
-        return
-
-    target_id: int | None = None
-    if message.reply_to_message and message.reply_to_message.from_user:
-        target_id = message.reply_to_message.from_user.id
-
-    if target_id is None and command.args:
-        # Try parse @username
-        text = command.args.strip()
-        if text.startswith("@"):
-            uname = text[1:]
-            target_player = next((p for p in state.alive_players() if p.username == uname), None)
-            if target_player is not None:
-                target_id = target_player.user_id
-
-    if target_id is None:
-        await message.answer(_("vote-target-required"))
-        return
-
-    target = state.get_player(target_id)
-    if target is None or not target.alive:
-        await message.answer(_("vote-target-invalid"))
-        return
-
-    weight = 2 if voter.role == "mayor" else 1
-    state.current_votes[user.id] = Vote(voter_id=user.id, target_id=target_id, weight=weight)
-    await game_service.save_state(state)
-
-    show_anon = state.settings.get("display", {}).get("anonymous_voting", False)
-    if show_anon:
-        await message.answer(_("vote-recorded-anon"))
-    else:
-        from app.services.messaging import player_mention
-
-        await message.answer(
-            _(
-                "vote-recorded",
-                voter=player_mention(voter.user_id, voter.first_name),
-                target=player_mention(target.user_id, target.first_name),
-            )
-        )
 
 
 # === Inline join callback ===
@@ -530,11 +476,14 @@ async def _on_phase_change(bot: Bot, state) -> None:
 
 
 async def _broadcast_hanging_result(bot: Bot, state) -> None:
-    """Broadcast yes/no tally + 'X osildi! U edi {role}' or 'no consensus' message.
+    """Broadcast the hanging verdict in a single combined message and delete
+    the now-stale 👍/👎 confirm message from the chat.
 
-    Looks at the most recent round prior to current round_num (the just-finished day).
+    Looks at the most recent round prior to current round_num (the
+    just-finished day).
     """
     from app.services.i18n_service import get_translator
+    from app.services.messaging import player_mention
 
     if state.round_num <= 1 or not state.rounds:
         return  # first round — no previous voting yet
@@ -556,7 +505,13 @@ async def _broadcast_hanging_result(bot: Bot, state) -> None:
     locale = state.settings.get("language", "uz")
     _ = get_translator(locale)
 
-    # If cancelled — show inline-tally cancelled message (yes/no included in body)
+    # Remove the live-tally 👍/👎 confirm message — it's now stale.
+    confirm_msg_id = extras.get("hanging_confirm_msg_id")
+    if confirm_msg_id:
+        with contextlib.suppress(Exception):
+            await bot.delete_message(chat_id=state.group_id, message_id=confirm_msg_id)
+
+    # Cancelled (yes <= no, or no votes) — single message.
     if extras.get("hang_cancelled"):
         try:
             await bot.send_message(
@@ -568,33 +523,37 @@ async def _broadcast_hanging_result(bot: Bot, state) -> None:
             logger.debug(f"Hanging cancel broadcast failed: {e}")
         return
 
-    # Successful hanging — show tally first, then result with role
+    # Successful hanging — single combined "tally + osildi" message.
+    if not prev_round.hanged:
+        return
+
+    hanged_role = extras.get("hanged_role", "")
+    hanged_name = extras.get("hanged_name", "")
+    show_role = state.settings.get("display", {}).get("show_role_on_death", True)
+    mention = player_mention(prev_round.hanged, hanged_name)
     try:
-        tally_text = _("hanging-tally", yes=yes_total or 0, no=no_total or 0)
-        await bot.send_message(state.group_id, tally_text, parse_mode="HTML")
+        if show_role and hanged_role:
+            from app.services.alive_summary import ROLE_DISPLAY
+
+            emoji, role_name = ROLE_DISPLAY.get(hanged_role, ("", hanged_role))
+            msg = _(
+                "hanging-combined-with-role",
+                yes=yes_total or 0,
+                no=no_total or 0,
+                mention=mention,
+                role_emoji=emoji,
+                role=role_name,
+            )
+        else:
+            msg = _(
+                "hanging-combined",
+                yes=yes_total or 0,
+                no=no_total or 0,
+                mention=mention,
+            )
+        await bot.send_message(state.group_id, msg, parse_mode="HTML")
     except Exception as e:
-        logger.debug(f"Hanging tally broadcast failed: {e}")
-
-    if prev_round.hanged:
-        hanged_name = extras.get("hanged_name", "")
-        hanged_role = extras.get("hanged_role", "")
-        show_role = state.settings.get("display", {}).get("show_role_on_death", True)
-        try:
-            if show_role and hanged_role:
-                from app.services.alive_summary import ROLE_DISPLAY
-
-                emoji, role_name = ROLE_DISPLAY.get(hanged_role, ("", hanged_role))
-                msg = _(
-                    "hanging-result-with-role",
-                    name=hanged_name,
-                    role_emoji=emoji,
-                    role=role_name,
-                )
-            else:
-                msg = _("hanging-result", name=hanged_name)
-            await bot.send_message(state.group_id, msg, parse_mode="HTML")
-        except Exception as e:
-            logger.debug(f"Hanging result broadcast failed: {e}")
+        logger.debug(f"Hanging combined broadcast failed: {e}")
 
 
 async def _broadcast_results_from_log(bot: Bot, state) -> None:

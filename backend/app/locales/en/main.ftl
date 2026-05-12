@@ -228,11 +228,23 @@ btn-join-game = 🎮 Join Game
 # PHASE CHANGES
 # ===========================================================
 
-phase-night-start = 🌃 Night #{ $round } has begun. Roles are taking action...
+phase-night-start = 🌃 Night #{ $round }. Whispers of the night drift across the town...
 
-phase-day-start = ☀️ Day #{ $round } has begun. Start the discussion!
+phase-night-start-1 = 🌃 Night #{ $round }. Whispers of the night drift across the town...
+phase-night-start-2 = 🌑 Night #{ $round }. The town murmurs under the moon — someone stopped breathing.
+phase-night-start-3 = 🌃 Night #{ $round }. Lock your doors — there are footsteps in the street.
+phase-night-start-4 = 🦉 Night #{ $round }. The owl is watching, but even it can't see everything.
+phase-night-start-5 = 🌌 Night #{ $round }. The stars bear witness — the town doesn't sleep, it just pretends.
 
-phase-voting-start = 🗳 Time to vote! /vote @user
+phase-day-start = ☀️ Day #{ $round }. The sun dried the blood spilled in the night...
+
+phase-day-start-1 = ☀️ Day #{ $round }. The sun dried the blood spilled in the night...
+phase-day-start-2 = 🌅 Day #{ $round }. The town wakes — but someone won't wake again.
+phase-day-start-3 = ☕ Day #{ $round }. Breakfast time, but a few seats are empty...
+phase-day-start-4 = 🐓 Day #{ $round }. The rooster crowed — time to count heads.
+phase-day-start-5 = 🌤 Day #{ $round }. Dawn breaks, but night's shadows still linger.
+
+phase-voting-start = 🗳 Voting time — should we hang somebody?
 
 
 # ===========================================================
@@ -294,6 +306,15 @@ night-prompt-detective = 🕵🏼 Commissioner, your choice?
 night-prompt-detective-check-only = 🕵🏼 Commissioner, on night 1 you may only investigate. Who do you check?
 
 night-prompt-detective-both = 🕵🏼 Commissioner, who do you investigate or shoot? 🔍 = investigate, 🔫 = shoot
+
+night-prompt-detective-prior-header = 🕵🏼 <b>Previously checked players:</b>
+night-prompt-detective-prior-line = • <b>{ $name }</b> — { $role }
+night-prompt-detective-chooser = 🕵🏼 What are we doing tonight?
+night-prompt-detective-target-list-check = 🔍 Who do we check?
+night-prompt-detective-target-list-kill = 🔫 Who do we take out?
+btn-detective-check = 🔍 Investigate
+btn-detective-kill = 🔫 Shoot
+night-no-targets = ❌ No one to choose right now.
 
 btn-skip = ⏭ Skip
 
@@ -399,13 +420,15 @@ night-prompt-snitch = 🤓 Snitch, who do you think the Commissioner will invest
 
 feedback-detective-result = 🕵🏼 { $target }'s role is — { $role }.
 
-feedback-doctor-saved = 👨🏻‍⚕ You treated { $target }! Their visitors tonight were: { $visitors }
+feedback-doctor-saved = 👨🏻‍⚕ You — healed <b>{ $target }</b> :) Their visitor was { $visitors }.
 
-feedback-doctor-no-visitors = 👨🏻‍⚕ You treated { $target }. Nobody came to them tonight.
+feedback-doctor-no-visitors = 👨🏻‍⚕ The doctor couldn't help..
 
 feedback-hooker-confirm = 💃 You put { $target } to sleep.
 
 feedback-hooker-target = There it is — 💊 the drug is kicking in. Sweet dreams for a whole day...
+
+mafia-kill-broadcast = 🤵🏼 During the Mafia vote, { $mention } was brutally killed 🩸
 
 
 # ===========================================================
@@ -681,9 +704,23 @@ hanging-result-with-role = <b>{ $name }</b> was hanged at the day meeting! They 
 hanging-result = <b>{ $name }</b> was hanged at the day meeting!
 
 hanging-cancelled =
+    <b>Voting closed:</b>
+    The town couldn't agree... No one was hanged today.
+
+hanging-combined =
     <b>Voting results:</b>
-    People couldn't agree ({ $yes } 👍 | { $no } 👎)...
-    Due to disagreement, no one was hanged...
+    { $yes } 👍 | { $no } 👎
+
+    { $mention } was hanged at the day meeting!
+
+hanging-combined-with-role =
+    <b>Voting results:</b>
+    { $yes } 👍 | { $no } 👎
+
+    { $mention } was hanged at the day meeting!
+    They were { $role_emoji } <b>{ $role }</b>..
+
+hanging-confirm-cannot-self = 😅 You can't vote on your own hanging!
 
 
 # ===========================================================

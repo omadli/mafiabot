@@ -70,37 +70,15 @@ async def _send_prompt_to_player(
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=rows)
 
-    # Detective has 2 actions: check OR shoot (1-night = check only)
+    # Detective: 2-step UX
+    #   Round 1 → only checking is allowed, single keyboard.
+    #   Round 2+ → first show prior check results + "Tekshirish/O'ldirish"
+    #              chooser. Target list comes after the chooser pick.
     if actor.role == "detective":
         if state.round_num == 1:
             text = _("night-prompt-detective-check-only")
         else:
-            # Provide both choices
-            check_rows = [
-                [
-                    InlineKeyboardButton(
-                        text=f"🔍 {t.first_name}",
-                        callback_data=f"night:detective:check:{t.user_id}",
-                    )
-                ]
-                for t in targets
-            ]
-            shoot_rows = [
-                [
-                    InlineKeyboardButton(
-                        text=f"🔫 {t.first_name}",
-                        callback_data=f"night:detective:kill:{t.user_id}",
-                    )
-                ]
-                for t in targets
-            ]
-            keyboard = InlineKeyboardMarkup(inline_keyboard=check_rows + shoot_rows)
-            text = _("night-prompt-detective-both")
-
-            try:
-                await bot.send_message(actor.user_id, text, reply_markup=keyboard)
-            except TelegramForbiddenError:
-                logger.warning(f"Cannot DM user {actor.user_id} (bot blocked)")
+            await _send_detective_chooser(bot, actor, _)
             return
     else:
         text = _(prompt_key)
@@ -111,6 +89,79 @@ async def _send_prompt_to_player(
         logger.warning(f"Cannot DM user {actor.user_id} (bot blocked)")
     except Exception as e:
         logger.exception(f"Failed to send night prompt to {actor.user_id}: {e}")
+
+
+async def _send_detective_chooser(bot: Bot, actor: PlayerState, _) -> None:
+    """Step 1 of the detective night flow: prior results + action chooser.
+
+    The actual target keyboard is built lazily in the chooser callback so
+    we always reflect the latest alive set, not a stale snapshot.
+    """
+    prior_lines: list[str] = []
+    check_results: dict = actor.extra.get("check_results", {}) or {}
+    if check_results:
+        from app.services.messaging import role_emoji_name
+
+        # Detective DMs use the actor's UI language; no per-user override yet.
+        locale = "uz"
+        prior_lines.append(_("night-prompt-detective-prior-header"))
+        for _uid_str, info in check_results.items():
+            role_label = role_emoji_name(info.get("role", "citizen"), locale)
+            name = info.get("name", "?")
+            prior_lines.append(_("night-prompt-detective-prior-line", name=name, role=role_label))
+        prior_lines.append("")  # blank line separator
+
+    prior_text = "\n".join(prior_lines)
+    chooser_text = _("night-prompt-detective-chooser")
+    text = (prior_text + chooser_text) if prior_text else chooser_text
+
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=_("btn-detective-check"), callback_data="night:detchoose:check"
+                ),
+                InlineKeyboardButton(
+                    text=_("btn-detective-kill"), callback_data="night:detchoose:kill"
+                ),
+            ]
+        ]
+    )
+
+    try:
+        await bot.send_message(actor.user_id, text, reply_markup=keyboard, parse_mode="HTML")
+    except TelegramForbiddenError:
+        logger.warning(f"Cannot DM user {actor.user_id} (bot blocked)")
+    except Exception as e:
+        logger.exception(f"Failed to send detective chooser to {actor.user_id}: {e}")
+
+
+async def send_detective_target_keyboard(
+    bot: Bot,
+    state: GameState,
+    actor: PlayerState,
+    action_kind: str,
+    locale: str,
+) -> InlineKeyboardMarkup | None:
+    """Build the target keyboard for the chosen detective action."""
+    from app.core.roles import get_role
+
+    role = get_role("detective")
+    targets = role.valid_targets(state, actor)
+    if not targets:
+        return None
+
+    callback_prefix = f"night:detective:{action_kind}"
+    rows = [
+        [
+            InlineKeyboardButton(
+                text=f"{t.first_name} (#{t.join_order})",
+                callback_data=f"{callback_prefix}:{t.user_id}",
+            )
+        ]
+        for t in targets
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def role_action_type(role_code: str) -> str:

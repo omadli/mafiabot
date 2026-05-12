@@ -21,7 +21,8 @@ class AchievementDef:
     name: dict[str, str]  # {"uz": ..., "ru": ..., "en": ...}
     description: dict[str, str]
     icon: str
-    diamonds: int
+    diamonds: int  # Reserved for rare/grindy achievements only — keep low.
+    dollars: int  # Default everyday reward.
     xp: int
     check: Callable[[User, UserStats, GameState, GameResult], Awaitable[bool]]
 
@@ -100,6 +101,7 @@ async def _balance_master(user: User, stats: UserStats, state: GameState, gr: Ga
 
 
 ACHIEVEMENTS: list[AchievementDef] = [
+    # Small/everyday achievements → small $ rewards, no diamonds.
     AchievementDef(
         code="first_game",
         name={"uz": "Birinchi qadam", "ru": "Первый шаг", "en": "First step"},
@@ -109,7 +111,8 @@ ACHIEVEMENTS: list[AchievementDef] = [
             "en": "Play your first game",
         },
         icon="🎮",
-        diamonds=5,
+        diamonds=0,
+        dollars=20,
         xp=20,
         check=_first_game,
     ),
@@ -122,7 +125,8 @@ ACHIEVEMENTS: list[AchievementDef] = [
             "en": "Win your first game",
         },
         icon="🥇",
-        diamonds=10,
+        diamonds=0,
+        dollars=50,
         xp=50,
         check=_first_blood,
     ),
@@ -135,7 +139,8 @@ ACHIEVEMENTS: list[AchievementDef] = [
             "en": "Play 10 games",
         },
         icon="🎖",
-        diamonds=15,
+        diamonds=0,
+        dollars=75,
         xp=100,
         check=_veteran_10,
     ),
@@ -148,10 +153,12 @@ ACHIEVEMENTS: list[AchievementDef] = [
             "en": "Play 50 games",
         },
         icon="🏅",
-        diamonds=50,
+        diamonds=0,
+        dollars=300,
         xp=300,
         check=_veteran_50,
     ),
+    # Rare grindy achievement — gets a few diamonds.
     AchievementDef(
         code="veteran_100",
         name={"uz": "Mafia ustasi", "ru": "Мастер мафии", "en": "Mafia master"},
@@ -161,7 +168,8 @@ ACHIEVEMENTS: list[AchievementDef] = [
             "en": "Play 100 games",
         },
         icon="👑",
-        diamonds=100,
+        diamonds=20,
+        dollars=500,
         xp=1000,
         check=_veteran_100,
     ),
@@ -174,7 +182,8 @@ ACHIEVEMENTS: list[AchievementDef] = [
             "en": "Win 5 games as Detective",
         },
         icon="🕵🏼",
-        diamonds=30,
+        diamonds=0,
+        dollars=150,
         xp=200,
         check=_sherlock,
     ),
@@ -187,7 +196,8 @@ ACHIEVEMENTS: list[AchievementDef] = [
             "en": "Win 5 games as Don",
         },
         icon="🤵🏻",
-        diamonds=30,
+        diamonds=0,
+        dollars=150,
         xp=200,
         check=_godfather,
     ),
@@ -200,7 +210,8 @@ ACHIEVEMENTS: list[AchievementDef] = [
             "en": "Win 3 games in a row",
         },
         icon="🔥",
-        diamonds=20,
+        diamonds=0,
+        dollars=100,
         xp=150,
         check=_streak_3,
     ),
@@ -213,7 +224,8 @@ ACHIEVEMENTS: list[AchievementDef] = [
             "en": "Win 5 games in a row",
         },
         icon="💥",
-        diamonds=50,
+        diamonds=5,
+        dollars=250,
         xp=400,
         check=_streak_5,
     ),
@@ -226,7 +238,8 @@ ACHIEVEMENTS: list[AchievementDef] = [
             "en": "Survive 10 games",
         },
         icon="🛡",
-        diamonds=25,
+        diamonds=0,
+        dollars=120,
         xp=200,
         check=_survivor,
     ),
@@ -239,7 +252,8 @@ ACHIEVEMENTS: list[AchievementDef] = [
             "en": "Win with 3 or fewer citizens left",
         },
         icon="🦅",
-        diamonds=40,
+        diamonds=0,
+        dollars=200,
         xp=300,
         check=_comeback,
     ),
@@ -252,7 +266,8 @@ ACHIEVEMENTS: list[AchievementDef] = [
             "en": "Win 3 times as a singleton",
         },
         icon="🃏",
-        diamonds=35,
+        diamonds=5,
+        dollars=200,
         xp=250,
         check=_solo_king,
     ),
@@ -265,10 +280,12 @@ ACHIEVEMENTS: list[AchievementDef] = [
             "en": "Reach 1500 ELO",
         },
         icon="📈",
-        diamonds=50,
+        diamonds=5,
+        dollars=300,
         xp=400,
         check=_elo_master,
     ),
+    # Truly rare — diamond drop justified.
     AchievementDef(
         code="elo_legend",
         name={"uz": "Afsona", "ru": "Легенда", "en": "Legend"},
@@ -278,7 +295,8 @@ ACHIEVEMENTS: list[AchievementDef] = [
             "en": "Reach 1800 ELO",
         },
         icon="🌟",
-        diamonds=150,
+        diamonds=25,
+        dollars=1000,
         xp=1000,
         check=_elo_legend,
     ),
@@ -291,7 +309,8 @@ ACHIEVEMENTS: list[AchievementDef] = [
             "en": "Win as Citizen, Mafia and Singleton",
         },
         icon="⚖️",
-        diamonds=75,
+        diamonds=10,
+        dollars=400,
         xp=500,
         check=_balance_master,
     ),
@@ -320,13 +339,22 @@ async def notify_unlock(bot, user_id: int, ach: AchievementDef, locale: str) -> 
 
     name = ach.name.get(locale, ach.name.get("uz", ach.code))
     description = ach.description.get(locale, ach.description.get("uz", ""))
-    reward = f"💎 {ach.diamonds} olmos · ⭐ {ach.xp} XP" if ach.diamonds or ach.xp else ""
+
+    parts: list[str] = []
+    if ach.dollars:
+        parts.append(f"💵 {ach.dollars}")
+    if ach.diamonds:
+        parts.append(f"💎 {ach.diamonds}")
+    if ach.xp:
+        parts.append(f"⭐ {ach.xp} XP")
+    reward = " · ".join(parts)
+
     text = f"{ach.icon} <b>Yangi yutuq!</b>\n\n<b>{name}</b>\n{description}"
     if reward:
         text += f"\n\n🎁 {reward}"
 
     try:
-        await bot.send_message(user_id, text)
+        await bot.send_message(user_id, text, parse_mode="HTML")
     except TelegramForbiddenError:
         logger.debug(f"Cannot DM user {user_id} for achievement notification")
 
@@ -362,9 +390,13 @@ async def check_and_unlock(user: User, state: GameState) -> list[AchievementDef]
             # Unlock
             await UserAchievement.create(user=user, achievement_id=ach.code)
             user.diamonds += ach.diamonds
+            user.dollars += ach.dollars
             user.xp += ach.xp
-            await user.save(update_fields=["diamonds", "xp"])
+            await user.save(update_fields=["diamonds", "dollars", "xp"])
             new_unlocks.append(ach)
-            logger.info(f"User {user.id} unlocked achievement: {ach.code}")
+            logger.info(
+                f"User {user.id} unlocked {ach.code} "
+                f"(+{ach.dollars}$ +{ach.diamonds}💎 +{ach.xp}xp)"
+            )
 
     return new_unlocks
