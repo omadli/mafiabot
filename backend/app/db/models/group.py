@@ -110,7 +110,7 @@ DEFAULT_TIMINGS = {
     "mafia_vote": 25,
     "hanging_vote": 25,
     "hanging_confirm": 15,
-    "last_words": 20,
+    "last_words": 60,
     "afsungar_carry": 15,
 }
 

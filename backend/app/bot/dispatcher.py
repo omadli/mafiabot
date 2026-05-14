@@ -17,7 +17,6 @@ def setup_routers(dp: Dispatcher) -> None:
     from app.bot.handlers.private import group_settings as private_group_settings
     from app.bot.handlers.private import inventory as private_inventory
     from app.bot.handlers.private import last_words as private_last_words
-    from app.bot.handlers.private import mafia_chat as private_mafia_chat
     from app.bot.handlers.private import menu as private_menu
     from app.bot.handlers.private import payment as private_payment
     from app.bot.handlers.private import role_actions as private_role_actions
@@ -53,7 +52,9 @@ def setup_routers(dp: Dispatcher) -> None:
     dp.include_router(private_special.router)
     dp.include_router(private_role_actions.router)
     dp.include_router(private_start.router)
-    dp.include_router(private_mafia_chat.router)  # before last_words
-    dp.include_router(private_last_words.router)  # catch-all text
+    # Single catch-all private text handler: tries mafia relay first,
+    # falls back to last-words capture (aiogram 3 doesn't fall through
+    # between routers, so both must live in one handler).
+    dp.include_router(private_last_words.router)
 
     logger.info("Bot routers registered")

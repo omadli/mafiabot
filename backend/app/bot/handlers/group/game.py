@@ -555,6 +555,15 @@ async def _broadcast_hanging_result(bot: Bot, state) -> None:
     except Exception as e:
         logger.debug(f"Hanging combined broadcast failed: {e}")
 
+    # DM the hanged player to invite last words (skipped automatically if
+    # the game has already produced a winner — see request_last_words).
+    try:
+        from app.services.last_words import request_last_words
+
+        await request_last_words(bot, state, prev_round.hanged, hanged=True)
+    except Exception as e:
+        logger.debug(f"request_last_words for hanged {prev_round.hanged} failed: {e}")
+
 
 async def _broadcast_results_from_log(bot: Bot, state) -> None:
     """Reconstruct night outcome from current round log and broadcast."""

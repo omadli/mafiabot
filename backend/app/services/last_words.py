@@ -41,7 +41,7 @@ async def request_last_words(
 
     # Mark as pending in Redis
     backend = get_state_backend()
-    timeout = state.settings.get("timings", {}).get("last_words", 20)
+    timeout = state.settings.get("timings", {}).get("last_words", 60)
     await backend.set(_pending_key(user_id), str(state.group_id))
 
     # Schedule cleanup after timeout (store reference to prevent GC)
