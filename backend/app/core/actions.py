@@ -195,7 +195,7 @@ class ActionResolver:
                 and a.action_type in ("protect", "heal")
             ):
                 lawyer_protected.add(a.target_id)
-        state.current_round().__dict__["lawyer_protected"] = list(lawyer_protected)
+        state.current_round().extra["lawyer_protected"] = list(lawyer_protected)
 
         # 6. Build kill targets
         kill_targets: dict[int, list[tuple[str, int, NightAction]]] = {}

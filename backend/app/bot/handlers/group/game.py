@@ -468,7 +468,7 @@ async def _on_phase_change(bot: Bot, state) -> None:
         await announce_voting(bot, state)
     elif state.phase == Phase.HANGING_CONFIRM:
         # Get pending hang target from round log
-        target_id = state.current_round().__dict__.get("pending_hang_target")
+        target_id = state.current_round().extra.get("pending_hang_target")
         if target_id:
             await announce_hanging_confirm(bot, state, target_id)
     elif state.phase in (Phase.FINISHED, Phase.CANCELLED):
@@ -496,7 +496,7 @@ async def _broadcast_hanging_result(bot: Bot, state) -> None:
     if prev_round is None:
         return
 
-    extras = prev_round.__dict__
+    extras = prev_round.extra
     yes_total = extras.get("hang_yes_total")
     no_total = extras.get("hang_no_total")
     if yes_total is None and no_total is None:

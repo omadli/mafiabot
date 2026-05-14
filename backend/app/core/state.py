@@ -103,6 +103,21 @@ class RoundLog(BaseModel):
     hanged: int | None = None
     last_words: dict[int, str] = Field(default_factory=dict)
 
+    # Free-form per-round scratchpad. EVERYTHING that needs to survive a
+    # Redis round-trip must live here — Pydantic v2 silently drops anything
+    # written via __dict__. Known keys:
+    #   hanging_confirm       — {target_id, yes: {uid_str: w}, no: {uid_str: w}}
+    #   hanging_confirm_msg_id — int (message_id of 👍/👎 prompt)
+    #   pending_hang_target   — int (vote leader awaiting confirmation)
+    #   hang_yes_total / hang_no_total — tallied totals
+    #   hang_cancelled        — bool
+    #   hanged_role / hanged_name — captured at hang time for the broadcast
+    #   lawyer_protected      — list[int] (Advokat night protections)
+    #   kamikaze_pending_choice — int (kamikaze user_id)
+    #   broadcast_atmosphere_keys — list[str] (per-role night msgs already
+    #                                          posted this round)
+    extra: dict[str, Any] = Field(default_factory=dict)
+
 
 class GameState(BaseModel):
     """To'liq o'yin holati (Redis'da saqlanadi)."""

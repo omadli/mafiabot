@@ -264,7 +264,7 @@ async def callback_hanging_confirm(
 
     weight = 2 if voter.role == "mayor" else 1
 
-    confirm_data: dict = state.current_round().__dict__.setdefault(
+    confirm_data: dict = state.current_round().extra.setdefault(
         "hanging_confirm",
         {"target_id": target_id, "yes": {}, "no": {}},
     )
@@ -367,7 +367,7 @@ async def announce_hanging_confirm(bot: Bot, state: GameState, target_id: int) -
     )
     try:
         sent = await bot.send_message(state.chat_id, text, reply_markup=keyboard, parse_mode="HTML")
-        state.current_round().__dict__["hanging_confirm_msg_id"] = sent.message_id
+        state.current_round().extra["hanging_confirm_msg_id"] = sent.message_id
         await game_service.save_state(state)
     except Exception as e:
         logger.warning(f"Hanging confirm message failed: {e}")

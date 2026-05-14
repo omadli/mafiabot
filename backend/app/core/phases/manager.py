@@ -222,7 +222,7 @@ class PhaseManager:
                 return
 
             # Move to HANGING_CONFIRM phase (👍/👎)
-            state.current_round().__dict__["pending_hang_target"] = leader_id
+            state.current_round().extra["pending_hang_target"] = leader_id
             state.phase = Phase.HANGING_CONFIRM
             state.phase_ends_at = int(time.time()) + timings.get("hanging_confirm", 15)
             return
@@ -232,7 +232,7 @@ class PhaseManager:
             await cls._tally_hanging_confirm(state)
 
             # If Kamikaze was hanged → trigger choice prompt
-            kamikaze_id = state.current_round().__dict__.get("kamikaze_pending_choice")
+            kamikaze_id = state.current_round().extra.get("kamikaze_pending_choice")
             if kamikaze_id:
                 from app.bot.handlers.private.special_actions import send_kamikaze_choice
 
@@ -273,8 +273,8 @@ class PhaseManager:
         """Process 👍/👎 votes. If yes > no → hang."""
         from app.core.state import DeathReason
 
-        confirm_data = state.current_round().__dict__.get("hanging_confirm", {})
-        target_id = state.current_round().__dict__.get("pending_hang_target")
+        confirm_data = state.current_round().extra.get("hanging_confirm", {})
+        target_id = state.current_round().extra.get("pending_hang_target")
         if not target_id:
             state.current_votes = {}
             return
@@ -288,8 +288,8 @@ class PhaseManager:
         no_total = sum(confirm_data.get("no", {}).values())
 
         # Persist totals for broadcast (👍 / 👎 breakdown reflects Mayor x2 weights)
-        state.current_round().__dict__["hang_yes_total"] = yes_total
-        state.current_round().__dict__["hang_no_total"] = no_total
+        state.current_round().extra["hang_yes_total"] = yes_total
+        state.current_round().extra["hang_no_total"] = no_total
 
         # If no confirmation votes at all — auto-confirm (fall through)
         if not confirm_data or (yes_total == 0 and no_total == 0):
@@ -298,7 +298,7 @@ class PhaseManager:
         if no_total >= yes_total:
             # Cancelled
             logger.info(f"Hanging cancelled by 👎 (yes={yes_total}, no={no_total})")
-            state.current_round().__dict__["hang_cancelled"] = True
+            state.current_round().extra["hang_cancelled"] = True
             state.current_round().hanged = None
             state.current_votes = {}
             return
@@ -312,7 +312,7 @@ class PhaseManager:
             return
 
         # Lawyer hanging protection
-        lawyer_protected: list[int] = state.current_round().__dict__.get("lawyer_protected", [])
+        lawyer_protected: list[int] = state.current_round().extra.get("lawyer_protected", [])
         if target_id in lawyer_protected:
             logger.info(f"Player {target_id} saved by Lawyer (hanging protection)")
             state.current_round().hanged = None
@@ -326,11 +326,11 @@ class PhaseManager:
         target.died_reason = DeathReason.VOTED_OUT
         state.current_round().hanged = target_id
         # Persist hanged role for broadcast (post-hang reveal)
-        state.current_round().__dict__["hanged_role"] = target.role
-        state.current_round().__dict__["hanged_name"] = target.first_name
+        state.current_round().extra["hanged_role"] = target.role
+        state.current_round().extra["hanged_name"] = target.first_name
 
         if target.role == "kamikaze":
-            state.current_round().__dict__["kamikaze_pending_choice"] = target.user_id
+            state.current_round().extra["kamikaze_pending_choice"] = target.user_id
 
         logger.info(f"Player {target_id} voted out (role={target.role})")
         state.current_votes = {}
@@ -390,7 +390,7 @@ class PhaseManager:
             return
 
         # Lawyer hanging protection (set during night)
-        lawyer_protected: list[int] = state.current_round().__dict__.get("lawyer_protected", [])
+        lawyer_protected: list[int] = state.current_round().extra.get("lawyer_protected", [])
         if target_id in lawyer_protected:
             logger.info(f"Player {target_id} saved by Lawyer (hanging protection)")
             state.current_round().hanged = None
@@ -412,7 +412,7 @@ class PhaseManager:
         # Kamikaze: if hanged, choose 1 to take
         if target.role == "kamikaze":
             # Schedule a prompt — handled by hook/messaging
-            state.current_round().__dict__["kamikaze_pending_choice"] = target.user_id
+            state.current_round().extra["kamikaze_pending_choice"] = target.user_id
 
         # Arsonist hanged: chain not triggered (he can only trigger via final_night button at night)
         logger.info(f"Player {target_id} voted out (role={target.role})")

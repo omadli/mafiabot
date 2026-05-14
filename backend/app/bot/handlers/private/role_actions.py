@@ -196,11 +196,11 @@ async def _broadcast_role_atmosphere(
 
     key = _atmosphere_key(role_code, action_kind)
     round_log = state.current_round()
-    posted: set[str] = set(round_log.__dict__.setdefault("broadcast_atmosphere_keys", []))
+    posted: set[str] = set(round_log.extra.setdefault("broadcast_atmosphere_keys", []))
     if key in posted:
         return
     posted.add(key)
-    round_log.__dict__["broadcast_atmosphere_keys"] = list(posted)
+    round_log.extra["broadcast_atmosphere_keys"] = list(posted)
     await game_service.save_state(state)
 
     locale = state.settings.get("language", "uz")
