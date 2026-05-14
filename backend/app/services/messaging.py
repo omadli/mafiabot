@@ -4,15 +4,30 @@ from __future__ import annotations
 
 import asyncio
 import random
+from pathlib import Path
 
 from aiogram import Bot
 from aiogram.exceptions import TelegramBadRequest
+from aiogram.types import FSInputFile
 from loguru import logger
 
 from app.core.actions import NightOutcome
 from app.core.roles import get_role
 from app.core.state import GameState, Phase
 from app.services.i18n_service import get_translator
+
+# Bundled default atmosphere GIFs (committed alongside the code). Used
+# whenever a group hasn't configured its own atmosphere_media file_id
+# for the given phase. Regenerate via scripts/generate_atmosphere_gifs.py.
+_ASSETS_DIR = Path(__file__).resolve().parents[1] / "assets" / "atmosphere"
+DEFAULT_ATMOSPHERE_PATHS: dict[Phase, Path] = {
+    Phase.NIGHT: _ASSETS_DIR / "night.gif",
+    Phase.DAY: _ASSETS_DIR / "day.gif",
+}
+
+# Cache the resolved Telegram file_id after the first upload per (bot, phase)
+# so repeated phase transitions reuse it instead of re-uploading the file.
+_DEFAULT_FILE_ID_CACHE: dict[tuple[int, Phase], str] = {}
 
 
 def role_emoji_name(role_code: str, locale: str) -> str:
@@ -257,6 +272,27 @@ async def broadcast_phase_change(bot: Bot, state: GameState) -> None:
                 return
             except Exception as e2:
                 logger.warning(f"atmosphere_media send failed for {media_key}: {e2}")
+
+    # No group-configured media — fall back to the bundled default GIF
+    # (only for NIGHT and DAY; VOTING has no default art yet).
+    default_path = DEFAULT_ATMOSPHERE_PATHS.get(state.phase)
+    if default_path and default_path.exists():
+        cache_key = (bot.id, state.phase)
+        cached_file_id = _DEFAULT_FILE_ID_CACHE.get(cache_key)
+        try:
+            if cached_file_id:
+                msg = await bot.send_animation(state.chat_id, cached_file_id, caption=caption)
+            else:
+                msg = await bot.send_animation(
+                    state.chat_id, FSInputFile(default_path), caption=caption
+                )
+                # Cache the Telegram-assigned file_id so subsequent sends
+                # are zero-bandwidth.
+                if msg.animation and msg.animation.file_id:
+                    _DEFAULT_FILE_ID_CACHE[cache_key] = msg.animation.file_id
+            return
+        except Exception as e:
+            logger.debug(f"default atmosphere GIF send failed: {e}")
 
     await _safe_send(bot, state.chat_id, caption)
 
