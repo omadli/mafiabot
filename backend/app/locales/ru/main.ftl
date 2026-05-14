@@ -543,6 +543,12 @@ btn-buy-dollars = 💵 Купить
 btn-buy-diamonds = 💎 Купить
 
 btn-premium-groups = 👑 Премиум-группы
+btn-pick-next-role = 🃏 Выбрать следующую роль
+btn-clear-next-role = 🃏 Отменить выбор
+pick-role-prompt = 🃏 <b>Какую роль вы хотите в следующей игре?</b>
+pick-role-confirmed = ✅ В следующей игре вы сыграете за { $role }!
+pick-role-already-chosen = ℹ️ Вы уже выбрали роль.
+pick-role-cleared = ❎ Выбор роли отменён.
 
 btn-news = 📢 Новости
 

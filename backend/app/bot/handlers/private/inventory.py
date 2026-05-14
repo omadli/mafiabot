@@ -121,6 +121,17 @@ async def _build_profile_message(
         ]
     )
 
+    # Row "Pick next role" — visible only if user has a special_role
+    # credit and hasn't picked their role for the next game yet.
+    if getattr(inv, "special_role", 0) > 0 and not next_role_pick:
+        rows.append(
+            [InlineKeyboardButton(text=_("btn-pick-next-role"), callback_data="inv:pickrole")]
+        )
+    elif next_role_pick:
+        rows.append(
+            [InlineKeyboardButton(text=_("btn-clear-next-role"), callback_data="inv:clearrole")]
+        )
+
     # Row 5: Premium
     rows.append([InlineKeyboardButton(text=_("btn-premium-groups"), callback_data="shop:premium")])
 
@@ -188,7 +199,9 @@ async def callback_toggle_item(query: CallbackQuery, user: User, _: Translator) 
     item_s["enabled"] = new_state
     settings[code] = item_s
     inv.settings = settings
-    await inv.save(update_fields=["settings"])
+    # UserInventory has OneToOneField(pk=True) — `inv.save()` breaks on
+    # PostgreSQL. Use filter().update() with the explicit column kwarg.
+    await UserInventory.filter(user_id=user.id).update(settings=settings)
 
     _emoji, name = ITEM_LABELS[code]
     state_text = _("inv-toggle-on") if new_state else _("inv-toggle-off")
@@ -208,6 +221,124 @@ async def callback_inv_close(query: CallbackQuery, _: Translator) -> None:
 async def callback_inv_back(query: CallbackQuery, user: User, _: Translator) -> None:
     await _refresh_profile(query, user, _)
     await query.answer()
+
+
+# === Next-game role picker (special_role item) ===
+
+
+# Order mirrors the role catalog: 10 civilians, 5 mafia, 6 singletons.
+_PICKABLE_ROLES: list[str] = [
+    "citizen",
+    "detective",
+    "sergeant",
+    "mayor",
+    "doctor",
+    "hooker",
+    "hobo",
+    "lucky",
+    "suicide",
+    "kamikaze",
+    "don",
+    "mafia",
+    "lawyer",
+    "journalist",
+    "killer",
+    "maniac",
+    "werewolf",
+    "mage",
+    "arsonist",
+    "crook",
+    "snitch",
+]
+
+
+def _build_role_picker_kb(_: Translator) -> InlineKeyboardMarkup:
+    """3-wide grid of all 21 roles + cancel row."""
+    rows: list[list[InlineKeyboardButton]] = []
+    bucket: list[InlineKeyboardButton] = []
+    for code in _PICKABLE_ROLES:
+        bucket.append(
+            InlineKeyboardButton(text=_(f"role-{code}"), callback_data=f"inv:setrole:{code}")
+        )
+        if len(bucket) == 3:
+            rows.append(bucket)
+            bucket = []
+    if bucket:
+        rows.append(bucket)
+    rows.append([InlineKeyboardButton(text=_("btn-back"), callback_data="inv:back")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+@router.callback_query(F.data == "inv:pickrole")
+async def callback_pick_role(query: CallbackQuery, user: User, _: Translator) -> None:
+    """Show role grid for the special_role inventory item."""
+    inv, _new = await UserInventory.get_or_create(user=user)
+    if getattr(inv, "special_role", 0) <= 0:
+        await query.answer(_("inv-no-items"), show_alert=True)
+        return
+    if (inv.settings or {}).get("special_role", {}).get("next_role"):
+        await query.answer(_("pick-role-already-chosen"), show_alert=True)
+        return
+    if query.message:
+        with contextlib.suppress(TelegramBadRequest):
+            await query.message.edit_text(
+                _("pick-role-prompt"),
+                reply_markup=_build_role_picker_kb(_),
+                parse_mode="HTML",
+            )
+    await query.answer()
+
+
+@router.callback_query(F.data.startswith("inv:setrole:"))
+async def callback_set_role(query: CallbackQuery, user: User, _: Translator) -> None:
+    """Consume one special_role credit + save the picked role in settings."""
+    if query.data is None:
+        await query.answer()
+        return
+    role_code = query.data.split(":")[2]
+    if role_code not in _PICKABLE_ROLES:
+        await query.answer("Invalid role", show_alert=True)
+        return
+
+    inv, _new = await UserInventory.get_or_create(user=user)
+    if getattr(inv, "special_role", 0) <= 0:
+        await query.answer(_("inv-no-items"), show_alert=True)
+        return
+
+    settings = dict(inv.settings or {})
+    sr = dict(settings.get("special_role", {}))
+    if sr.get("next_role"):
+        await query.answer(_("pick-role-already-chosen"), show_alert=True)
+        return
+    sr["next_role"] = role_code
+    sr["enabled"] = True
+    settings["special_role"] = sr
+    new_count = inv.special_role - 1
+
+    # OneToOneField(pk=True) → use filter().update() instead of .save().
+    await UserInventory.filter(user_id=user.id).update(special_role=new_count, settings=settings)
+
+    role_label = _(f"role-{role_code}")
+    await query.answer(_("pick-role-confirmed", role=role_label), show_alert=True)
+    await _refresh_profile(query, user, _)
+
+
+@router.callback_query(F.data == "inv:clearrole")
+async def callback_clear_role(query: CallbackQuery, user: User, _: Translator) -> None:
+    """Drop the previously-chosen next role. (special_role credit is NOT
+    refunded — picking is final once acted on.)"""
+    inv, _new = await UserInventory.get_or_create(user=user)
+    settings = dict(inv.settings or {})
+    sr = dict(settings.get("special_role", {}))
+    if not sr.get("next_role"):
+        await query.answer()
+        return
+    sr.pop("next_role", None)
+    sr["enabled"] = False
+    settings["special_role"] = sr
+    await UserInventory.filter(user_id=user.id).update(settings=settings)
+    await query.answer(_("pick-role-cleared"), show_alert=False)
+    await _refresh_profile(query, user, _)
 
 
 # === Shop ===

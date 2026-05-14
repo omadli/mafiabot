@@ -193,6 +193,13 @@ async def start_game(state: GameState) -> GameState:
         role_obj = get_role(p.role)
         p.team = role_obj.team
 
+    # Honor 🃏 special_role picks. For each player who pre-paid a
+    # special_role credit and picked a specific role, swap their assigned
+    # role with whichever player got that role in random distribution.
+    # If the picked role isn't in THIS game's distribution, the credit is
+    # NOT consumed — the pick carries over to a future game.
+    await _apply_special_role_picks(state)
+
     # Activate items from inventory (settings.enabled + items_allowed in group)
     items_allowed = state.settings.get("items_allowed", {})
     for p in state.players:
@@ -296,6 +303,65 @@ async def finish_game(state: GameState, winner: Team | None) -> None:
     logger.info(
         f"Game {state.id} finished, winner={winner}, "
         f"duration={state.finished_at - (state.started_at or state.finished_at)}s"
+    )
+
+
+async def _apply_special_role_picks(state: GameState) -> None:
+    """Swap roles for players who pre-paid a 🃏 special_role pick.
+
+    Runs AFTER distribute_mvp_roles. For each picker:
+      * If they already lucked into their picked role, just consume the
+        credit silently.
+      * Otherwise swap with whichever player got the picked role.
+      * If the picked role isn't in this game's distribution at all, do
+        nothing (the credit stays so the pick carries to a future game).
+    """
+    from app.db.models import UserInventory
+
+    for player in state.players:
+        inv = await UserInventory.get_or_none(user_id=player.user_id)
+        if inv is None:
+            continue
+        sr_settings = (inv.settings or {}).get("special_role", {})
+        forced_role = sr_settings.get("next_role")
+        if not forced_role:
+            continue
+
+        if player.role == forced_role:
+            await _consume_special_role_credit(player.user_id, inv)
+            continue
+
+        other = next(
+            (p for p in state.players if p.role == forced_role and p.user_id != player.user_id),
+            None,
+        )
+        if other is None:
+            # Role missing from this distribution — keep the credit for
+            # the next game.
+            continue
+
+        player.role, other.role = forced_role, player.role
+        player.team = get_role(player.role).team
+        other.team = get_role(other.role).team
+        logger.info(
+            f"special_role swap: user {player.user_id} forced into {forced_role} "
+            f"(swapped with user {other.user_id})"
+        )
+        await _consume_special_role_credit(player.user_id, inv)
+
+
+async def _consume_special_role_credit(user_id: int, inv: object) -> None:
+    """Decrement special_role inventory + clear the picked role."""
+    from app.db.models import UserInventory
+
+    new_settings = dict(getattr(inv, "settings", None) or {})
+    sr = dict(new_settings.get("special_role", {}))
+    sr.pop("next_role", None)
+    sr["enabled"] = False
+    new_settings["special_role"] = sr
+    new_count = max(0, getattr(inv, "special_role", 0) - 1)
+    await UserInventory.filter(user_id=user_id).update(
+        special_role=new_count, settings=new_settings
     )
 
 

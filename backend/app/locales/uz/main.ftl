@@ -541,6 +541,12 @@ btn-buy-dollars = 💵 Xarid qilish
 btn-buy-diamonds = 💎 Xarid qilish
 btn-premium-groups = 👑 Premium guruhlar
 btn-news = 📢 Yangiliklar
+btn-pick-next-role = 🃏 Keyingi rolni tanlash
+btn-clear-next-role = 🃏 Tanlovni bekor qilish
+pick-role-prompt = 🃏 <b>Keyingi o'yinda qaysi rolda o'ynamoqchisiz?</b>
+pick-role-confirmed = ✅ Keyingi o'yinda { $role } rolida o'ynaysiz!
+pick-role-already-chosen = ℹ️ Siz allaqachon rol tanlagansiz.
+pick-role-cleared = ❎ Rol tanlovi bekor qilindi.
 btn-back = 🔙 Orqaga
 
 btn-exchange = 🔁 Konvertatsiya

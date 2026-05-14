@@ -188,11 +188,16 @@ async def purchase_item(
 
         await user_locked.save(update_fields=[currency])
 
-        # Increment inventory field
+        # Increment inventory field.
+        # UserInventory has OneToOneField(pk=True) which breaks
+        # `inv.save()` on PostgreSQL (Tortoise 0.21 emits the field
+        # name "user" instead of the column "user_id"). Use
+        # filter().update() with the explicit column kwarg instead.
         inv, _ = await UserInventory.get_or_create(user=user_locked)
         current = getattr(inv, spec.inventory_field, 0)
-        setattr(inv, spec.inventory_field, current + quantity)
-        await inv.save(update_fields=[spec.inventory_field])
+        new_qty = current + quantity
+        setattr(inv, spec.inventory_field, new_qty)
+        await UserInventory.filter(user_id=user_locked.id).update(**{spec.inventory_field: new_qty})
 
         await Transaction.create(
             user=user_locked,
