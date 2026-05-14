@@ -174,7 +174,7 @@ function Overview({ user }: { user: UserDetail }) {
                   <th>{t("admin.user_detail_extra.games_role")}</th>
                   <th>{t("admin.user_detail.games_total")}</th>
                   <th>{t("admin.user_detail.wins")}</th>
-                  <th>WR</th>
+                  <th>{t("admin.common.wr")}</th>
                   <th>{t("admin.user_detail.elo")}</th>
                 </tr>
               </thead>

@@ -23,7 +23,10 @@ export function SaGroupDetailPage() {
   const groupId = parseInt(rawId ?? "0");
   const [tab, setTab] = useState<Tab>("games");
 
-  if (!groupId) return <div className="webapp-section">Invalid group ID</div>;
+  if (!groupId)
+    return (
+      <div className="webapp-section">{t("sa.group_detail.invalid_id")}</div>
+    );
 
   return (
     <>
@@ -31,7 +34,9 @@ export function SaGroupDetailPage() {
         {t("group-back")}
       </Link>
 
-      <h2 style={{ margin: "0.5rem 0" }}>🏘 Group {groupId}</h2>
+      <h2 style={{ margin: "0.5rem 0" }}>
+        🏘 {t("sa.group_detail.group_label")} {groupId}
+      </h2>
 
       <div className="webapp-tabs" style={{ marginBottom: "1rem" }}>
         <button
@@ -62,27 +67,35 @@ export function SaGroupDetailPage() {
 }
 
 function GamesTab({ groupId }: { groupId: number }) {
-  const { t } = useI18n();
+  const { t: tFlat } = useI18n();
+  const { t } = useTranslation();
   const { data, isLoading } = useQuery({
     queryKey: ["sa-group-games", groupId],
     queryFn: () => saApi.groupGames(groupId, 1, 50),
   });
 
-  if (isLoading || !data) return <div className="webapp-section">⏳ {t("loading")}</div>;
+  if (isLoading || !data)
+    return <div className="webapp-section">⏳ {tFlat("loading")}</div>;
 
   return (
     <div className="webapp-section">
-      <h3>{t("group-games-title")} ({data.total})</h3>
+      <h3>
+        {tFlat("group-games-title")} ({data.total})
+      </h3>
       <div style={{ overflowX: "auto" }}>
         <table className="sa-table">
           <thead>
             <tr>
-              <th>Game ID</th>
-              <th>Status</th>
-              <th>Winner</th>
-              <th style={{ textAlign: "right" }}>Players</th>
-              <th style={{ textAlign: "right" }}>Duration</th>
-              <th>Started</th>
+              <th>{t("sa.group_detail.games_col_id")}</th>
+              <th>{t("sa.group_detail.games_col_status")}</th>
+              <th>{t("sa.group_detail.games_col_winner")}</th>
+              <th style={{ textAlign: "right" }}>
+                {t("sa.group_detail.games_col_players")}
+              </th>
+              <th style={{ textAlign: "right" }}>
+                {t("sa.group_detail.games_col_duration")}
+              </th>
+              <th>{t("sa.group_detail.games_col_started")}</th>
             </tr>
           </thead>
           <tbody>
@@ -95,7 +108,9 @@ function GamesTab({ groupId }: { groupId: number }) {
                 <td>{g.winner_team ?? "—"}</td>
                 <td style={{ textAlign: "right" }}>{g.players_count}</td>
                 <td style={{ textAlign: "right" }}>
-                  {g.duration_seconds ? `${Math.round(g.duration_seconds / 60)} min` : "—"}
+                  {g.duration_seconds
+                    ? `${Math.round(g.duration_seconds / 60)} ${t("sa.group_detail.games_duration_unit")}`
+                    : "—"}
                 </td>
                 <td style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
                   {g.started_at ? new Date(g.started_at).toLocaleString() : "—"}
@@ -110,27 +125,37 @@ function GamesTab({ groupId }: { groupId: number }) {
 }
 
 function LeaderboardTab({ groupId }: { groupId: number }) {
-  const { t } = useI18n();
+  const { t: tFlat } = useI18n();
+  const { t } = useTranslation();
   const { data, isLoading } = useQuery({
     queryKey: ["sa-group-leaderboard", groupId],
     queryFn: () => saApi.groupLeaderboard(groupId, 50),
   });
 
-  if (isLoading || !data) return <div className="webapp-section">⏳ {t("loading")}</div>;
+  if (isLoading || !data)
+    return <div className="webapp-section">⏳ {tFlat("loading")}</div>;
 
   return (
     <div className="webapp-section">
-      <h3>{t("group-leaderboard-title")}</h3>
+      <h3>{tFlat("group-leaderboard-title")}</h3>
       <div style={{ overflowX: "auto" }}>
         <table className="sa-table">
           <thead>
             <tr>
-              <th>#</th>
-              <th>Player</th>
-              <th style={{ textAlign: "right" }}>ELO</th>
-              <th style={{ textAlign: "right" }}>Games</th>
-              <th style={{ textAlign: "right" }}>Wins</th>
-              <th style={{ textAlign: "right" }}>WR%</th>
+              <th>{t("sa.group_detail.lb_col_rank")}</th>
+              <th>{t("sa.group_detail.lb_col_player")}</th>
+              <th style={{ textAlign: "right" }}>
+                {t("sa.group_detail.lb_col_elo")}
+              </th>
+              <th style={{ textAlign: "right" }}>
+                {t("sa.group_detail.lb_col_games")}
+              </th>
+              <th style={{ textAlign: "right" }}>
+                {t("sa.group_detail.lb_col_wins")}
+              </th>
+              <th style={{ textAlign: "right" }}>
+                {t("sa.group_detail.lb_col_wr")}
+              </th>
             </tr>
           </thead>
           <tbody>

@@ -1,21 +1,22 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 import { saApi } from "@shared/api/sa";
 import { useI18n } from "@shared/i18n/useI18n";
 
-const ITEM_LABELS: Record<string, string> = {
-  shield: "🛡 Shield",
-  killer_shield: "⛑ Killer Shield",
-  vote_shield: "⚖️ Vote Shield",
-  rifle: "🔫 Rifle",
-  mask: "🎭 Mask",
-  fake_document: "📁 Fake Document",
-  special_role: "🃏 Special Role",
-};
-
 export function SaSystemPage() {
-  const { t } = useI18n();
+  const { t: tFlat } = useI18n();
+  const { t } = useTranslation();
+  const ITEM_LABELS: Record<string, string> = {
+    shield: t("sa.system.item_shield"),
+    killer_shield: t("sa.system.item_killer_shield"),
+    vote_shield: t("sa.system.item_vote_shield"),
+    rifle: t("sa.system.item_rifle"),
+    mask: t("sa.system.item_mask"),
+    fake_document: t("sa.system.item_fake_document"),
+    special_role: t("sa.system.item_special_role"),
+  };
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["sa-system-settings"],
@@ -29,22 +30,22 @@ export function SaSystemPage() {
   });
 
   if (isLoading || !data) {
-    return <div className="webapp-section">⏳ {t("loading")}</div>;
+    return <div className="webapp-section">⏳ {tFlat("loading")}</div>;
   }
 
   return (
     <>
-      <h2 style={{ marginTop: 0 }}>⚙️ {t("system-title")}</h2>
+      <h2 style={{ marginTop: 0 }}>⚙️ {tFlat("system-title")}</h2>
 
       {/* Item prices */}
       <div className="webapp-section">
-        <h3>{t("system-prices")}</h3>
+        <h3>{tFlat("system-prices")}</h3>
         <table className="sa-table">
           <thead>
             <tr>
-              <th>Item</th>
-              <th>💵 Dollar</th>
-              <th>💎 Diamond</th>
+              <th>{t("sa.system.col_item")}</th>
+              <th>{t("sa.system.col_dollars")}</th>
+              <th>{t("sa.system.col_diamonds")}</th>
             </tr>
           </thead>
           <tbody>
@@ -83,7 +84,7 @@ export function SaSystemPage() {
 
       {/* Rewards */}
       <div className="webapp-section">
-        <h3>{t("system-rewards")}</h3>
+        <h3>{tFlat("system-rewards")}</h3>
         {Object.entries(data.rewards).map(([k, v]) => (
           <SettingRow
             key={k}
@@ -96,7 +97,7 @@ export function SaSystemPage() {
 
       {/* Exchange */}
       <div className="webapp-section">
-        <h3>{t("system-exchange")}</h3>
+        <h3>{tFlat("system-exchange")}</h3>
         {Object.entries(data.exchange).map(([k, v]) => (
           <SettingRow
             key={k}
@@ -109,7 +110,7 @@ export function SaSystemPage() {
 
       {/* Premium */}
       <div className="webapp-section">
-        <h3>{t("system-premium")}</h3>
+        <h3>{tFlat("system-premium")}</h3>
         {Object.entries(data.premium).map(([k, v]) => (
           <SettingRow
             key={k}

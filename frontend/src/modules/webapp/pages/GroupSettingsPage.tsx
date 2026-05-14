@@ -2,65 +2,39 @@ import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import WebApp from "@twa-dev/sdk";
+import { useTranslation } from "react-i18next";
 import { api } from "@shared/api/client";
 
-const ROLE_LABELS: Record<string, string> = {
-  citizen: "👨🏼 Tinch aholi",
-  detective: "🕵🏻‍♂ Komissar",
-  sergeant: "👮🏻‍♂ Serjant",
-  mayor: "🎖 Janob",
-  doctor: "👨🏻‍⚕ Doktor",
-  hooker: "💃 Kezuvchi",
-  hobo: "🧙‍♂ Daydi",
-  lucky: "🤞🏼 Omadli",
-  suicide: "🤦🏼 Suidsid",
-  kamikaze: "💣 Afsungar",
-  don: "🤵🏻 Don",
-  mafia: "🤵🏼 Mafiya",
-  lawyer: "👨‍💼 Advokat",
-  journalist: "👩🏼‍💻 Jurnalist",
-  killer: "🥷 Ninza",
-  maniac: "🔪 Qotil",
-  werewolf: "🐺 Bo'ri",
-  mage: "🧙 Sehrgar",
-  arsonist: "🧟 G'azabkor",
-  crook: "🤹 Aferist",
-  snitch: "🤓 Sotqin",
+// Static role emojis + i18n key suffix — name resolves at render time
+// against the backend `role-*` keys (shared with the bot) so this list
+// stays in sync with whatever the locale calls each role.
+const ROLE_CODES = [
+  "citizen", "detective", "sergeant", "mayor", "doctor",
+  "hooker", "hobo", "lucky", "suicide", "kamikaze",
+  "don", "mafia", "lawyer", "journalist", "killer",
+  "maniac", "werewolf", "mage", "arsonist", "crook", "snitch",
+] as const;
+const ROLE_EMOJI: Record<string, string> = {
+  citizen: "👨🏼", detective: "🕵🏻‍♂", sergeant: "👮🏻‍♂", mayor: "🎖",
+  doctor: "👨🏻‍⚕", hooker: "💃", hobo: "🧙‍♂", lucky: "🤞🏼", suicide: "🤦🏼",
+  kamikaze: "💣", don: "🤵🏻", mafia: "🤵🏼", lawyer: "👨‍💼", journalist: "👩🏼‍💻",
+  killer: "🥷", maniac: "🔪", werewolf: "🐺", mage: "🧙", arsonist: "🧟",
+  crook: "🤹", snitch: "🤓",
 };
 
-const TIMING_LABELS: Record<string, string> = {
-  registration: "Ro'yxatdan o'tish",
-  night: "Tun",
-  day: "Kun",
-  mafia_vote: "Mafia ovozi",
-  hanging_vote: "Osishga ovoz",
-  hanging_confirm: "Tasdiq (👍/👎)",
-  last_words: "So'nggi so'z",
-  afsungar_carry: "Afsungar olib ketish",
-};
-
-const SILENCE_LABELS: Record<string, string> = {
-  dead_players: "O'lganlar yozolmaydi",
-  sleeping_players: "Uxlaganlar yozolmaydi",
-  non_players: "O'ynamayotganlar yozolmaydi",
-  night_chat: "Tunda hech kim yozolmaydi",
-};
-
-const ITEM_LABELS: Record<string, string> = {
-  shield: "🛡 Himoya",
-  killer_shield: "⛑ Qotildan himoya",
-  vote_shield: "⚖️ Ovoz himoyasi",
-  rifle: "🔫 Miltiq",
-  mask: "🎭 Maska",
-  fake_document: "📁 Soxta hujjat",
-};
-
-const PERMISSION_LABELS: Record<string, string> = {
-  who_can_register: "Ro'yxatdan o'tishni kim boshlay oladi",
-  who_can_start: "O'yinni kim boshlay oladi",
-  who_can_extend: "Vaqtni kim uzaytira oladi",
-  who_can_stop: "Kim to'xtata oladi",
-};
+const TIMING_CODES = [
+  "registration", "night", "day", "mafia_vote",
+  "hanging_vote", "hanging_confirm", "last_words", "afsungar_carry",
+] as const;
+const SILENCE_CODES = [
+  "dead_players", "sleeping_players", "non_players", "night_chat",
+] as const;
+const ITEM_CODES = [
+  "shield", "killer_shield", "vote_shield", "rifle", "mask", "fake_document",
+] as const;
+const PERMISSION_CODES = [
+  "who_can_register", "who_can_start", "who_can_extend", "who_can_stop",
+] as const;
 
 interface GroupSettings {
   group_id: number;
@@ -78,12 +52,19 @@ interface GroupSettings {
 type Tab = "roles" | "timings" | "items" | "silence" | "permissions" | "gameplay" | "display";
 
 export function GroupSettingsPage() {
+  const { t } = useTranslation();
   const { groupId } = useParams();
   const gid = parseInt(groupId || "0");
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<Tab>("roles");
   const [draft, setDraft] = useState<GroupSettings | null>(null);
   const [dirty, setDirty] = useState(false);
+
+  const roleLabel = (code: string) => `${ROLE_EMOJI[code] ?? ""} ${t(`role-${code}`)}`.trim();
+  const timingLabel = (code: string) => t(`group_settings.timing_${code}`);
+  const silenceLabel = (code: string) => t(`group_settings.silence_${code}`);
+  const permissionLabel = (code: string) => t(`group_settings.perm_${code}`);
+  const itemLabel = (code: string) => t(`sa.system.item_${code}`);
 
   const { data, isLoading } = useQuery({
     queryKey: ["settings", gid],
@@ -144,26 +125,26 @@ export function GroupSettingsPage() {
     <main>
       <h2 style={{ marginBottom: "0.5rem" }}>⚙️ {draft.title}</h2>
       <p style={{ color: "var(--muted)", marginTop: 0, fontSize: "0.85rem" }}>
-        Group ID: {draft.group_id}
+        {t("group_settings.group_id")}: {draft.group_id}
       </p>
 
       <div className="webapp-tabs">
-        <Tab id="roles" current={tab} setTab={setTab}>🎭 Rollar</Tab>
-        <Tab id="timings" current={tab} setTab={setTab}>⏱ Vaqtlar</Tab>
-        <Tab id="items" current={tab} setTab={setTab}>🛡 Itemlar</Tab>
-        <Tab id="silence" current={tab} setTab={setTab}>🔇 Jimlik</Tab>
-        <Tab id="permissions" current={tab} setTab={setTab}>🔐 Ruxsatlar</Tab>
-        <Tab id="gameplay" current={tab} setTab={setTab}>🎮 Gameplay</Tab>
-        <Tab id="display" current={tab} setTab={setTab}>👁 Ko'rinish</Tab>
+        <Tab id="roles" current={tab} setTab={setTab}>{t("group_settings.tab_roles")}</Tab>
+        <Tab id="timings" current={tab} setTab={setTab}>{t("group_settings.tab_timings")}</Tab>
+        <Tab id="items" current={tab} setTab={setTab}>{t("group_settings.tab_items")}</Tab>
+        <Tab id="silence" current={tab} setTab={setTab}>{t("group_settings.tab_silence")}</Tab>
+        <Tab id="permissions" current={tab} setTab={setTab}>{t("group_settings.tab_permissions")}</Tab>
+        <Tab id="gameplay" current={tab} setTab={setTab}>{t("group_settings.tab_gameplay")}</Tab>
+        <Tab id="display" current={tab} setTab={setTab}>{t("group_settings.tab_display")}</Tab>
       </div>
 
       {tab === "roles" && (
         <div className="webapp-section">
-          <h3>Yoqilgan rollar</h3>
-          {Object.keys(ROLE_LABELS).map((code) => (
+          <h3>{t("group_settings.section_roles")}</h3>
+          {ROLE_CODES.map((code) => (
             <Toggle
               key={code}
-              label={ROLE_LABELS[code]}
+              label={roleLabel(code)}
               checked={!!draft.roles[code]}
               onChange={(v) => updateField("roles", code, v)}
             />
@@ -173,11 +154,11 @@ export function GroupSettingsPage() {
 
       {tab === "timings" && (
         <div className="webapp-section">
-          <h3>Vaqt sozlamalari (sekund)</h3>
-          {Object.keys(TIMING_LABELS).map((key) => (
+          <h3>{t("group_settings.section_timings")}</h3>
+          {TIMING_CODES.map((key) => (
             <NumInput
               key={key}
-              label={TIMING_LABELS[key]}
+              label={timingLabel(key)}
               value={draft.timings[key] || 0}
               onChange={(v) => updateField("timings", key, v)}
             />
@@ -187,11 +168,11 @@ export function GroupSettingsPage() {
 
       {tab === "items" && (
         <div className="webapp-section">
-          <h3>Guruhda yoqilgan itemlar</h3>
-          {Object.keys(ITEM_LABELS).map((code) => (
+          <h3>{t("group_settings.section_items")}</h3>
+          {ITEM_CODES.map((code) => (
             <Toggle
               key={code}
-              label={ITEM_LABELS[code]}
+              label={itemLabel(code)}
               checked={!!draft.items_allowed[code]}
               onChange={(v) => updateField("items_allowed", code, v)}
             />
@@ -201,11 +182,11 @@ export function GroupSettingsPage() {
 
       {tab === "silence" && (
         <div className="webapp-section">
-          <h3>Jimlik qoidalari</h3>
-          {Object.keys(SILENCE_LABELS).map((key) => (
+          <h3>{t("group_settings.section_silence")}</h3>
+          {SILENCE_CODES.map((key) => (
             <Toggle
               key={key}
-              label={SILENCE_LABELS[key]}
+              label={silenceLabel(key)}
               checked={!!draft.silence[key]}
               onChange={(v) => updateField("silence", key, v)}
             />
@@ -215,18 +196,18 @@ export function GroupSettingsPage() {
 
       {tab === "permissions" && (
         <div className="webapp-section">
-          <h3>Buyruq ruxsatlari</h3>
-          {Object.keys(PERMISSION_LABELS).map((key) => (
+          <h3>{t("group_settings.section_permissions")}</h3>
+          {PERMISSION_CODES.map((key) => (
             <SelectField
               key={key}
-              label={PERMISSION_LABELS[key]}
+              label={permissionLabel(key)}
               value={String(draft.permissions[key] ?? "all")}
               options={["all", "admins", "registrar", "none"]}
               onChange={(v) => updateField("permissions", key, v)}
             />
           ))}
           <Toggle
-            label="✋ /leave ruxsat"
+            label={t("group_settings.allow_leave")}
             checked={!!draft.permissions.allow_leave}
             onChange={(v) => updateField("permissions", "allow_leave", v)}
           />
@@ -235,30 +216,30 @@ export function GroupSettingsPage() {
 
       {tab === "gameplay" && (
         <div className="webapp-section">
-          <h3>Gameplay</h3>
+          <h3>{t("group_settings.tab_gameplay")}</h3>
           <SelectField
-            label="Mafia nisbati"
+            label={t("group_settings.mafia_ratio")}
             value={String(draft.gameplay.mafia_ratio || "low")}
             options={["low", "high"]}
             onChange={(v) => updateField("gameplay", "mafia_ratio", v)}
           />
           <NumInput
-            label="Min o'yinchi"
+            label={t("group_settings.min_players")}
             value={Number(draft.gameplay.min_players || 4)}
             onChange={(v) => updateField("gameplay", "min_players", v)}
           />
           <NumInput
-            label="Max o'yinchi"
+            label={t("group_settings.max_players")}
             value={Number(draft.gameplay.max_players || 30)}
             onChange={(v) => updateField("gameplay", "max_players", v)}
           />
           <Toggle
-            label="Kunduzi 'Hech kim' varianti"
+            label={t("group_settings.skip_day_vote")}
             checked={!!draft.gameplay.allow_skip_day_vote}
             onChange={(v) => updateField("gameplay", "allow_skip_day_vote", v)}
           />
           <Toggle
-            label="Tunda 'Skip' tugmasi"
+            label={t("group_settings.skip_night_action")}
             checked={!!draft.gameplay.allow_skip_night_action}
             onChange={(v) => updateField("gameplay", "allow_skip_night_action", v)}
           />
@@ -267,29 +248,29 @@ export function GroupSettingsPage() {
 
       {tab === "display" && (
         <div className="webapp-section">
-          <h3>Ko'rinish</h3>
+          <h3>{t("group_settings.section_display")}</h3>
           <Toggle
-            label="Rollar emoji bilan"
+            label={t("group_settings.show_role_emojis")}
             checked={!!draft.display.show_role_emojis}
             onChange={(v) => updateField("display", "show_role_emojis", v)}
           />
           <Toggle
-            label="Rollarni guruhlab ko'rsatish"
+            label={t("group_settings.group_roles_in_list")}
             checked={!!draft.display.group_roles_in_list}
             onChange={(v) => updateField("display", "group_roles_in_list", v)}
           />
           <Toggle
-            label="Anonim ovoz berish"
+            label={t("group_settings.anonymous_voting")}
             checked={!!draft.display.anonymous_voting}
             onChange={(v) => updateField("display", "anonymous_voting", v)}
           />
           <Toggle
-            label="Ro'yxatni avto-pin qilish"
+            label={t("group_settings.auto_pin_registration")}
             checked={!!draft.display.auto_pin_registration}
             onChange={(v) => updateField("display", "auto_pin_registration", v)}
           />
           <Toggle
-            label="O'lganda rolini ko'rsatish"
+            label={t("group_settings.show_role_on_death")}
             checked={!!draft.display.show_role_on_death}
             onChange={(v) => updateField("display", "show_role_on_death", v)}
           />
@@ -301,7 +282,11 @@ export function GroupSettingsPage() {
         onClick={saveCurrentTab}
         disabled={!dirty || saveMutation.isPending}
       >
-        {saveMutation.isPending ? "💾 Saqlanmoqda..." : dirty ? "💾 Saqlash" : "✅ Saqlangan"}
+        {saveMutation.isPending
+          ? t("group_settings.save_saving")
+          : dirty
+            ? t("group_settings.save_dirty")
+            : t("group_settings.save_saved")}
       </button>
     </main>
   );

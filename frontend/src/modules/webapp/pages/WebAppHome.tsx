@@ -1,7 +1,10 @@
 import WebApp from "@twa-dev/sdk";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 export function WebAppHome() {
+  const { t } = useTranslation();
+
   let groupId: number | null = null;
   let startParam: string | undefined;
   try {
@@ -15,29 +18,24 @@ export function WebAppHome() {
 
   return (
     <main>
-      <h1>📱 Mafia WebApp</h1>
-      <p style={{ color: "var(--muted)" }}>
-        Guruh sozlamalari va leaderboard.
-      </p>
+      <h1>{t("webapp_home.title")}</h1>
+      <p style={{ color: "var(--muted)" }}>{t("webapp_home.subtitle")}</p>
       {groupId ? (
         <div className="webapp-section">
           <Link to={`/webapp/settings/${groupId}`} className="webapp-tab active">
-            ⚙️ Sozlamalar
+            {t("webapp_home.settings_btn")}
           </Link>
           <Link
             to={`/webapp/leaderboard/${groupId}`}
             className="webapp-tab"
             style={{ marginLeft: "0.5rem" }}
           >
-            🏆 Leaderboard
+            {t("webapp_home.leaderboard_btn")}
           </Link>
         </div>
       ) : (
         <div className="webapp-section">
-          <p style={{ color: "var(--muted)" }}>
-            Bu sahifa Telegram WebApp orqali ochilishi kerak. Bot guruhda
-            "Sozlamalar" tugmasini bosing.
-          </p>
+          <p style={{ color: "var(--muted)" }}>{t("webapp_home.open_via_telegram")}</p>
         </div>
       )}
     </main>
