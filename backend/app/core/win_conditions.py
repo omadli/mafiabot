@@ -49,6 +49,12 @@ def check_winner(state: GameState) -> Team | None:
         if kills >= 3:
             return Team.SINGLETON
 
+    # Singletons (Mage, Crook, Werewolf, ...) outlived both teams.
+    # Without this guard, the team fallback below would credit Mafia for
+    # 0 >= 0 — a mage-alone-alive game would wrongly report Mafia victory.
+    if not mafia_alive and not citizens_alive and alive:
+        return Team.SINGLETON
+
     # === Citizens vs Mafia ===
     if not mafia_alive and citizens_alive:
         return Team.CITIZENS

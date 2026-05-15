@@ -48,3 +48,30 @@ def test_no_winner_mid_game():
         (4, "doctor", Team.CITIZENS, True),
     )
     assert check_winner(state) is None
+
+
+def test_mage_alone_alive_is_singleton_win_not_mafia():
+    state = _make_state(
+        (1, "mage", Team.SINGLETON, True),
+        (2, "don", Team.MAFIA, False),
+        (3, "citizen", Team.CITIZENS, False),
+    )
+    assert check_winner(state) == Team.SINGLETON
+
+
+def test_crook_alone_alive_is_singleton_win():
+    state = _make_state(
+        (1, "crook", Team.SINGLETON, True),
+        (2, "mafia", Team.MAFIA, False),
+        (3, "doctor", Team.CITIZENS, False),
+    )
+    assert check_winner(state) == Team.SINGLETON
+
+
+def test_werewolf_alone_alive_is_singleton_win():
+    state = _make_state(
+        (1, "werewolf", Team.SINGLETON, True),
+        (2, "don", Team.MAFIA, False),
+        (3, "detective", Team.CITIZENS, False),
+    )
+    assert check_winner(state) == Team.SINGLETON
