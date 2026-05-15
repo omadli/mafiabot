@@ -69,13 +69,30 @@ def distribute_roles(
     user_ids: list[int],
     mafia_ratio: str = "low",
     enabled_roles: dict[str, bool] | None = None,
+    override: list[str] | None = None,
 ) -> list[RoleAssignment]:
-    """Assign roles to N players based on settings."""
+    """Assign roles to N players based on settings.
+
+    `override` is an optional admin-provided role list for this N. When
+    supplied and its length matches N exactly, the algorithm is bypassed
+    entirely and these roles are dealt out (shuffled) verbatim. If the
+    length doesn't match (stale config), we silently fall back to the
+    algorithm to avoid blocking the game.
+    """
     n = len(user_ids)
     if n < 4:
         raise ValueError(f"Min 4 players required, got {n}")
     if n > 30:
         raise ValueError(f"Max 30 players, got {n}")
+
+    if override is not None and len(override) == n:
+        roles = list(override)
+        random.shuffle(roles)
+        shuffled_users = list(user_ids)
+        random.shuffle(shuffled_users)
+        return [
+            RoleAssignment(user_id=u, role=r) for u, r in zip(shuffled_users, roles, strict=False)
+        ]
 
     enabled = _default_enabled()
     if enabled_roles:

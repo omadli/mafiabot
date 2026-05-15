@@ -44,12 +44,23 @@ interface GroupSettings {
   timings: Record<string, number>;
   silence: Record<string, boolean>;
   items_allowed: Record<string, boolean>;
+  role_distribution: Record<string, string[]>;
   permissions: Record<string, string | boolean>;
   gameplay: Record<string, string | number | boolean>;
   display: Record<string, boolean>;
 }
 
-type Tab = "roles" | "timings" | "items" | "silence" | "permissions" | "gameplay" | "display";
+type Tab =
+  | "roles"
+  | "distribution"
+  | "timings"
+  | "items"
+  | "silence"
+  | "permissions"
+  | "gameplay"
+  | "display";
+
+const PLAYER_COUNTS = Array.from({ length: 27 }, (_, i) => i + 4); // 4..30
 
 export function GroupSettingsPage() {
   const { t } = useTranslation();
@@ -59,6 +70,7 @@ export function GroupSettingsPage() {
   const [tab, setTab] = useState<Tab>("roles");
   const [draft, setDraft] = useState<GroupSettings | null>(null);
   const [dirty, setDirty] = useState(false);
+  const [distN, setDistN] = useState<number>(8); // selected player-count in distribution tab
 
   const roleLabel = (code: string) => `${ROLE_EMOJI[code] ?? ""} ${t(`role-${code}`)}`.trim();
   const timingLabel = (code: string) => t(`group_settings.timing_${code}`);
@@ -107,6 +119,8 @@ export function GroupSettingsPage() {
 
   const saveCurrentTab = () => {
     if (tab === "roles") saveMutation.mutate({ section: "roles", value: draft.roles });
+    else if (tab === "distribution")
+      saveMutation.mutate({ section: "role_distribution", value: draft.role_distribution });
     else if (tab === "timings")
       saveMutation.mutate({ section: "timings", value: draft.timings });
     else if (tab === "items")
@@ -121,6 +135,34 @@ export function GroupSettingsPage() {
       saveMutation.mutate({ section: "display", value: draft.display });
   };
 
+  const currentOverride: string[] | null =
+    draft.role_distribution?.[String(distN)] ?? null;
+
+  const setOverride = (newList: string[] | null) => {
+    const next = { ...(draft.role_distribution ?? {}) };
+    if (newList === null) {
+      delete next[String(distN)];
+    } else {
+      next[String(distN)] = newList;
+    }
+    setDraft({ ...draft, role_distribution: next });
+    setDirty(true);
+  };
+
+  const enableOverride = () => {
+    // Sensible starting point: 1 don + 1 detective + rest citizens.
+    const seed: string[] = ["don", "detective"];
+    while (seed.length < distN) seed.push("citizen");
+    setOverride(seed);
+  };
+
+  const updateSlot = (index: number, newRole: string) => {
+    if (currentOverride === null) return;
+    const copy = [...currentOverride];
+    copy[index] = newRole;
+    setOverride(copy);
+  };
+
   return (
     <main>
       <h2 style={{ marginBottom: "0.5rem" }}>⚙️ {draft.title}</h2>
@@ -130,6 +172,7 @@ export function GroupSettingsPage() {
 
       <div className="webapp-tabs">
         <Tab id="roles" current={tab} setTab={setTab}>{t("group_settings.tab_roles")}</Tab>
+        <Tab id="distribution" current={tab} setTab={setTab}>{t("group_settings.tab_distribution")}</Tab>
         <Tab id="timings" current={tab} setTab={setTab}>{t("group_settings.tab_timings")}</Tab>
         <Tab id="items" current={tab} setTab={setTab}>{t("group_settings.tab_items")}</Tab>
         <Tab id="silence" current={tab} setTab={setTab}>{t("group_settings.tab_silence")}</Tab>
@@ -149,6 +192,72 @@ export function GroupSettingsPage() {
               onChange={(v) => updateField("roles", code, v)}
             />
           ))}
+        </div>
+      )}
+
+      {tab === "distribution" && (
+        <div className="webapp-section">
+          <h3>{t("group_settings.section_distribution")}</h3>
+          <p style={{ color: "var(--muted)", fontSize: "0.85rem", marginTop: 0 }}>
+            {t("group_settings.distribution_hint")}
+          </p>
+
+          <div className="webapp-row">
+            <label>{t("group_settings.distribution_player_count")}</label>
+            <select
+              className="webapp-input"
+              style={{ width: "auto" }}
+              value={distN}
+              onChange={(e) => setDistN(parseInt(e.target.value))}
+            >
+              {PLAYER_COUNTS.map((n) => (
+                <option key={n} value={n}>
+                  {n}{draft.role_distribution?.[String(n)] ? " ✓" : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {currentOverride === null ? (
+            <div style={{ padding: "1rem 0" }}>
+              <p style={{ color: "var(--muted)", fontSize: "0.9rem" }}>
+                {t("group_settings.distribution_using_algorithm", { n: distN })}
+              </p>
+              <button className="webapp-btn" onClick={enableOverride}>
+                {t("group_settings.distribution_enable_override")}
+              </button>
+            </div>
+          ) : (
+            <>
+              <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>
+                {t("group_settings.distribution_slots_hint", { n: distN })}
+              </p>
+              {currentOverride.map((roleCode, idx) => (
+                <div key={idx} className="webapp-row">
+                  <label>#{idx + 1}</label>
+                  <select
+                    className="webapp-input"
+                    style={{ width: "auto" }}
+                    value={roleCode}
+                    onChange={(e) => updateSlot(idx, e.target.value)}
+                  >
+                    {ROLE_CODES.map((code) => (
+                      <option key={code} value={code}>
+                        {ROLE_EMOJI[code]} {t(`role-${code}`)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+              <button
+                className="webapp-btn"
+                style={{ marginTop: "0.5rem", background: "var(--danger, #c0392b)" }}
+                onClick={() => setOverride(null)}
+              >
+                {t("group_settings.distribution_reset")}
+              </button>
+            </>
+          )}
         </div>
       )}
 

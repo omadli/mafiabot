@@ -185,7 +185,17 @@ async def start_game(state: GameState) -> GameState:
     user_ids = [p.user_id for p in state.players]
     mafia_ratio = state.settings.get("gameplay", {}).get("mafia_ratio", "low")
     enabled = state.settings.get("roles", {})
-    assignments = distribute_mvp_roles(user_ids, mafia_ratio=mafia_ratio, enabled_roles=enabled)
+    # Admin-provided role list for this exact N — settings JSON keys are
+    # strings, hence str(n). If missing/length-mismatched, the engine
+    # falls back to the algorithm.
+    role_dist_override = state.settings.get("role_distribution") or {}
+    override_list = role_dist_override.get(str(len(user_ids)))
+    assignments = distribute_mvp_roles(
+        user_ids,
+        mafia_ratio=mafia_ratio,
+        enabled_roles=enabled,
+        override=override_list,
+    )
 
     role_map = {a.user_id: a.role for a in assignments}
     for p in state.players:

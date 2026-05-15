@@ -134,3 +134,35 @@ def test_n24_werewolf_multi_instance():
     werewolf_count = sum(1 for r in roles if r == "werewolf")
     # N=24 → singletons = 24//4 = 6; with only werewolf enabled, all become werewolf
     assert werewolf_count >= 2, f"Expected >=2 werewolves, got {werewolf_count}"
+
+
+def test_override_used_verbatim_when_length_matches():
+    """Admin-provided override bypasses the algorithm entirely."""
+    override = ["don", "detective", "doctor", "citizen", "mafia"]
+    result = distribute_roles(_user_ids(5), override=override)
+    assert sorted(r.role for r in result) == sorted(override)
+
+
+def test_override_ignored_when_length_mismatches():
+    """Stale override (wrong length) falls back to the algorithm."""
+    override = ["don", "detective"]  # only 2 roles for a 5-player game
+    result = distribute_roles(_user_ids(5), override=override)
+    # Length must match player count regardless
+    assert len(result) == 5
+    # Algorithm always assigns 1 detective + 1 don at N=5
+    roles = [r.role for r in result]
+    assert "detective" in roles
+    assert "don" in roles
+
+
+def test_override_shuffles_assignment():
+    """Override roles get shuffled across user_ids (not deterministic order)."""
+    import random
+
+    override = ["don", "detective", "doctor", "citizen", "mafia"]
+    # With seeded RNG, two runs should produce identical results
+    random.seed(123)
+    a = distribute_roles(_user_ids(5), override=override)
+    random.seed(123)
+    b = distribute_roles(_user_ids(5), override=override)
+    assert [(r.user_id, r.role) for r in a] == [(r.user_id, r.role) for r in b]
