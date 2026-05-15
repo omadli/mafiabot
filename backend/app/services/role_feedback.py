@@ -27,7 +27,11 @@ async def send_role_feedback(bot: Bot, state: GameState, outcome: NightOutcome) 
 
     coros = []
 
-    # Detective results
+    # Detective results — DM the Detective with their finding, and a
+    # blind heads-up to the target ("someone got curious about your role").
+    # Multiple Detectives (e.g. Sergeant promoted) all check independently;
+    # if multiple checked the same target, the target receives one DM per
+    # check, which intentionally signals heavier attention.
     for r in outcome.detective_results:
         coros.append(
             _safe_dm(
@@ -40,18 +44,40 @@ async def send_role_feedback(bot: Bot, state: GameState, outcome: NightOutcome) 
                 ),
             )
         )
+        coros.append(_safe_dm(bot, r.target_id, _("feedback-detective-target-notice")))
 
     # Doctor results
-    #   saved=True  → "Siz {target} ni davoladingiz:) Uni mehmoni {role} edi."
-    #   saved=False → "Doktor yordam berolmadi.."  (no target — the doctor's
-    #                  pick wasn't attacked, so "no visitors" is enough)
+    #   saved=True  → DM doctor "you healed {target}, visitor was {killer}"
+    #                 AND DM target "Doctor healed you" (target was attacked).
+    #   saved=False → DM doctor "no visitors today". Then the target DM
+    #                 splits on whether they were a kill/sleep target this
+    #                 night despite the doctor's heal:
+    #                   - hooker tried to sleep them → "Doctor healed you"
+    #                   - nobody touched them → "Doctor came to visit you"
     for h in outcome.doctor_results:
         if h.saved:
             visitor_roles = ", ".join(role_emoji_name(r, locale) for r in h.visited_by_killers)
             text = _("feedback-doctor-saved", target=h.target_name, visitors=visitor_roles)
+            target_text = _("feedback-doctor-target-saved")
         else:
             text = _("feedback-doctor-no-visitors")
+            # Was the target also hit by a hooker (or any non-doctor action)?
+            target_threatened = any(
+                a.target_id == h.target_id
+                and a.action_type in ("kill", "sleep")
+                and a.actor_id != h.actor_id
+                for a in state.current_actions.values()
+            )
+            target_text = _(
+                "feedback-doctor-target-saved"
+                if target_threatened
+                else "feedback-doctor-target-visit"
+            )
         coros.append(_safe_dm(bot, h.actor_id, text, parse_mode="HTML"))
+        # Don't tell the doctor about themselves: skip the target DM when
+        # the doctor self-healed.
+        if h.target_id != h.actor_id:
+            coros.append(_safe_dm(bot, h.target_id, target_text))
 
     # Hooker results — confirm to actor + DM target
     for hr in outcome.hooker_results:

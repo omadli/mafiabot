@@ -435,6 +435,12 @@ feedback-doctor-saved = 👨🏻‍⚕ You — healed <b>{ $target }</b> :) Thei
 
 feedback-doctor-no-visitors = 👨🏻‍⚕ The doctor couldn't help..
 
+feedback-detective-target-notice = 🕵🏼 Tonight someone got curious about your role...
+
+feedback-doctor-target-saved = 👨🏻‍⚕ The doctor healed you.
+
+feedback-doctor-target-visit = 👨🏻‍⚕ The doctor came to visit you.
+
 feedback-hooker-confirm = 💃 You put { $target } to sleep.
 
 feedback-hooker-target = There it is — 💊 the drug is kicking in. Sweet dreams for a whole day...

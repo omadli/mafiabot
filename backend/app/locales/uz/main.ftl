@@ -434,6 +434,12 @@ feedback-doctor-saved = 👨🏻‍⚕ Siz - <b>{ $target }</b> ni davoladingiz:
 
 feedback-doctor-no-visitors = 👨🏻‍⚕ Doktor yordam berolmadi..
 
+feedback-detective-target-notice = 🕵🏼 Bu tunda kimdir sizning rolingizga qiziqdi...
+
+feedback-doctor-target-saved = 👨🏻‍⚕ Doktor sizni davoladi.
+
+feedback-doctor-target-visit = 👨🏻‍⚕ Doktor siznikiga mehmonga keldi.
+
 feedback-hooker-confirm = 💃 Siz { $target } ni uxlatdingiz.
 
 feedback-hooker-target = Ana 💊 dori ta'sir qila boshladi endi sen bir kun uxlaysan...

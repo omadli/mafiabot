@@ -8,6 +8,7 @@ from __future__ import annotations
 from collections import Counter
 
 from app.core.state import GameState, Team
+from app.services.messaging import player_mention
 
 # Display order for roles within each team (for readability)
 ROLE_DISPLAY = {
@@ -57,11 +58,13 @@ def format_alive_summary(state: GameState) -> str:
     """
     alive = sorted(state.alive_players(), key=lambda p: p.join_order)
 
-    # Numbered list
+    # Numbered list — every entry is an HTML mention so tapping opens the
+    # player's profile (Telegram resolves tg://user?id=... when the chat
+    # has seen that user before, which is true for all game participants).
     lines = ["<b>Tirik o'yinchilar:</b>"]
     for p in alive:
-        name = _safe(p.first_name or (p.username or f"Player {p.user_id}"))
-        lines.append(f"{p.join_order}. {name}")
+        display_name = p.first_name or p.username or f"Player {p.user_id}"
+        lines.append(f"{p.join_order}. {player_mention(p.user_id, display_name)}")
     lines.append("")
 
     # Team breakdown — count roles per team
