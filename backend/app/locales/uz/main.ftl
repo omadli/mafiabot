@@ -738,7 +738,9 @@ hanging-confirm-cannot-self = 😅 O'zingizning osilishingizga ovoz bera olmaysi
 # SEHRGAR REAKTIV XABARLARI (o'yinchiga shaxsiy)
 # ===========================================================
 
-mage-attacked = 🧙 Sizga { $attacker_role } hujum qildi.\nKechirasizmi yoki o'ldirasizmi?
+mage-attacked =
+    🧙 Sizga { $attacker_role } hujum qildi.
+    Kechirasizmi yoki o'ldirasizmi?
 
 mage-forgive = 💚 Kechirish
 
@@ -1174,7 +1176,10 @@ show-role-not-in-game = 🚫 Siz bu o'yinda emassiz
 
 show-role-no-game = 🚫 Hozir o'yin yo'q
 
-show-role-alert = 🎭 Sizning rolingiz: { $role }\n\n{ $description }
+show-role-alert =
+    🎭 Sizning rolingiz: { $role }
+
+    { $description }
 
 dm-your-role =
     🎭 <b>Siz - { $role } siz!</b>

@@ -744,7 +744,9 @@ hanging-confirm-cannot-self = 😅 You can't vote on your own hanging!
 # MAGE REACTIVE MESSAGES (private to player)
 # ===========================================================
 
-mage-attacked = 🧙 { $attacker_role } has attacked you.\nDo you forgive them or kill them?
+mage-attacked =
+    🧙 { $attacker_role } has attacked you.
+    Do you forgive them or kill them?
 
 mage-forgive = 💚 Forgive
 
@@ -1160,7 +1162,10 @@ show-role-not-in-game = 🚫 You are not in this game
 
 show-role-no-game = 🚫 No active game right now
 
-show-role-alert = 🎭 Your role: { $role }\n\n{ $description }
+show-role-alert =
+    🎭 Your role: { $role }
+
+    { $description }
 
 dm-your-role =
     🎭 <b>You are { $role }!</b>

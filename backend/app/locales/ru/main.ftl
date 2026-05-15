@@ -744,7 +744,9 @@ hanging-confirm-cannot-self = 😅 Нельзя голосовать за соб
 # РЕАКТИВНЫЕ СООБЩЕНИЯ КОЛДУНА (в личку игроку)
 # ===========================================================
 
-mage-attacked = 🧙 На вас напал { $attacker_role }.\nПрощаете или убиваете?
+mage-attacked =
+    🧙 На вас напал { $attacker_role }.
+    Прощаете или убиваете?
 
 mage-forgive = 💚 Простить
 
@@ -1160,7 +1162,10 @@ show-role-not-in-game = 🚫 Вы не в этой игре
 
 show-role-no-game = 🚫 Сейчас нет активной игры
 
-show-role-alert = 🎭 Ваша роль: { $role }\n\n{ $description }
+show-role-alert =
+    🎭 Ваша роль: { $role }
+
+    { $description }
 
 dm-your-role =
     🎭 <b>Вы - { $role }!</b>

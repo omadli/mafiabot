@@ -96,6 +96,41 @@ class PhaseManager:
                 await cls._advance_phase(bot, state)
                 await save_state(state)
 
+                # === Winner check BEFORE the next-phase intro ===
+                # If the phase that just completed produced a game-ending event
+                # (night kills wiped a team, or a critical hanging finished
+                # mafia/citizens), we must end the game right here — not
+                # after the next NIGHT/DAY has already been announced to
+                # the group. The on_phase_change(FINISHED) handler narrates
+                # the killing event and then the game-over message.
+                if state.phase not in (Phase.WAITING, Phase.CANCELLED, Phase.FINISHED):
+                    winner = check_winner(state)
+                    if winner is not None:
+                        state.winner_team = winner
+                        state.winner_user_ids = winner_user_ids(state, winner)
+                        state.phase = Phase.FINISHED
+                        await save_state(state)
+                        await finish_game(state, winner)
+                        if on_phase_change is not None:
+                            try:
+                                await on_phase_change(state)
+                            except Exception as e:
+                                logger.exception(f"on_phase_change failed: {e}")
+                        try:
+                            from app.services.ws_broker import emit_game_event
+
+                            await emit_game_event(
+                                "phase_change",
+                                game_id=str(state.id),
+                                group_id=state.group_id,
+                                phase=state.phase.value,
+                                round_num=state.round_num,
+                                alive=len(state.alive_players()),
+                            )
+                        except Exception as e:
+                            logger.debug(f"WS emit failed: {e}")
+                        break
+
                 if on_phase_change is not None:
                     try:
                         await on_phase_change(state)
@@ -117,22 +152,11 @@ class PhaseManager:
                 except Exception as e:
                     logger.debug(f"WS emit failed: {e}")
 
-                # Check winner — skip when game was just cancelled or already finished
-                # (avoids false winner announcement on registration-timeout cancels).
+                # The game may have already been cancelled by _advance_phase
+                # (e.g., not enough players at end of registration). Exit
+                # cleanly in that case — on_phase_change already broadcast.
                 if state.phase in (Phase.CANCELLED, Phase.FINISHED):
-                    # Phase change broadcast happens above; loop now exits naturally.
                     break
-
-                if state.phase != Phase.WAITING:
-                    winner = check_winner(state)
-                    if winner is not None:
-                        state.winner_team = winner
-                        state.winner_user_ids = winner_user_ids(state, winner)
-                        await save_state(state)
-                        await finish_game(state, winner)
-                        if on_phase_change is not None:
-                            await on_phase_change(state)
-                        break
 
         except asyncio.CancelledError:
             logger.info(f"Phase loop cancelled for group {group_id}")

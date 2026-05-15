@@ -473,6 +473,29 @@ async def _on_phase_change(bot: Bot, state) -> None:
         if target_id:
             await announce_hanging_confirm(bot, state, target_id)
     elif state.phase in (Phase.FINISHED, Phase.CANCELLED):
+        # If the game ended right after a death-producing phase, the
+        # narration for that event would otherwise be skipped (the loop
+        # short-circuits to FINISHED before the next phase's intro can
+        # broadcast it). Replay it now so the chat sees who died / who
+        # was hanged *before* the final game-over message.
+        if state.phase == Phase.FINISHED and state.rounds:
+            last_round = state.rounds[-1]
+            if last_round.night_deaths:
+                try:
+                    await _broadcast_results_from_log(bot, state)
+                except Exception as e:
+                    logger.debug(f"Final night broadcast failed: {e}")
+            # Hanging info is stored on the round whose .extra has hang_*_total.
+            # When _advance_phase ended the game from HANGING_CONFIRM, round_num
+            # was already bumped, so the just-hanged round is at index -1.
+            if (
+                last_round.extra.get("hang_yes_total") is not None
+                or last_round.extra.get("hang_no_total") is not None
+            ):
+                try:
+                    await _broadcast_hanging_result(bot, state)
+                except Exception as e:
+                    logger.debug(f"Final hanging broadcast failed: {e}")
         await broadcast_game_end(bot, state)
 
 
