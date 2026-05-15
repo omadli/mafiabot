@@ -171,20 +171,26 @@ async def callback_vote_cast(query: CallbackQuery, user: User, _: Translator, bo
     )
     await game_service.save_state(state)
 
+    # This callback fires from the voter's DM, so `_` is the voter's user
+    # locale. Anything we emit to the group (or to OTHER players' DMs) must
+    # use the group locale instead — otherwise the public broadcast renders
+    # in whichever language the latest voter happens to use.
+    group_locale = state.settings.get("language", "uz")
+    group_t = get_translator(group_locale)
+
     if crook_proxy_victim_id is not None:
         with contextlib.suppress(Exception):
-            await bot.send_message(crook_proxy_victim_id, _("crook-stole-vote-dm"))
+            await bot.send_message(crook_proxy_victim_id, group_t("crook-stole-vote-dm"))
 
     show_anon = state.settings.get("display", {}).get("anonymous_voting", False)
     display_voter = state.get_player(voter_id_for_record) or voter
     voter_mention = player_mention(display_voter.user_id, display_voter.first_name)
     if display_voter.role == "mayor":
-        locale = state.settings.get("language", "uz")
-        voter_display = f"{role_emoji_name(display_voter.role, locale)} {voter_mention}"
+        voter_display = f"{role_emoji_name(display_voter.role, group_locale)} {voter_mention}"
     else:
         voter_display = voter_mention
 
-    # Confirmation toast + DM edit
+    # Confirmation toast + DM edit (these go back to the voter — keep `_`)
     if target_id == 0:
         await query.answer(_("vote-skipped-toast"), show_alert=False)
         confirm_text = _("vote-skipped-confirm")
@@ -198,20 +204,20 @@ async def callback_vote_cast(query: CallbackQuery, user: User, _: Translator, bo
         with contextlib.suppress(Exception):
             await query.message.edit_text(confirm_text, reply_markup=back_kb, parse_mode="HTML")
 
-    # Public broadcast (non-anonymous only)
+    # Public broadcast (non-anonymous only) — group locale, not voter's.
     if not show_anon:
         try:
             if target_id == 0:
                 await bot.send_message(
                     state.chat_id,
-                    _("vote-broadcast-abstain", voter=voter_display),
+                    group_t("vote-broadcast-abstain", voter=voter_display),
                     parse_mode="HTML",
                 )
             else:
                 assert target is not None
                 await bot.send_message(
                     state.chat_id,
-                    _(
+                    group_t(
                         "vote-broadcast",
                         voter=voter_display,
                         target=player_mention(target.user_id, target.first_name),

@@ -14,7 +14,7 @@ from app.config import settings
 from app.core.state import Phase
 from app.db.models import Game, Group, User
 from app.services import game_service
-from app.services.i18n_service import Translator
+from app.services.i18n_service import Translator, get_translator
 
 router = Router(name="private_start")
 router.message.filter(F.chat.type == "private")
@@ -130,12 +130,15 @@ async def _handle_join(message: Message, user: User, group_id: int, _: Translato
 
     logger.info(f"User {user.id} joined game {state.id} in group {group_id}")
 
-    # Refresh group registration message
+    # Refresh group registration message — always render in the group's
+    # own locale, NOT the joining user's. Otherwise the card flickers
+    # between languages every time someone with a different setting joins.
     bot: Bot = message.bot  # type: ignore[assignment]
     if state.registration_message_id:
+        group_t = get_translator(state.settings.get("language", "uz"))
         try:
-            text = format_registration_text(state, _)
-            keyboard = build_registration_keyboard(state, settings.bot_username, _)
+            text = format_registration_text(state, group_t)
+            keyboard = build_registration_keyboard(state, settings.bot_username, group_t)
             await bot.edit_message_text(
                 text,
                 chat_id=state.chat_id,
