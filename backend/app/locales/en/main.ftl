@@ -890,21 +890,67 @@ help-group =
     /rules — game rules
 
 rules-summary =
-    📖 Mafia Baku Black — rules:
+    📖 <b>Mafia game rules</b>
 
-    The city is split into two sides: civilians and mafia.
-    Each night the mafia silently eliminates one player. Each
-    day the town debates and votes to hang a suspect.
-    Commissioner Cattani hunts the wicked; the Doctor saves
-    the doomed.
+    🏙 <b>Setting:</b> the city is split into two main sides — <b>civilians</b> and <b>mafia</b>. Alongside them, <b>singleton</b> roles play with their own win conditions.
 
-    Singleton roles (Maniac, Werewolf, Mage and others)
-    play alone under their own win conditions.
+    🎲 <b>Round structure:</b>
+      1️⃣ <b>Night</b> — secret actions (mafia kills, Detective checks, Doctor heals, etc.).
+      2️⃣ <b>Day</b> — night events announced, town debates.
+      3️⃣ <b>Voting</b> — pick a suspect.
+      4️⃣ <b>Confirm</b> 👍/👎 — enough "yes" votes hang them.
+      5️⃣ <b>Last words</b> — the dead may send a final message to the group.
 
-    Victory: wipe out the mafia — civilians win.
-    Match or outnumber the civilians — mafia wins.
+    🗳 <b>Voting</b> happens in DMs — other players don't see your vote (if the admin enables anonymity).
 
-    Start with /game. Good luck!
+    💎 <b>Items:</b> 🛡 Shield, ⛑ Killer shield, ⚖️ Vote shield, 🔫 Rifle (pierces shields), 🎭 Mask (hides your role), 📁 Fake document (Detective sees "civilian").
+
+    🏆 <b>Win conditions:</b>
+      • <b>Civilians</b>: wipe out all mafia and singletons.
+      • <b>Mafia</b>: equal or outnumber the civilians.
+      • <b>Singletons</b> — each role has its own conditions (read more via the button below).
+
+    ⚙️ <b>Settings:</b> group admins use /settings to tweak roles, timings, silence rules and more.
+
+    Tap below to learn exactly how every role works 👇
+
+btn-rules-roles = 🎭 Roles in detail
+btn-rules-back = 🔙 Back
+
+rules-pick-team =
+    🎭 <b>Roles by team</b>
+
+    Which side would you like to read about?
+
+rules-team-civilians = Civilians
+rules-team-mafia = Mafia
+rules-team-singletons = Singletons (solo)
+
+rules-team-civilians-intro =
+    👨‍👨‍👧‍👦 <b>Civilians</b>
+
+    Main goal: identify and eliminate the mafia and singletons. Each role has its own toolkit — coordinate carefully so nights aren't wasted.
+
+    Pick a role for full details 👇
+
+rules-team-mafia-intro =
+    🤵🏼 <b>Mafia</b>
+
+    Main goal: reduce the civilian count until you match them. Each night the mafia kills one player (Don picks; if no Don, plain Mafia). Special roles — Lawyer, Journalist, Killer — add extra abilities.
+
+    Pick a role for full details 👇
+
+rules-team-singletons-intro =
+    🎯 <b>Singleton roles (solo)</b>
+
+    These roles aren't on either team — each has its own win condition. They can rival mafia, civilians, and even other singletons.
+
+    Pick a role for full details 👇
+
+rules-role-detail =
+    { $emoji } <b>{ $role }</b>
+
+    { $description }
 
 
 # === Mafia chat ===
@@ -1172,27 +1218,100 @@ dm-your-role =
 
     { $description }
 
-role-desc-citizen = Your task: find the mafia and vote them out by day.
-role-desc-detective = Each night you check one player and learn their real role.
-role-desc-sergeant = Detective's helper — you see their messages and protect them.
-role-desc-mayor = Your daytime vote counts twice.
-role-desc-doctor = Each night you heal one player, saving them from death.
-role-desc-hooker = Each night you put one player to sleep, cancelling their night action.
-role-desc-hobo = At night you visit one player and see their visitors.
-role-desc-lucky = 50% chance to survive a deadly attack.
-role-desc-suicide = If you're hanged during the day — you win!
-role-desc-kamikaze = If you're hanged, you take one player with you.
-role-desc-don = Mafia boss — each night you kill one player.
-role-desc-mafia = Member of the mafia. You support the Don.
-role-desc-lawyer = At night you protect one mafia from the detective and from being hanged.
-role-desc-journalist = You can find the detective's helpers, but not the detective.
-role-desc-killer = Mafia's strongest killer — pierces through all protections.
-role-desc-maniac = Solo winner — survive to be the last one standing.
-role-desc-werewolf = You transform into the role of whoever you attack.
-role-desc-mage = Win if you survive to the very end.
-role-desc-arsonist = Win if you kill 3+ players.
-role-desc-crook = Win if you survive. By day you can vote in another player's name.
-role-desc-snitch = If you and the detective both target the same player, their role is revealed publicly.
+role-desc-citizen =
+    No special abilities — but <b>your power is your voice</b>.
+    Stay quiet at night. By day, take part in the debate: read suspects'
+    behaviour and vote sharply.
+
+role-desc-detective =
+    Each night you check one player and learn whether they are <b>mafia or civilian</b>.
+    The mafia will hunt you — stay careful. Tip: don't reveal your findings to
+    the whole chat right away, or mafia will pin you fast.
+
+role-desc-sergeant =
+    Detective's deputy. If the Detective dies, you inherit their role and start
+    checking players yourself. You see the Detective's messages.
+
+role-desc-mayor =
+    Mayor. <b>Your vote counts as 2</b> (during day voting and hang confirmation).
+    Mafia may target you first — stay alert.
+
+role-desc-doctor =
+    Each night you heal one player, saving them from a mafia attack.
+    <b>Self-heal works only once</b>. You can't heal the same player two nights in a row.
+
+role-desc-hooker =
+    Each night you put one player to sleep, <b>cancelling their night action</b>.
+    Sleep the Don — mafia doesn't kill. Sleep the Detective — they don't check.
+    You can't sleep yourself.
+
+role-desc-hobo =
+    At night you visit one player. You <b>see who else came to visit them</b> —
+    which exposes mafia killers. Masked players you can't identify.
+
+role-desc-lucky =
+    On a mafia attack, you <b>survive 50% of the time</b>. No choices to make —
+    it's pure luck. To the Detective you appear as "civilian".
+
+role-desc-suicide =
+    Special condition: <b>if you're hanged by the day vote — you win!</b>
+    But if you're killed at night — you lose. Goal: draw suspicion onto yourself.
+    To the Detective you appear as "civilian".
+
+role-desc-kamikaze =
+    Don't go down alone. <b>If you're hanged — you take one player with you</b>
+    (your choice). Taking a mafia member with you counts as a separate win.
+
+role-desc-don =
+    Mafia boss. Each night <b>you pick the kill target</b> (the mafia obeys your
+    pick). To the Detective you appear as "civilian". Catching you is a huge
+    civilian win.
+
+role-desc-mafia =
+    Mafia member. You back the Don at night and join in killing the chosen
+    target. The mafia chat helps you coordinate.
+
+role-desc-lawyer =
+    Mafia lawyer. Each night <b>you pick one mafia member</b> and shield them
+    from a Detective check and from being hanged. You can shield yourself too.
+
+role-desc-journalist =
+    Mafia spy. Each night you check one player — you can spot a <b>Doctor, Hobo
+    or Hooker</b>. But the Detective and Sergeant you can't identify.
+
+role-desc-killer =
+    Mafia's strongest killer. Your rifle <b>pierces every protection</b>
+    (Doctor, 🛡 Shield, ⛑ Killer shield). At night you kill the Don's target;
+    with the Don's permission you can pick your own.
+
+role-desc-maniac =
+    Solo killer. Your win: <b>be the last alive</b> (everyone else dead).
+    Enemy of both mafia and civilians. You kill one player per night.
+    To the Detective you appear as "civilian".
+
+role-desc-werewolf =
+    Werewolf. At night you attack a player and <b>transform into their role</b>:
+    attack the Don → become Mafia, attack the Detective → become Sergeant.
+    If another Werewolf attacks you too — both of you die.
+
+role-desc-mage =
+    Mage. <b>Survive to the end — you win solo</b>. If attacked, you may
+    "forgive" or "kill in return". To the Detective you appear as "civilian".
+
+role-desc-arsonist =
+    Arsonist. At night you "set fire" to your targets, but they don't die yet.
+    Once you have <b>3 or more marked targets</b>, they all die at once and
+    you become the solo winner.
+
+role-desc-crook =
+    Crook. <b>Survive to the end — you win solo</b>. Special ability: by day
+    you can cast your vote in another player's name — your vote registers as
+    if it were theirs.
+
+role-desc-snitch =
+    Snitch. At night you pick one player. <b>If the Detective targets that
+    exact same player</b>, your role is revealed to the group and you win!
+    Masked players can't be identified.
 
 # ===========================================================
 # DM-based voting (Wave 6 — voting moved out of group chat)

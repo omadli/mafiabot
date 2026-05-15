@@ -905,20 +905,67 @@ help-group =
     /rules — qoidalar
 
 rules-summary =
-    📖 Mafia Baku Black — qoidalar:
+    📖 <b>Mafia o'yin qoidalari</b>
 
-    Shahar ikki tomonga bo'linadi: tinch aholi va mafiya.
-    Har kecha mafiya bitta odamni o'ldiradi. Kunduz aholi
-    ovoz berib birini osadi. Komissar Kattani yovuzlarni
-    fosh etadi, Doktor qurbonlarni himoyalaydi.
+    🏙 <b>Sahna:</b> shahar ikki asosiy tomonga bo'lingan — <b>tinch aholi</b> va <b>mafiya</b>. Ularning yonida o'z g'alaba shartlari bilan o'ynaydigan <b>singleton</b> rollari ham bor.
 
-    Singleton rollar (Qotil, Bo'ri, Sehrgar va boshqalar)
-    yakka holda o'z g'alaba shartlari bilan o'ynaydi.
+    🎲 <b>Aylanish:</b>
+      1️⃣ <b>Tun</b> — yashirin harakatlar (mafiya o'ldiradi, Komissar tekshiradi, Doktor davolaydi, va h.k.).
+      2️⃣ <b>Kun</b> — kechagi natijalar e'lon qilinadi, aholi muhokama qiladi.
+      3️⃣ <b>Ovoz berish</b> — gumondorni tanlaymiz.
+      4️⃣ <b>Tasdiqlash</b> 👍/👎 — yetarli "ha" ovozi bo'lsa, gumondor osiladi.
+      5️⃣ <b>So'nggi so'z</b> — o'lgan o'yinchi guruhga oxirgi xabarini yuborishi mumkin.
 
-    G'alaba: mafiyani yo'q qilsang — tinch aholi g'olib.
-    Tinch aholi sonini tenglashtirsang — mafiya g'olib.
+    🗳 <b>Ovoz berish</b> shaxsiy chat orqali bo'ladi — guruhda boshqalar kimga ovoz berganingizni ko'rmaydi (agar admin shunday sozlasa).
 
-    /game bilan boshlang. Omad!
+    💎 <b>Itemlar:</b> 🛡 Himoya, ⛑ Qotildan himoya, ⚖️ Ovoz himoyasi, 🔫 Miltiq (himoyani teshib o'tadi), 🎭 Maska (kim ekanligingizni yashiradi), 📁 Soxta hujjat (Komissar "tinch aholi" deb ko'radi).
+
+    🏆 <b>G'alaba shartlari:</b>
+      • <b>Tinch aholi</b>: barcha mafiya va singletonlarni yo'q qilsa.
+      • <b>Mafiya</b>: mafiya soni tinch aholi soniga teng yoki ko'p bo'lsa.
+      • <b>Singleton</b> rollar — har biri o'z shartlari bilan g'olib bo'ladi (pastdagi tugmadan har biri haqida o'qing).
+
+    ⚙️ <b>Sozlamalar:</b> guruh adminlari /settings orqali rollar, vaqtlar, jimlik qoidalari va boshqalarni o'zgartirishi mumkin.
+
+    Quyidagi tugma orqali har bir rol qanday ishlashini batafsil o'rganishingiz mumkin 👇
+
+btn-rules-roles = 🎭 Rollar haqida batafsil
+btn-rules-back = 🔙 Orqaga
+
+rules-pick-team =
+    🎭 <b>Rollar bo'yicha to'plamlar</b>
+
+    Qaysi tomon haqida bilmoqchisiz?
+
+rules-team-civilians = Tinch aholilar
+rules-team-mafia = Mafiya
+rules-team-singletons = Singletonlar (yakka)
+
+rules-team-civilians-intro =
+    👨‍👨‍👧‍👦 <b>Tinch aholilar</b>
+
+    Asosiy maqsad: mafiya va singletonlarni topib yo'q qilish. Har bir rolning o'z imkoniyatlari bor — tunda kim qaysi vazifani bajarishini yaxshi rejalashtirish kerak.
+
+    Rol haqida batafsil bilish uchun tanlang 👇
+
+rules-team-mafia-intro =
+    🤵🏼 <b>Mafiya</b>
+
+    Asosiy maqsad: tinch aholi sonini kamaytirib, ular bilan tenglashish. Har tunda mafiya bitta o'yinchini o'ldiradi (Don tanlaydi, yo'q bo'lsa Mafiya). Maxsus rollar — Advokat, Jurnalist, Killer — qo'shimcha qobiliyatlar beradi.
+
+    Rol haqida batafsil bilish uchun tanlang 👇
+
+rules-team-singletons-intro =
+    🎯 <b>Singleton rollar (yakka)</b>
+
+    Bu rollar hech qaysi tomonda emas — har biri o'zining maxsus g'alaba shartiga ega. Bir-biriga ham, mafiyaga ham, tinch aholiga ham raqib bo'lishi mumkin.
+
+    Rol haqida batafsil bilish uchun tanlang 👇
+
+rules-role-detail =
+    { $emoji } <b>{ $role }</b>
+
+    { $description }
 
 
 # === Mafia chat ===
@@ -1186,27 +1233,103 @@ dm-your-role =
 
     { $description }
 
-role-desc-citizen = Vazifangiz mafiani topish va kunduzgi ovozda osish.
-role-desc-detective = Har tunda 1 o'yinchini tekshirib, uning aslida kim ekanligini bilasiz.
-role-desc-sergeant = Komissarning yordamchisi — uning xabarlarini ko'rasiz va himoya qilasiz.
-role-desc-mayor = Sizning ovozingiz ikki barobar hisoblanadi.
-role-desc-doctor = Har tunda 1 o'yinchini davolab, uni o'limdan saqlaysiz.
-role-desc-hooker = Har tunda 1 o'yinchini uxlatib, uning tundagi harakatini bekor qilasiz.
-role-desc-hobo = Tunda 1 o'yinchining uyiga borasiz va uning mehmonlarini ko'rasiz.
-role-desc-lucky = 50% omadingiz bor — o'limdan tasodifan qutulishingiz mumkin.
-role-desc-suicide = Sizni kunduzgi ovozda osishsa, siz g'olib bo'lasiz!
-role-desc-kamikaze = Osilsangiz, o'zingiz bilan birga 1 odamni jahannamga olib ketasiz.
-role-desc-don = Mafiya boshlig'i — har tunda 1 o'yinchini o'ldirasiz.
-role-desc-mafia = Mafiya guruhi a'zosi. Donni qo'llab-quvvatlaysiz.
-role-desc-lawyer = Tunda 1 mafiyani Komissardan va kunduzgi osishdan himoyalaysiz.
-role-desc-journalist = Komissar yordamchilarini topa olasiz, lekin Komissarning o'zini emas.
-role-desc-killer = Mafiyaning eng kuchli o'ldiruvchisi — barcha himoyalarni teshib o'tasiz.
-role-desc-maniac = Yakka g'olib — oxirgi tirik qolish uchun hammani o'ldirasiz.
-role-desc-werewolf = Hujum qilgan o'yinchining roliga aylanasiz.
-role-desc-mage = Oxirgacha tirik qolsangiz, yakka g'olib bo'lasiz.
-role-desc-arsonist = 3+ o'yinchini o'ldirsangiz, yakka g'olib bo'lasiz.
-role-desc-crook = Tirik qolsangiz, yakka g'olib bo'lasiz. Kunduzi boshqa o'yinchi nomidan ovoz bera olasiz.
-role-desc-snitch = Komissar bilan bir odamni tanlasangiz, rolini guruhga oshkor qilasiz.
+role-desc-citizen =
+    Sizning maxsus qobiliyatingiz yo'q — lekin <b>kuchingiz ovozingizda</b>.
+    Tunda jim o'tirasiz. Kunduzi muhokamada faol bo'ling: mafiyani gap-so'zlaridan
+    payqashga harakat qiling va ovoz berishda to'g'ri tanlov qiling.
+
+role-desc-detective =
+    Har tunda 1 o'yinchini tekshirasiz va u <b>mafiya yoki tinch aholi</b>
+    ekanligini bilasiz. Sizni mafiyadan oldin nishonlash uchun ehtiyot bo'ling.
+    Maslahat: aniqlovlarni tezda guruhga oshkor qilmang — mafiya sizni topadi.
+
+role-desc-sergeant =
+    Komissarning yordamchisi. Komissar o'lsa, siz uning vazifasini olasiz va
+    har tunda tekshira boshlaysiz. Komissarning xabarlarini ko'rib turasiz.
+
+role-desc-mayor =
+    Hokim. Sizning <b>ovozingiz 2 barobar</b> hisoblanadi (kunduzgi ovoz berishda
+    va osishni tasdiqlashda). Mafiya sizni birinchi o'ldirishi mumkin — ehtiyot bo'ling.
+
+role-desc-doctor =
+    Har tunda 1 o'yinchini davolab, uni mafiya hujumidan saqlaysiz.
+    <b>O'zingizni faqat 1 marta</b> davolay olasiz. Bir xil o'yinchini ikki tun ketma-ket
+    davolab bo'lmaydi.
+
+role-desc-hooker =
+    Har tunda 1 o'yinchini uxlatib, uning tundagi harakatini <b>bekor qilasiz</b>.
+    Don'ni uxlatsangiz mafiya o'ldira olmaydi. Komissarni uxlatsangiz tekshira olmaydi.
+    O'zingizni uxlata olmaysiz.
+
+role-desc-hobo =
+    Tunda 1 o'yinchining uyiga borasiz. <b>Kim u o'yinchining oldiga kelganini</b>
+    ko'rasiz — shu orqali mafiya qotillarini aniqlab olishingiz mumkin.
+    Maska kiygan o'yinchilarni tanib olmaysiz.
+
+role-desc-lucky =
+    Mafiya hujum qilsa, <b>50% omad bilan tirik qolasiz</b>. Hech qanday qaror
+    qabul qilmaysiz — Xudoning irodasi. Komissarga "tinch aholi" deb ko'rinasiz.
+
+role-desc-suicide =
+    Maxsus shart: <b>kunduzgi ovozda osilsangiz — g'olib bo'lasiz!</b>
+    Lekin tunda o'ldirilsangiz — yutqizasiz. Vazifa: o'zingizga shubha qaratish.
+    Komissarga "tinch aholi" deb ko'rinasiz.
+
+role-desc-kamikaze =
+    O'lganda yolg'iz ketmaysiz. <b>Osilsangiz — o'zingiz bilan birga 1 odamni</b>
+    jahannamga olib ketasiz (tanlovingiz bo'yicha). Mafiyani olib ketsangiz — alohida g'olib.
+
+role-desc-don =
+    Mafiya boshlig'i. Har tunda <b>kimni o'ldirishni siz tanlaysiz</b> (mafiya guruhi
+    sizning tanlovingizga bo'ysunadi). Komissarga "tinch aholi" deb ko'rinasiz.
+    Sizni topish — tinch aholi uchun katta yutuq.
+
+role-desc-mafia =
+    Mafiya guruhi a'zosi. Tunda Donni qo'llab-quvvatlaysiz va u tanlagan nishonni
+    o'ldirishda ishtirok etasiz. Mafiya chati orqali bir-biringiz bilan til topishasiz.
+
+role-desc-lawyer =
+    Mafiya advokati. Har tunda <b>1 mafiyani tanlab</b> uni Komissar tekshiruvidan
+    va kunduzgi osishdan himoya qilasiz (osilmaydi). O'zingizni ham himoyalashingiz mumkin.
+
+role-desc-journalist =
+    Mafiya josusi. Har tunda 1 o'yinchini tekshirib, u <b>Doktor, Daydi yoki Kezuvchi</b>
+    ekanligini bilishingiz mumkin. Ammo Komissar va Serjantni tana olmaysiz.
+
+role-desc-killer =
+    Mafiyaning eng kuchli qotili. Sizning miltig'ingiz <b>barcha himoyalarni</b>
+    (Doktor, 🛡 Himoya, ⛑ Qotildan himoya) <b>teshib o'tadi</b>. Tunda Don tanlagan
+    qurbonni o'ldirasiz, ammo Don ruxsat bersa o'zingiz tanlay olasiz.
+
+role-desc-maniac =
+    Yakka qotil. Sizning g'alabangiz — <b>oxirgi tirik qolish</b> (boshqa hamma o'lsa).
+    Mafiyaga ham, tinch aholiga ham raqibsiz. Tunda 1 o'yinchini o'ldirasiz.
+    Komissarga "tinch aholi" deb ko'rinasiz.
+
+role-desc-werewolf =
+    Bo'ri. Tunda 1 o'yinchiga hujum qilasiz va uning <b>roliga aylanasiz</b>:
+    Don'ga hujum qilsangiz Mafiyaga, Komissarga hujum qilsangiz Serjantga aylanasiz.
+    Agar boshqa Bo'ri sizga ham hujum qilsa — ikkalangiz ham o'lasiz.
+
+role-desc-mage =
+    Sehrgar. <b>Oxirigacha tirik qolsangiz — yakka g'olibsiz</b>. Hujum qilingansiz,
+    "kechirish" yoki "qaytarib o'ldirish"ni tanlay olasiz. Komissarga "tinch aholi"
+    deb ko'rinasiz.
+
+role-desc-arsonist =
+    Olovchi. Tunda nishonlaringizni "yoqib qo'yasiz", lekin ular o'lmaydi.
+    <b>3 ta yoki undan ko'p nishon qo'yib bo'lganingizda</b> — hammasi bir vaqtda
+    o'ladi va siz yakka g'olib bo'lasiz.
+
+role-desc-crook =
+    Aferist. <b>Oxirgacha tirik qolsangiz — yakka g'olib</b>. Maxsus qobiliyat:
+    kunduzi siz tanlagan boshqa o'yinchining nomidan ovoz bera olasiz —
+    sizning ovozingiz uning ovozi sifatida ko'rinadi.
+
+role-desc-snitch =
+    Sotqin. Tunda 1 o'yinchini tanlaysiz. <b>Agar Komissar ham aynan o'sha o'yinchini</b>
+    tekshirsa — sizning rolingiz guruhga oshkor qilinadi va siz g'olibsiz!
+    Maska kiygan o'yinchilarni tana olmaysiz.
 
 # ===========================================================
 # DM-based voting (Wave 6 — voting moved out of group chat)
