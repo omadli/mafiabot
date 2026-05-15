@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { authStore } from "@shared/store/auth";
 
 import { AdminLayout } from "./components/AdminLayout";
+import { AdminLiveGamePage } from "./pages/AdminLiveGamePage";
 import { AuditPage } from "./pages/AuditPage";
 import { Dashboard } from "./pages/Dashboard";
 import { GameReplayPage } from "./pages/GameReplayPage";
@@ -24,6 +25,7 @@ export function AdminApp() {
           <Route path="users" element={<UsersPage />} />
           <Route path="users/:userId" element={<UserDetailPage />} />
           <Route path="groups" element={<GroupsPage />} />
+          <Route path="groups/:groupId/live" element={<AdminLiveGamePage />} />
           <Route path="games" element={<GamesPage />} />
           <Route path="games/:gameId" element={<GameReplayPage />} />
           <Route path="audit" element={<AuditPage />} />

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
@@ -98,7 +99,10 @@ export function GroupsPage() {
                   <td style={{ color: "var(--muted)" }}>
                     {new Date(g.created_at).toLocaleDateString()}
                   </td>
-                  <td>
+                  <td style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
+                    <Link className="admin-btn" to={`/admin/groups/${g.id}/live`}>
+                      🎥 {t("admin.groups.live")}
+                    </Link>
                     {g.is_blocked ? (
                       <button
                         className="admin-btn"
