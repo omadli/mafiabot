@@ -121,8 +121,12 @@ function GamesTab({ groupId }: { groupId: number }) {
                 <td style={{ fontFamily: "monospace", fontSize: "0.75rem" }}>
                   {g.id.slice(0, 8)}…
                 </td>
-                <td>{g.status}</td>
-                <td>{g.winner_team ?? "—"}</td>
+                <td>{t(`admin.games.status_${g.status}`, g.status)}</td>
+                <td>
+                  {g.winner_team
+                    ? t(`admin.games.team_${g.winner_team}`, g.winner_team)
+                    : "—"}
+                </td>
                 <td style={{ textAlign: "right" }}>{g.players_count}</td>
                 <td style={{ textAlign: "right" }}>
                   {g.duration_seconds
@@ -240,37 +244,37 @@ function SettingsTab({ groupId }: { groupId: number }) {
     {
       code: "roles",
       emoji: "🎭",
-      title: t("admin.settings.roles"),
+      title: t("sa.settings.roles"),
       render: () => <RolesEditor settings={data} onSave={onSave} />,
     },
     {
       code: "timings",
       emoji: "⏱",
-      title: t("admin.settings.timings"),
+      title: t("sa.settings.timings"),
       render: () => <TimingsEditor settings={data} onSave={onSave} />,
     },
     {
       code: "items_allowed",
       emoji: "🛡",
-      title: t("admin.settings.items"),
+      title: t("sa.settings.items"),
       render: () => <ItemsEditor settings={data} onSave={onSave} />,
     },
     {
       code: "silence",
       emoji: "🔇",
-      title: t("admin.settings.silence"),
+      title: t("sa.settings.silence"),
       render: () => <SilenceEditor settings={data} onSave={onSave} />,
     },
     {
       code: "gameplay",
       emoji: "🎮",
-      title: t("admin.settings.gameplay"),
+      title: t("sa.settings.gameplay"),
       render: () => <GameplayEditor settings={data} onSave={onSave} />,
     },
     {
       code: "language",
       emoji: "🌐",
-      title: t("admin.settings.language"),
+      title: t("sa.settings.language"),
       render: () => <LanguageEditor settings={data} onSave={onSave} />,
     },
   ];
@@ -299,7 +303,7 @@ function SettingsTab({ groupId }: { groupId: number }) {
             </strong>
             {savedKey === sec.code && (
               <span style={{ color: "#4ade80", fontSize: "0.8rem" }}>
-                ✓ {t("admin.settings.saved")}
+                ✓ {t("sa.settings.saved")}
               </span>
             )}
           </summary>

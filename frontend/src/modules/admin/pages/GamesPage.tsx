@@ -50,14 +50,16 @@ export function GamesPage() {
                   <td>{g.group_id}</td>
                   <td>
                     {g.status === "finished" ? (
-                      <span className="badge green">{g.status}</span>
+                      <span className="badge green">{t(`admin.games.status_${g.status}`)}</span>
                     ) : g.status === "running" ? (
-                      <span className="badge yellow">{g.status}</span>
+                      <span className="badge yellow">{t(`admin.games.status_${g.status}`)}</span>
                     ) : (
-                      <span className="badge">{g.status}</span>
+                      <span className="badge">{t(`admin.games.status_${g.status}`, g.status)}</span>
                     )}
                   </td>
-                  <td>{g.winner_team || "—"}</td>
+                  <td>
+                    {g.winner_team ? t(`admin.games.team_${g.winner_team}`, g.winner_team) : "—"}
+                  </td>
                   <td style={{ color: "var(--muted)" }}>
                     {new Date(g.started_at).toLocaleString()}
                   </td>

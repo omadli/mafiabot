@@ -164,13 +164,13 @@ export function SaLiveGamePage() {
               >
                 <span>
                   {p.join_order}. {ROLE_EMOJI[p.role] || ""} <strong>{p.first_name}</strong>{" "}
-                  <small style={{ color: "var(--muted)" }}>({p.role})</small>
+                  <small style={{ color: "var(--muted)" }}>({t(`role-${p.role}`)})</small>
                 </span>
                 <span style={{ fontSize: "0.75rem" }}>
                   {p.alive ? (
                     <span style={{ color: "#4ade80" }}>✓ {t("admin.live.alive_yes")}</span>
                   ) : (
-                    <span style={{ color: "#e74c3c" }}>💀 R{p.died_at_round}</span>
+                    <span style={{ color: "#e74c3c" }}>💀 {t("admin.live.round_short")}{p.died_at_round}</span>
                   )}
                 </span>
               </li>

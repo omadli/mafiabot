@@ -76,7 +76,7 @@ export function AdminLiveGamePage() {
         </Link>
       </div>
       <h1 className="admin-page-title">
-        🎥 {t("admin.live.title")} — Group #{data.group_id}
+        🎥 {t("admin.live.title")} — {t("admin.live.group_label")} #{data.group_id}
       </h1>
       <div
         style={{
@@ -160,7 +160,7 @@ function PlayersPanel({ data }: { data: LiveGameState }) {
                     {p.alive ? (
                       <span className="badge green">{t("admin.live.alive_yes")}</span>
                     ) : (
-                      <span className="badge red">💀 R{p.died_at_round}</span>
+                      <span className="badge red">💀 {t("admin.live.round_short")}{p.died_at_round}</span>
                     )}
                   </td>
                   <td style={{ fontSize: "0.85rem", color: "var(--muted)" }}>

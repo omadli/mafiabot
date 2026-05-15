@@ -110,6 +110,8 @@
     },
     "live": {
       "title": "Jonli o'yin",
+      "group_label": "Guruh",
+      "round_short": "R",
       "back_to_groups": "Guruhlar ro'yxatiga qaytish",
       "no_active_game": "Bu guruhda hozir o'yin yo'q",
       "no_active_hint": "O'yin boshlanganda bu yerda real vaqtda ko'rsatiladi.",
@@ -151,7 +153,14 @@
       "col_status": "Status",
       "col_winner": "G'olib",
       "col_started": "Boshlandi",
-      "col_duration": "Davomiylik"
+      "col_duration": "Davomiylik",
+      "status_running": "Davom etmoqda",
+      "status_finished": "Tugadi",
+      "status_cancelled": "Bekor qilindi",
+      "status_waiting": "Ro'yxat",
+      "team_citizens": "Tinch aholilar",
+      "team_mafia": "Mafiya",
+      "team_singleton": "Singleton"
     },
     "game_replay": {
       "back": "O'yinlar",

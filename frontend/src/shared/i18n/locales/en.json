@@ -110,6 +110,8 @@
     },
     "live": {
       "title": "Live game",
+      "group_label": "Group",
+      "round_short": "R",
       "back_to_groups": "Back to groups",
       "no_active_game": "No active game in this group right now",
       "no_active_hint": "It will appear here in real time once a game starts.",
@@ -151,7 +153,14 @@
       "col_status": "Status",
       "col_winner": "Winner",
       "col_started": "Started",
-      "col_duration": "Duration"
+      "col_duration": "Duration",
+      "status_running": "Running",
+      "status_finished": "Finished",
+      "status_cancelled": "Cancelled",
+      "status_waiting": "Waiting",
+      "team_citizens": "Citizens",
+      "team_mafia": "Mafia",
+      "team_singleton": "Singleton"
     },
     "game_replay": {
       "back": "Games",

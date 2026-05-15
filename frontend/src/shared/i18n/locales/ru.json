@@ -110,6 +110,8 @@
     },
     "live": {
       "title": "Живая игра",
+      "group_label": "Группа",
+      "round_short": "Р",
       "back_to_groups": "Вернуться к группам",
       "no_active_game": "Сейчас в этой группе нет активной игры",
       "no_active_hint": "Когда игра начнётся — здесь появится в реальном времени.",
@@ -151,7 +153,14 @@
       "col_status": "Статус",
       "col_winner": "Победитель",
       "col_started": "Начало",
-      "col_duration": "Длительность"
+      "col_duration": "Длительность",
+      "status_running": "В процессе",
+      "status_finished": "Завершена",
+      "status_cancelled": "Отменена",
+      "status_waiting": "Регистрация",
+      "team_citizens": "Мирные",
+      "team_mafia": "Мафия",
+      "team_singleton": "Синглтон"
     },
     "game_replay": {
       "back": "Игры",

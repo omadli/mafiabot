@@ -78,7 +78,7 @@ export function RolesEditor({ settings, onSave }: EditorProps) {
       {ROLE_GROUPS.map((group) => (
         <div key={group.team} style={{ marginBottom: "1rem" }}>
           <h4 style={{ color: "var(--muted)", fontSize: "0.85rem", margin: "0.5rem 0" }}>
-            {t(`admin.settings.team_${group.team}`)}
+            {t(`sa.settings.team_${group.team}`)}
           </h4>
           <div
             style={{
@@ -94,7 +94,7 @@ export function RolesEditor({ settings, onSave }: EditorProps) {
                 className={`sa-chip ${roles[code] ? "active" : ""}`}
                 style={{ justifyContent: "flex-start", textAlign: "left", padding: "0.4rem 0.6rem" }}
               >
-                {roles[code] ? "🟢" : "🔴"} {ROLE_EMOJI[code] ?? "❓"} {code}
+                {roles[code] ? "🟢" : "🔴"} {ROLE_EMOJI[code] ?? "❓"} {t(`role-${code}`)}
               </button>
             ))}
           </div>
@@ -130,7 +130,7 @@ export function TimingsEditor({ settings, onSave }: EditorProps) {
   return (
     <div>
       <p style={{ color: "var(--muted)", fontSize: "0.85rem", marginTop: 0 }}>
-        ({t("admin.settings.timings_unit")})
+        ({t("sa.settings.timings_unit")})
       </p>
       {TIMING_KEYS.map(({ key, delta }) => (
         <div
@@ -142,17 +142,35 @@ export function TimingsEditor({ settings, onSave }: EditorProps) {
             gap: "0.5rem",
             padding: "0.4rem 0",
             borderBottom: "1px solid #2a2a45",
+            flexWrap: "wrap",
           }}
         >
-          <span>{t(`admin.settings.timing_${key}`)}</span>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-            <button className="sa-chip" onClick={() => adjust(key, -delta)}>
+          <span style={{ flex: "1 1 50%", minWidth: 0, wordBreak: "break-word" }}>
+            {t(`sa.settings.timing_${key}`)}
+          </span>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.3rem",
+              flex: "0 0 auto",
+            }}
+          >
+            <button
+              className="sa-chip"
+              onClick={() => adjust(key, -delta)}
+              style={{ padding: "0.3rem 0.5rem" }}
+            >
               ➖ {delta}
             </button>
-            <span style={{ minWidth: "60px", textAlign: "center", fontWeight: 600 }}>
+            <span style={{ minWidth: "48px", textAlign: "center", fontWeight: 600 }}>
               {timings[key] ?? "—"}s
             </span>
-            <button className="sa-chip" onClick={() => adjust(key, delta)}>
+            <button
+              className="sa-chip"
+              onClick={() => adjust(key, delta)}
+              style={{ padding: "0.3rem 0.5rem" }}
+            >
               ➕ {delta}
             </button>
           </div>
@@ -164,16 +182,17 @@ export function TimingsEditor({ settings, onSave }: EditorProps) {
 
 // === Items editor ===
 
-const ITEM_LABELS: Record<string, string> = {
-  shield: "🛡 Shield",
-  killer_shield: "⛑ Killer shield",
-  vote_shield: "⚖️ Vote shield",
-  rifle: "🔫 Rifle",
-  mask: "🎭 Mask",
-  fake_document: "📁 Fake document",
-};
+const ITEM_CODES = [
+  "shield",
+  "killer_shield",
+  "vote_shield",
+  "rifle",
+  "mask",
+  "fake_document",
+] as const;
 
 export function ItemsEditor({ settings, onSave }: EditorProps) {
+  const { t } = useTranslation();
   const items = settings.items_allowed || {};
   const toggle = (code: string) => {
     onSave("items_allowed", { ...items, [code]: !items[code] });
@@ -186,14 +205,14 @@ export function ItemsEditor({ settings, onSave }: EditorProps) {
         gap: "0.4rem",
       }}
     >
-      {Object.entries(ITEM_LABELS).map(([code, label]) => (
+      {ITEM_CODES.map((code) => (
         <button
           key={code}
           onClick={() => toggle(code)}
           className={`sa-chip ${items[code] ? "active" : ""}`}
           style={{ justifyContent: "flex-start", textAlign: "left", padding: "0.5rem 0.7rem" }}
         >
-          {items[code] ? "🟢" : "🔴"} {label}
+          {items[code] ? "🟢" : "🔴"} {t(`sa.system.item_${code}`)}
         </button>
       ))}
     </div>
@@ -212,10 +231,10 @@ export function SilenceEditor({ settings, onSave }: EditorProps) {
   };
 
   const labelKey: Record<string, string> = {
-    dead_players: "admin.settings.silence_dead",
-    sleeping_players: "admin.settings.silence_sleeping",
-    non_players: "admin.settings.silence_non_players",
-    night_chat: "admin.settings.silence_night_chat",
+    dead_players: "sa.settings.silence_dead",
+    sleeping_players: "sa.settings.silence_sleeping",
+    non_players: "sa.settings.silence_non_players",
+    night_chat: "sa.settings.silence_night_chat",
   };
 
   return (
@@ -252,7 +271,7 @@ export function GameplayEditor({ settings, onSave }: EditorProps) {
     <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
       <div>
         <p style={{ color: "var(--muted)", margin: "0.5rem 0", fontSize: "0.85rem" }}>
-          {t("admin.settings.ratio")}
+          {t("sa.settings.ratio")}
         </p>
         <div style={{ display: "flex", gap: "0.4rem" }}>
           <button
@@ -260,14 +279,14 @@ export function GameplayEditor({ settings, onSave }: EditorProps) {
             onClick={() => setRatio("low")}
             style={{ flex: 1 }}
           >
-            {t("admin.settings.ratio_low")}
+            {t("sa.settings.ratio_low")}
           </button>
           <button
             className={`sa-chip ${ratio === "high" ? "active" : ""}`}
             onClick={() => setRatio("high")}
             style={{ flex: 1 }}
           >
-            {t("admin.settings.ratio_high")}
+            {t("sa.settings.ratio_high")}
           </button>
         </div>
       </div>
@@ -277,7 +296,7 @@ export function GameplayEditor({ settings, onSave }: EditorProps) {
         className={`sa-chip ${g.allow_skip_day_vote ? "active" : ""}`}
         style={{ justifyContent: "flex-start", textAlign: "left", padding: "0.6rem 0.8rem" }}
       >
-        {g.allow_skip_day_vote ? "🟢" : "🔴"} {t("admin.settings.skip_day_vote")}
+        {g.allow_skip_day_vote ? "🟢" : "🔴"} {t("sa.settings.skip_day_vote")}
       </button>
 
       <button
@@ -285,7 +304,7 @@ export function GameplayEditor({ settings, onSave }: EditorProps) {
         className={`sa-chip ${g.allow_skip_night_action ? "active" : ""}`}
         style={{ justifyContent: "flex-start", textAlign: "left", padding: "0.6rem 0.8rem" }}
       >
-        {g.allow_skip_night_action ? "🟢" : "🔴"} {t("admin.settings.skip_night_action")}
+        {g.allow_skip_night_action ? "🟢" : "🔴"} {t("sa.settings.skip_night_action")}
       </button>
     </div>
   );

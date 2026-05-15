@@ -168,7 +168,7 @@ export function GameReplayPage() {
                     {p.alive ? (
                       <span className="badge green">{t("admin.game_replay.alive")}</span>
                     ) : (
-                      <span className="badge red">💀 R{p.died_at_round}</span>
+                      <span className="badge red">💀 {t("admin.live.round_short")}{p.died_at_round}</span>
                     )}
                   </td>
                   <td style={{ color: "var(--muted)", fontSize: "0.85rem" }}>
