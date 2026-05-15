@@ -11,6 +11,7 @@ import { SaRolesPage } from "./pages/sa/SaRolesPage";
 import { SaPlayersPage } from "./pages/sa/SaPlayersPage";
 import { SaGroupsPage } from "./pages/sa/SaGroupsPage";
 import { SaGroupDetailPage } from "./pages/sa/SaGroupDetailPage";
+import { SaLiveGamePage } from "./pages/sa/SaLiveGamePage";
 import { SaSystemPage } from "./pages/sa/SaSystemPage";
 
 import "./WebAppStyles.css";
@@ -48,6 +49,7 @@ export function WebAppRoot() {
           <Route path="players" element={<SaPlayersPage />} />
           <Route path="groups" element={<SaGroupsPage />} />
           <Route path="groups/:groupId" element={<SaGroupDetailPage />} />
+          <Route path="groups/:groupId/live" element={<SaLiveGamePage />} />
           <Route path="system" element={<SaSystemPage />} />
         </Route>
       </Routes>

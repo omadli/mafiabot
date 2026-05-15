@@ -56,6 +56,9 @@ export const saApi = {
   groupSettings: async (groupId: number): Promise<GroupSettings> =>
     (await api.get(`/sa/groups/${groupId}/settings`)).data,
 
+  groupLive: async (groupId: number): Promise<unknown> =>
+    (await api.get(`/sa/groups/${groupId}/live`)).data,
+
   updateGroupSettings: async (
     groupId: number,
     section: string,

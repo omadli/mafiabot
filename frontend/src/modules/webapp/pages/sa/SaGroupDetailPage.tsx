@@ -38,6 +38,23 @@ export function SaGroupDetailPage() {
         🏘 {t("sa.group_detail.group_label")} {groupId}
       </h2>
 
+      <Link
+        to={`/webapp/sa/groups/${groupId}/live`}
+        style={{
+          display: "inline-block",
+          padding: "0.5rem 0.75rem",
+          marginBottom: "0.75rem",
+          background: "var(--accent)",
+          color: "#fff",
+          borderRadius: "0.4rem",
+          textDecoration: "none",
+          fontWeight: 600,
+          fontSize: "0.9rem",
+        }}
+      >
+        🎥 {t("admin.live.title")}
+      </Link>
+
       <div className="webapp-tabs" style={{ marginBottom: "1rem" }}>
         <button
           className={`webapp-tab ${tab === "games" ? "active" : ""}`}
