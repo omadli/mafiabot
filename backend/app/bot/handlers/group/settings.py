@@ -21,7 +21,7 @@ router = Router(name="group_settings")
 router.message.filter(F.chat.type.in_({"group", "supergroup"}))
 
 
-@router.message(Command("settings"), IsGroupAdmin())
+@router.message(Command("settings", prefix="/!"), IsGroupAdmin())
 async def cmd_settings_admin(message: Message, user: User, bot: Bot, _: Translator) -> None:
     """Admin chaqirgan /settings — DM orqali sozlamalar menyusini ochish."""
     group = await Group.get_or_none(id=message.chat.id)
@@ -44,7 +44,7 @@ async def cmd_settings_admin(message: Message, user: User, bot: Bot, _: Translat
         await message.reply(_("settings-dm-failed"))
 
 
-@router.message(Command("settings"))
+@router.message(Command("settings", prefix="/!"))
 async def cmd_settings_non_admin(message: Message, _: Translator) -> None:
     """Admin emas — kichik xato xabari."""
     await message.reply(_("settings-admin-only"))

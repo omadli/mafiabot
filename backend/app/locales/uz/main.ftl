@@ -191,6 +191,16 @@ last-words-sent-confirm = ✅ Sizning habaringiz guruhga yuborildi!
 
 
 # ===========================================================
+# FLOOD CONTROL — buyruqlar spam'iga jahl xabarlar
+# ===========================================================
+
+flood-alert-1 = 😤 Hoy! Tinchlanvol, bot sening uchun robot emas. Ikki sekund kut!
+flood-alert-2 = 🤨 Yana bosding-a? Qo'lingda spinnerga aylanib qoldi shekilli buyruq tugmasi.
+flood-alert-3 = 🙄 Birovning robotini qiynama, og'ayni. Sabring yo'qmi yoki klaviaturang buzilganmi?
+flood-alert-4 = 😡 Bas qil! Yana bir marta tegsang, jahlim chiqib chatdan otib yuboraman.
+
+
+# ===========================================================
 # O'YIN RO'YXATGA OLISH / BOSHLASH XATOLARI
 # ===========================================================
 

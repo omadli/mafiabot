@@ -24,7 +24,7 @@ router = Router(name="group_giveaway")
 router.message.filter(F.chat.type.in_({"group", "supergroup"}))
 
 
-@router.message(Command("give"))
+@router.message(Command("give", prefix="/!"))
 async def cmd_give(
     message: Message, user: User, _: Translator, command: CommandObject, bot: Bot
 ) -> None:

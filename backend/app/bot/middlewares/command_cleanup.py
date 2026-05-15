@@ -45,7 +45,10 @@ class CommandCleanupMiddleware(BaseMiddleware):
 
 def _is_command(message: Message) -> bool:
     text = message.text or message.caption or ""
-    if text.startswith("/"):
+    # We accept either `/` or `!` as a command prefix (see help.py — every
+    # group command filter uses prefix="/!"). Both get cleaned up so the
+    # user's command text doesn't litter the chat for everyone else to tap.
+    if text.startswith(("/", "!")):
         return True
     for ent in message.entities or message.caption_entities or []:
         if ent.type == "bot_command" and ent.offset == 0:

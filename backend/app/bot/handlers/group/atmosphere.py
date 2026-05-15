@@ -30,7 +30,7 @@ SLOT_ALIASES = {
 }
 
 
-@router.message(Command("setatmosphere"))
+@router.message(Command("setatmosphere", prefix="/!"))
 async def set_atmosphere(
     message: Message, command: CommandObject, user: User, _: Translator
 ) -> None:
@@ -104,7 +104,7 @@ async def set_atmosphere(
     await message.reply(_("atmosphere-saved", slot=slot_alias))
 
 
-@router.message(Command("clearatmosphere"))
+@router.message(Command("clearatmosphere", prefix="/!"))
 async def clear_atmosphere(
     message: Message, command: CommandObject, user: User, _: Translator
 ) -> None:

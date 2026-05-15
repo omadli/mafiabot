@@ -18,7 +18,7 @@ router = Router(name="stats")
 # === /stats — shaxsiy global ===
 
 
-@router.message(Command("stats", "mystats"))
+@router.message(Command("stats", "mystats", prefix="/!"))
 async def cmd_stats(message: Message, user: User, _: Translator, command: CommandObject) -> None:
     """Shaxsiy statistika."""
     # Optional filter: /stats role komissar
@@ -157,7 +157,7 @@ async def _user_locale(user: User) -> str | None:
 # === /top — guruh leaderboard ===
 
 
-@router.message(Command("top"))
+@router.message(Command("top", prefix="/!"))
 async def cmd_top(message: Message, _: Translator, command: CommandObject) -> None:
     """Guruh leaderboard. Default: ELO. Boshqa: /top wins|xp|winrate."""
     chat_id = message.chat.id
@@ -209,7 +209,7 @@ async def cmd_top(message: Message, _: Translator, command: CommandObject) -> No
 # === /global_top — global leaderboard ===
 
 
-@router.message(Command("global_top", "globaltop"))
+@router.message(Command("global_top", "globaltop", prefix="/!"))
 async def cmd_global_top(message: Message, _: Translator) -> None:
     top = await UserStats.all().order_by("-elo").limit(10)
     if not top:
@@ -230,7 +230,7 @@ async def cmd_global_top(message: Message, _: Translator) -> None:
 # === /profile @user ===
 
 
-@router.message(Command("profile"))
+@router.message(Command("profile", prefix="/!"))
 async def cmd_profile(message: Message, _: Translator, command: CommandObject) -> None:
     target_user: User | None = None
 
@@ -256,7 +256,7 @@ async def cmd_profile(message: Message, _: Translator, command: CommandObject) -
 # === /group_stats ===
 
 
-@router.message(Command("group_stats", "groupstats"))
+@router.message(Command("group_stats", "groupstats", prefix="/!"))
 async def cmd_group_stats(message: Message, _: Translator) -> None:
     if message.chat.type not in ("group", "supergroup"):
         await message.answer(_("top-group-only"))

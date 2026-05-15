@@ -18,7 +18,7 @@ from app.services.i18n_service import Translator
 router = Router(name="common_help")
 
 
-@router.message(Command("help"))
+@router.message(Command("help", prefix="/!"))
 async def cmd_help(message: Message, user: User, _: Translator) -> None:
     """Help command — context-aware (private vs group)."""
     if message.chat.type == "private":
@@ -27,7 +27,7 @@ async def cmd_help(message: Message, user: User, _: Translator) -> None:
         await message.answer(_("help-group"))
 
 
-@router.message(Command("rules"))
+@router.message(Command("rules", prefix="/!"))
 async def cmd_rules(message: Message, user: User, _: Translator) -> None:
     """Qisqa qoidalar."""
     await message.answer(_("rules-summary"))
@@ -49,6 +49,7 @@ PRIVATE_COMMANDS = [
 
 GROUP_COMMANDS = [
     BotCommand(command="game", description="🎲 Yangi o'yin boshlash"),
+    BotCommand(command="start", description="▶️ Ro'yxatdagi o'yinni boshlash"),
     BotCommand(command="leave", description="🏃 O'yindan chiqib ketish"),
     BotCommand(command="vote", description="🗳 Ovoz berish"),
     BotCommand(command="extend", description="⏱ Vaqtni uzaytirish"),
@@ -58,6 +59,7 @@ GROUP_COMMANDS = [
     BotCommand(command="top", description="🏆 Guruh reytingi"),
     BotCommand(command="group_stats", description="📈 Guruh statistikasi"),
     BotCommand(command="profile", description="👤 Profil"),
+    BotCommand(command="settings", description="⚙️ Sozlamalar (admin)"),
     BotCommand(command="rules", description="📖 Qoidalar"),
     BotCommand(command="help", description="❓ Yordam"),
 ]

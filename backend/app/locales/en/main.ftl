@@ -191,6 +191,16 @@ last-words-sent-confirm = ✅ Your message has been delivered to the group!
 
 
 # ===========================================================
+# FLOOD CONTROL — sassy replies to command spam
+# ===========================================================
+
+flood-alert-1 = 😤 Hey! Easy there — I'm not your personal fidget toy. Two seconds, please!
+flood-alert-2 = 🤨 Mashing that button again? Did your command key get stuck or what?
+flood-alert-3 = 🙄 Quit hammering me, buddy. Out of patience or out of keyboard?
+flood-alert-4 = 😡 That's enough! One more poke and I'm tossing you out of the chat.
+
+
+# ===========================================================
 # GAME REGISTRATION / START ERRORS
 # ===========================================================
 

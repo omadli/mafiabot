@@ -27,13 +27,16 @@ def setup_routers(dp: Dispatcher) -> None:
     # Middlewares
     from app.bot.middlewares.command_cleanup import CommandCleanupMiddleware
     from app.bot.middlewares.i18n import I18nMiddleware
+    from app.bot.middlewares.throttling import ThrottlingMiddleware
     from app.bot.middlewares.user_loader import UserLoaderMiddleware
 
     dp.update.outer_middleware(UserLoaderMiddleware())
     dp.update.outer_middleware(I18nMiddleware())
-    # Inner: runs around individual message handlers, so it can delete
-    # the /command message AFTER the handler completes.
+    # Inner stack: cleanup wraps throttle wraps handler. When the throttle
+    # short-circuits a flooded command, cleanup still runs afterwards and
+    # deletes the user's spammed `/cmd` (or `!cmd`) text from the chat.
     dp.message.middleware(CommandCleanupMiddleware())
+    dp.message.middleware(ThrottlingMiddleware())
 
     # Routers (order matters: more specific first)
     dp.include_router(private_super_admin.router)  # before other private handlers

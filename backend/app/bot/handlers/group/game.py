@@ -35,7 +35,7 @@ router = Router(name="group_game")
 router.message.filter(F.chat.type.in_({"group", "supergroup"}))
 
 
-@router.message(Command("game", "newgame"))
+@router.message(Command("game", "newgame", prefix="/!"))
 async def cmd_game(
     message: Message, user: User, _: Translator, command: CommandObject, bot: Bot
 ) -> None:
@@ -120,7 +120,7 @@ async def cmd_game(
     )
 
 
-@router.message(Command("leave"))
+@router.message(Command("leave", prefix="/!"))
 async def cmd_leave(message: Message, user: User, _: Translator, bot: Bot) -> None:
     """O'yindan chiqib ketish."""
     state = await game_service.load_state(message.chat.id)
@@ -185,7 +185,7 @@ async def cmd_leave(message: Message, user: User, _: Translator, bot: Bot) -> No
     await message.answer(text, parse_mode="HTML")
 
 
-@router.message(Command("stop"))
+@router.message(Command("stop", prefix="/!"))
 async def cmd_stop(message: Message, user: User, _: Translator, bot: Bot) -> None:
     """O'yinni bekor qilish."""
     state = await game_service.load_state(message.chat.id)
@@ -209,7 +209,7 @@ async def cmd_stop(message: Message, user: User, _: Translator, bot: Bot) -> Non
     await message.answer(_("stop-success"))
 
 
-@router.message(Command("extend"))
+@router.message(Command("extend", prefix="/!"))
 async def cmd_extend(message: Message, user: User, _: Translator) -> None:
     """Ro'yxatdan o'tish vaqtini cheksiz uzaytirish (timeout o'chiriladi).
 
@@ -278,7 +278,7 @@ async def callback_join(query: CallbackQuery, user: User, _: Translator, bot: Bo
 # === /start group command (registration starter / launcher) ===
 
 
-@router.message(Command("start", "go", "begin"))
+@router.message(Command("start", "go", "begin", prefix="/!"))
 async def cmd_start(
     message: Message, user: User, _: Translator, command: CommandObject, bot: Bot
 ) -> None:
