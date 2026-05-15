@@ -1076,6 +1076,56 @@ gameplay-skip-day = Пропуск дневного голоса
 
 gameplay-skip-night = Пропуск ночного действия
 
+# --- Section G.2: Display sub-menu ---
+
+btn-settings-display = 🖼 Отображение
+
+settings-display-prompt =
+    🖼 <b>Настройки отображения</b>
+
+    Что показывать в сообщениях бота:
+
+display-show_role_emojis = Эмодзи ролей
+display-group_roles_in_list = Группировать роли в списке
+display-anonymous_voting = Анонимное голосование
+display-auto_pin_registration = Автозакрепление регистрации
+display-show_role_on_death = Показывать роль после смерти
+
+# --- Section G.3: Permissions sub-menu ---
+
+btn-settings-permissions = 🔐 Права
+
+settings-permissions-prompt =
+    🔐 <b>Права доступа</b>
+
+    Кто какие команды может использовать:
+
+perm-who_can_register = Регистрация на игру
+perm-who_can_start = Запуск игры
+perm-who_can_extend = Продление времени
+perm-who_can_stop = Остановка игры
+perm-allow_leave = Разрешить покидать игру
+
+perm-target-all = Все
+perm-target-admins = Только админы
+perm-target-registrar = Первый записавшийся
+perm-target-creator = Только создатель
+
+# --- Section G.4: AFK sub-menu ---
+
+btn-settings-afk = 💤 AFK
+
+settings-afk-prompt =
+    💤 <b>Пороги AFK</b>
+
+    Правила санкций для неактивных игроков:
+
+afk-skip_phases_before_kick = Пропущенных фаз до кика
+afk-xp_penalty_on_kick = Штраф XP при кике
+afk-elo_penalty_on_leave = Штраф ELO при выходе
+afk-consecutive_leaves_to_ban = Подряд выходов до бана
+afk-ban_duration_hours = Длительность бана (час)
+
 # --- Section H: Language sub-menu ---
 
 settings-lang-prompt =

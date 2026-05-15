@@ -41,8 +41,11 @@ from loguru import logger
 from app.config import settings as app_settings
 from app.db.models import Group, GroupSettings, User
 from app.db.models.group import (
+    DEFAULT_AFK,
+    DEFAULT_DISPLAY,
     DEFAULT_GAMEPLAY,
     DEFAULT_ITEMS_ALLOWED,
+    DEFAULT_PERMISSIONS,
     DEFAULT_ROLES_ENABLED,
     DEFAULT_SILENCE,
     DEFAULT_TIMINGS,
@@ -95,6 +98,33 @@ TIMING_KEYS: list[tuple[str, int]] = [
     ("hanging_confirm", 5),
     ("last_words", 5),
     ("afsungar_carry", 5),
+]
+
+# Display toggles — same UX as silence.
+DISPLAY_KEYS = [
+    "show_role_emojis",
+    "group_roles_in_list",
+    "anonymous_voting",
+    "auto_pin_registration",
+    "show_role_on_death",
+]
+
+# AFK numeric thresholds — (key, +/- delta, min, max).
+AFK_KEYS: list[tuple[str, int, int, int]] = [
+    ("skip_phases_before_kick", 1, 1, 10),
+    ("xp_penalty_on_kick", 10, 0, 500),
+    ("elo_penalty_on_leave", 5, 0, 100),
+    ("consecutive_leaves_to_ban", 1, 1, 20),
+    ("ban_duration_hours", 6, 1, 168),
+]
+
+# Permission fields: each cycles between two values (kept narrow so the bot
+# DM stays tappable; the WebApp surfaces full enum choices).
+PERMISSION_TOGGLES: list[tuple[str, tuple[str, str]]] = [
+    ("who_can_register", ("all", "admins")),
+    ("who_can_start", ("registrar", "admins")),
+    ("who_can_extend", ("all", "admins")),
+    ("who_can_stop", ("admins", "creator")),
 ]
 
 
@@ -191,15 +221,29 @@ async def build_settings_home_message(
                 text=_("btn-settings-gameplay"), callback_data=f"settings:gameplay:{group.id}"
             ),
             InlineKeyboardButton(
-                text=_("btn-settings-lang"), callback_data=f"settings:lang:{group.id}"
+                text=_("btn-settings-display"), callback_data=f"settings:display:{group.id}"
             ),
         ]
     )
     rows.append(
         [
             InlineKeyboardButton(
+                text=_("btn-settings-permissions"),
+                callback_data=f"settings:permissions:{group.id}",
+            ),
+            InlineKeyboardButton(
+                text=_("btn-settings-afk"), callback_data=f"settings:afk:{group.id}"
+            ),
+        ]
+    )
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text=_("btn-settings-lang"), callback_data=f"settings:lang:{group.id}"
+            ),
+            InlineKeyboardButton(
                 text=_("btn-settings-atmosphere"), callback_data=f"settings:atmosphere:{group.id}"
-            )
+            ),
         ]
     )
 
@@ -637,6 +681,225 @@ async def cb_atmosphere(query: CallbackQuery, user: User, _: Translator) -> None
         ]
     )
     await _edit(query, text, kb)
+
+
+# === Display sub-menu ===
+
+
+def _build_display_kb(s: GroupSettings, gid: int, _: Translator) -> InlineKeyboardMarkup:
+    d = {**DEFAULT_DISPLAY, **(s.display or {})}
+    rows: list[list[InlineKeyboardButton]] = []
+    for key in DISPLAY_KEYS:
+        enabled = d.get(key, False)
+        label = f"{_toggle_label(enabled)} {_(f'display-{key}')}"
+        rows.append(
+            [InlineKeyboardButton(text=label, callback_data=f"settings:display:toggle:{gid}:{key}")]
+        )
+    rows.append([InlineKeyboardButton(text=_("btn-back"), callback_data=f"settings:home:{gid}")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+@router.callback_query(F.data.regexp(r"^settings:display:\d+$"))
+async def cb_display(query: CallbackQuery, user: User, _: Translator) -> None:
+    gid = int(query.data.split(":")[2])
+    group, s = await _load_group_or_fail(query, gid)
+    if group is None or s is None:
+        return
+    await query.answer()
+    await _edit(query, _("settings-display-prompt"), _build_display_kb(s, gid, _))
+
+
+@router.callback_query(F.data.startswith("settings:display:toggle:"))
+async def cb_display_toggle(query: CallbackQuery, user: User, _: Translator) -> None:
+    parts = query.data.split(":")
+    if len(parts) != 5:
+        await query.answer("Invalid", show_alert=True)
+        return
+    gid = int(parts[3])
+    key = parts[4]
+    if key not in DISPLAY_KEYS:
+        await query.answer("Invalid", show_alert=True)
+        return
+
+    group, s = await _load_group_or_fail(query, gid)
+    if group is None or s is None:
+        return
+
+    d = {**DEFAULT_DISPLAY, **(s.display or {})}
+    d[key] = not d.get(key, False)
+    await save_settings_fields(s, display=d)
+
+    await query.answer(f"{_(f'display-{key}')}: {_toggle_label(d[key])}")
+    await _edit(query, _("settings-display-prompt"), _build_display_kb(s, gid, _))
+
+
+# === Permissions sub-menu ===
+
+
+def _build_permissions_text(s: GroupSettings, _: Translator) -> str:
+    p = {**DEFAULT_PERMISSIONS, **(s.permissions or {})}
+    lines = [_("settings-permissions-prompt"), ""]
+    for key, _vals in PERMISSION_TOGGLES:
+        cur = p.get(key, "all")
+        lines.append(f"  {_(f'perm-{key}')}: <b>{_(f'perm-target-{cur}')}</b>")
+    lines.append(f"  {_('perm-allow_leave')}: <b>{_toggle_label(p.get('allow_leave', True))}</b>")
+    return "\n".join(lines)
+
+
+def _build_permissions_kb(s: GroupSettings, gid: int, _: Translator) -> InlineKeyboardMarkup:
+    p = {**DEFAULT_PERMISSIONS, **(s.permissions or {})}
+    rows: list[list[InlineKeyboardButton]] = []
+    for key, _vals in PERMISSION_TOGGLES:
+        cur = p.get(key, "all")
+        label = f"{_(f'perm-{key}')}: {_(f'perm-target-{cur}')}"
+        rows.append(
+            [InlineKeyboardButton(text=label, callback_data=f"settings:perm:cycle:{gid}:{key}")]
+        )
+    leave_on = p.get("allow_leave", True)
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text=f"{_toggle_label(leave_on)} {_('perm-allow_leave')}",
+                callback_data=f"settings:perm:toggle:{gid}:allow_leave",
+            )
+        ]
+    )
+    rows.append([InlineKeyboardButton(text=_("btn-back"), callback_data=f"settings:home:{gid}")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+@router.callback_query(F.data.regexp(r"^settings:permissions:\d+$"))
+async def cb_permissions(query: CallbackQuery, user: User, _: Translator) -> None:
+    gid = int(query.data.split(":")[2])
+    group, s = await _load_group_or_fail(query, gid)
+    if group is None or s is None:
+        return
+    await query.answer()
+    await _edit(query, _build_permissions_text(s, _), _build_permissions_kb(s, gid, _))
+
+
+@router.callback_query(F.data.startswith("settings:perm:cycle:"))
+async def cb_perm_cycle(query: CallbackQuery, user: User, _: Translator) -> None:
+    parts = query.data.split(":")
+    if len(parts) != 5:
+        await query.answer("Invalid", show_alert=True)
+        return
+    gid = int(parts[3])
+    key = parts[4]
+    vals = dict(PERMISSION_TOGGLES).get(key)
+    if vals is None:
+        await query.answer("Invalid", show_alert=True)
+        return
+
+    group, s = await _load_group_or_fail(query, gid)
+    if group is None or s is None:
+        return
+
+    p = {**DEFAULT_PERMISSIONS, **(s.permissions or {})}
+    cur = p.get(key, vals[0])
+    p[key] = vals[1] if cur == vals[0] else vals[0]
+    await save_settings_fields(s, permissions=p)
+
+    await query.answer(f"{_(f'perm-{key}')}: {_(f'perm-target-{p[key]}')}")
+    await _edit(query, _build_permissions_text(s, _), _build_permissions_kb(s, gid, _))
+
+
+@router.callback_query(F.data.startswith("settings:perm:toggle:"))
+async def cb_perm_toggle(query: CallbackQuery, user: User, _: Translator) -> None:
+    parts = query.data.split(":")
+    if len(parts) != 5:
+        await query.answer("Invalid", show_alert=True)
+        return
+    gid = int(parts[3])
+    key = parts[4]
+    if key != "allow_leave":
+        await query.answer("Invalid", show_alert=True)
+        return
+
+    group, s = await _load_group_or_fail(query, gid)
+    if group is None or s is None:
+        return
+
+    p = {**DEFAULT_PERMISSIONS, **(s.permissions or {})}
+    p[key] = not p.get(key, True)
+    await save_settings_fields(s, permissions=p)
+
+    await query.answer(f"{_(f'perm-{key}')}: {_toggle_label(p[key])}")
+    await _edit(query, _build_permissions_text(s, _), _build_permissions_kb(s, gid, _))
+
+
+# === AFK sub-menu ===
+
+
+def _build_afk_text(s: GroupSettings, _: Translator) -> str:
+    a = {**DEFAULT_AFK, **(s.afk or {})}
+    lines = [_("settings-afk-prompt"), ""]
+    for key, _delta, _lo, _hi in AFK_KEYS:
+        lines.append(f"  {_(f'afk-{key}')}: <b>{a.get(key, 0)}</b>")
+    return "\n".join(lines)
+
+
+def _build_afk_kb(s: GroupSettings, gid: int, _: Translator) -> InlineKeyboardMarkup:
+    a = {**DEFAULT_AFK, **(s.afk or {})}
+    rows: list[list[InlineKeyboardButton]] = []
+    for key, delta, _lo, _hi in AFK_KEYS:
+        current = a.get(key, 0)
+        label = f"{_(f'afk-{key}')}  {current}"
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=f"➖ {delta}", callback_data=f"settings:afk:adj:{gid}:{key}:-{delta}"
+                ),
+                InlineKeyboardButton(text=label, callback_data="settings:noop"),
+                InlineKeyboardButton(
+                    text=f"➕ {delta}", callback_data=f"settings:afk:adj:{gid}:{key}:{delta}"
+                ),
+            ]
+        )
+    rows.append([InlineKeyboardButton(text=_("btn-back"), callback_data=f"settings:home:{gid}")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+@router.callback_query(F.data.regexp(r"^settings:afk:\d+$"))
+async def cb_afk(query: CallbackQuery, user: User, _: Translator) -> None:
+    gid = int(query.data.split(":")[2])
+    group, s = await _load_group_or_fail(query, gid)
+    if group is None or s is None:
+        return
+    await query.answer()
+    await _edit(query, _build_afk_text(s, _), _build_afk_kb(s, gid, _))
+
+
+@router.callback_query(F.data.startswith("settings:afk:adj:"))
+async def cb_afk_adjust(query: CallbackQuery, user: User, _: Translator) -> None:
+    parts = query.data.split(":")
+    if len(parts) != 6:
+        await query.answer("Invalid", show_alert=True)
+        return
+    gid = int(parts[3])
+    key = parts[4]
+    try:
+        delta = int(parts[5])
+    except ValueError:
+        await query.answer("Invalid", show_alert=True)
+        return
+
+    spec = next((row for row in AFK_KEYS if row[0] == key), None)
+    if spec is None:
+        await query.answer("Invalid", show_alert=True)
+        return
+    _key, _delta, lo, hi = spec
+
+    group, s = await _load_group_or_fail(query, gid)
+    if group is None or s is None:
+        return
+
+    a = {**DEFAULT_AFK, **(s.afk or {})}
+    a[key] = max(lo, min(hi, a.get(key, 0) + delta))
+    await save_settings_fields(s, afk=a)
+
+    await query.answer(f"{_(f'afk-{key}')}: {a[key]}")
+    await _edit(query, _build_afk_text(s, _), _build_afk_kb(s, gid, _))
 
 
 # === No-op (clicked header / spacer) ===

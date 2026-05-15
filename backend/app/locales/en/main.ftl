@@ -1076,6 +1076,56 @@ gameplay-skip-day = Skip day vote
 
 gameplay-skip-night = Skip night action
 
+# --- Section G.2: Display sub-menu ---
+
+btn-settings-display = 🖼 Display
+
+settings-display-prompt =
+    🖼 <b>Display options</b>
+
+    What the bot should reveal in chat:
+
+display-show_role_emojis = Show role emojis
+display-group_roles_in_list = Group roles in lists
+display-anonymous_voting = Anonymous voting
+display-auto_pin_registration = Auto-pin registration
+display-show_role_on_death = Reveal role on death
+
+# --- Section G.3: Permissions sub-menu ---
+
+btn-settings-permissions = 🔐 Permissions
+
+settings-permissions-prompt =
+    🔐 <b>Permissions</b>
+
+    Who can run which commands:
+
+perm-who_can_register = Register for game
+perm-who_can_start = Start game
+perm-who_can_extend = Extend timer
+perm-who_can_stop = Stop game
+perm-allow_leave = Allow leaving game
+
+perm-target-all = Everyone
+perm-target-admins = Admins only
+perm-target-registrar = First registrant
+perm-target-creator = Creator only
+
+# --- Section G.4: AFK sub-menu ---
+
+btn-settings-afk = 💤 AFK
+
+settings-afk-prompt =
+    💤 <b>AFK thresholds</b>
+
+    Penalty rules for inactive players:
+
+afk-skip_phases_before_kick = Skipped phases before kick
+afk-xp_penalty_on_kick = XP penalty on kick
+afk-elo_penalty_on_leave = ELO penalty on leave
+afk-consecutive_leaves_to_ban = Consecutive leaves before ban
+afk-ban_duration_hours = Ban duration (hours)
+
 # --- Section H: Language sub-menu ---
 
 settings-lang-prompt =

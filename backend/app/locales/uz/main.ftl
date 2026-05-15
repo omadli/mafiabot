@@ -1090,6 +1090,56 @@ gameplay-skip-day = Kun ovozini o'tkazib yuborish
 
 gameplay-skip-night = Tun harakatini o'tkazib yuborish
 
+# --- Section G.2: Display sub-menu ---
+
+btn-settings-display = 🖼 Ko'rinish
+
+settings-display-prompt =
+    🖼 <b>Ko'rinish sozlamalari</b>
+
+    Bot xabarlarida ko'rsatish qoidalari:
+
+display-show_role_emojis = Rol emojilari ko'rinsin
+display-group_roles_in_list = Ro'yxatda rollar tartibi bilan
+display-anonymous_voting = Anonim ovoz berish
+display-auto_pin_registration = Ro'yxatni avto-pin qilish
+display-show_role_on_death = O'limdan keyin rol oshkor qilinsin
+
+# --- Section G.3: Permissions sub-menu ---
+
+btn-settings-permissions = 🔐 Ruxsatlar
+
+settings-permissions-prompt =
+    🔐 <b>Ruxsatlar</b>
+
+    Kim qaysi buyruqni ishlatishi mumkin:
+
+perm-who_can_register = Ro'yxatga yozilish
+perm-who_can_start = O'yinni boshlash
+perm-who_can_extend = Vaqtni uzaytirish
+perm-who_can_stop = O'yinni to'xtatish
+perm-allow_leave = O'yindan chiqib ketishga ruxsat
+
+perm-target-all = Hamma
+perm-target-admins = Faqat adminlar
+perm-target-registrar = Birinchi yozilgan
+perm-target-creator = Faqat creator
+
+# --- Section G.4: AFK sub-menu ---
+
+btn-settings-afk = 💤 AFK
+
+settings-afk-prompt =
+    💤 <b>AFK chegaralari</b>
+
+    Faolsiz o'yinchilar uchun jazo qoidalari:
+
+afk-skip_phases_before_kick = O'tkazilgan fazalardan keyin chiqarish
+afk-xp_penalty_on_kick = Chiqarilgan o'yinchi XP jarima
+afk-elo_penalty_on_leave = Tashlab ketgan ELO jarima
+afk-consecutive_leaves_to_ban = Ban uchun ketma-ket tashlash
+afk-ban_duration_hours = Ban davomiyligi (soat)
+
 # --- Section H: Language sub-menu ---
 
 settings-lang-prompt =
