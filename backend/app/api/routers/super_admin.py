@@ -244,6 +244,22 @@ async def list_groups(
     return {"total": total, "page": page, "items": items}
 
 
+@router.get("/groups/{group_id}/live")
+async def group_live_state(
+    group_id: int,
+    sa: SuperAdminContext = Depends(get_current_super_admin),
+) -> dict:
+    """Live in-progress game snapshot for the SA WebApp spectator view."""
+    from app.services import game_service
+
+    state = await game_service.load_state(group_id)
+    if state is None:
+        raise HTTPException(status_code=404, detail="No active game in this group")
+    import json as _json
+
+    return _json.loads(state.to_redis())
+
+
 @router.get("/groups/{group_id}/games")
 async def group_games(
     group_id: int,

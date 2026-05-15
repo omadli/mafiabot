@@ -43,11 +43,32 @@ async def load_state(group_id: int) -> GameState | None:
 async def save_state(state: GameState) -> None:
     backend = get_state_backend()
     await backend.set(game_state_key(state.group_id), state.to_redis())
+    # Notify any open spectator socket that state has changed. The payload
+    # is intentionally minimal — clients refetch /live to get the full
+    # snapshot. Phase-specific events (phase_change) are still emitted
+    # separately by the phase manager for richer UI cues.
+    try:
+        from app.services.ws_broker import emit_game_event
+
+        await emit_game_event(
+            "state_changed",
+            group_id=state.group_id,
+            phase=state.phase.value,
+            round_num=state.round_num,
+        )
+    except Exception:
+        pass
 
 
 async def delete_state(group_id: int) -> None:
     backend = get_state_backend()
     await backend.delete(game_state_key(group_id))
+    try:
+        from app.services.ws_broker import emit_game_event
+
+        await emit_game_event("game_cleared", group_id=group_id)
+    except Exception:
+        pass
 
 
 # === User active game tracking ===

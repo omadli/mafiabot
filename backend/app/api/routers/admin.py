@@ -426,6 +426,25 @@ async def get_game(game_id: UUID, admin: AdminAccount = Depends(get_current_admi
     }
 
 
+@router.get("/admin/groups/{group_id}/live")
+async def get_group_live_state(
+    group_id: int, admin: AdminAccount = Depends(get_current_admin)
+) -> dict:
+    """Live snapshot of whatever game (if any) is in progress in this group.
+
+    Pulls from Redis. Returns 404 if no live game. Pair this with the
+    per-group WebSocket `/ws/admin/group/{gid}` for delta updates.
+    """
+    from app.services import game_service
+
+    state = await game_service.load_state(group_id)
+    if state is None:
+        raise HTTPException(status_code=404, detail="No active game in this group")
+    import json as _json
+
+    return _json.loads(state.to_redis())
+
+
 # === Audit log ===
 
 
