@@ -826,7 +826,7 @@ help-text =
     • 👑 Премиум статус: /buy_premium
     • 🎁 Подарок алмазами: <code>/give &lt;кол-во&gt;</code> (с reply)
 
-    📢 Канал: @MafiaAzBot_news
+    📢 Канал новостей: @Mafiauzbot_news
 
 rules-text =
     📖 <b>Правила Мафии</b>
@@ -867,16 +867,18 @@ language-picker-prompt = 🌐 Выберите язык:
 language-switched = ✅ Язык изменён
 
 help-private =
-    ❓ Помощь (личный чат):
+    ❓ <b>Помощь (личный чат)</b>
 
     /start — запустить бота
     /profile — ваш профиль
     /inventory — оружие/защита
     /stats — статистика
     /global_top — глобальный рейтинг
-    /rules — правила
+    /rules — правила и подробности о ролях
 
     В группах начинайте игру командой /game.
+
+    📢 Канал новостей: @Mafiauzbot_news
 
 help-group =
     ❓ Команды в группе:

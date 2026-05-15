@@ -826,7 +826,7 @@ help-text =
     • 👑 Premium status: /buy_premium
     • 🎁 Gift diamonds: <code>/give &lt;amount&gt;</code> (as reply)
 
-    📢 News channel: @MafiaAzBot_news
+    📢 News channel: @Mafiauzbot_news
 
 rules-text =
     📖 <b>Mafia Game Rules</b>
@@ -866,16 +866,18 @@ language-picker-prompt = 🌐 Pick a language:
 language-switched = ✅ Language switched
 
 help-private =
-    ❓ Help (private chat):
+    ❓ <b>Help (private chat)</b>
 
     /start — launch the bot
     /profile — your profile
     /inventory — weapons/shields
     /stats — statistics
     /global_top — global rankings
-    /rules — game rules
+    /rules — game rules and full role details
 
     Use /game in a group chat to start a game.
+
+    📢 News channel: @Mafiauzbot_news
 
 help-group =
     ❓ Group commands:

@@ -821,7 +821,7 @@ help-text =
     • 🎁 Olmos sovg'a: <code>/give &lt;miqdor&gt;</code> (reply qilib)
 
     <b>Yordam kerakmi?</b>
-    📢 Kanal: @MafiaAzBot_news
+    📢 Yangiliklar kanali: @Mafiauzbot_news
 
 rules-text =
     📖 <b>Mafia o'yin qoidalari</b>
@@ -881,16 +881,18 @@ language-picker-prompt = 🌐 Tilni tanlang:
 language-switched = ✅ Til o'zgartirildi
 
 help-private =
-    ❓ Yordam (private chat):
+    ❓ <b>Yordam (private chat)</b>
 
     /start — botni ishga tushirish
     /profile — sizning profil
     /inventory — qurollar/himoyalar
     /stats — statistika
     /global_top — global reyting
-    /rules — qoidalar
+    /rules — qoidalar va rollar haqida batafsil
 
     Guruhlarda /game bilan o'yin boshlang.
+
+    📢 Yangiliklar kanali: @Mafiauzbot_news
 
 help-group =
     ❓ Guruh buyruqlari:
