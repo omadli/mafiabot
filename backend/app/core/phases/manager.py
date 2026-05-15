@@ -291,13 +291,10 @@ class PhaseManager:
         state.current_round().extra["hang_yes_total"] = yes_total
         state.current_round().extra["hang_no_total"] = no_total
 
-        # If no confirmation votes at all — auto-confirm (fall through)
-        if not confirm_data or (yes_total == 0 and no_total == 0):
-            yes_total = 1  # default "yes"
-
-        if no_total >= yes_total:
-            # Cancelled
-            logger.info(f"Hanging cancelled by 👎 (yes={yes_total}, no={no_total})")
+        # Hang only on strict majority of 👍. A tie (including 0:0 — nobody
+        # bothered to confirm) means the player survives.
+        if yes_total <= no_total:
+            logger.info(f"Hanging cancelled (yes={yes_total}, no={no_total})")
             state.current_round().extra["hang_cancelled"] = True
             state.current_round().hanged = None
             state.current_votes = {}

@@ -187,6 +187,8 @@ last-words-broadcast =
     Someone heard { $role_emoji } { $role_name } { $mention } scream before death:
     <i>{ $message }</i>
 
+last-words-sent-confirm = ✅ Your message has been delivered to the group!
+
 
 # ===========================================================
 # GAME REGISTRATION / START ERRORS
@@ -244,7 +246,6 @@ phase-day-start-3 = ☕ Day #{ $round }. Breakfast time, but a few seats are emp
 phase-day-start-4 = 🐓 Day #{ $round }. The rooster crowed — time to count heads.
 phase-day-start-5 = 🌤 Day #{ $round }. Dawn breaks, but night's shadows still linger.
 
-phase-voting-start = 🗳 Voting time — should we hang somebody?
 
 
 # ===========================================================

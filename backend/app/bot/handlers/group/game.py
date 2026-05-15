@@ -464,7 +464,8 @@ async def _on_phase_change(bot: Bot, state) -> None:
         except Exception as e:
             logger.warning(f"Failed to send alive summary: {e}")
     elif state.phase == Phase.VOTING:
-        await broadcast_phase_change(bot, state)
+        # Voting phase has no group-wide prompt — voting happens in DMs.
+        # `announce_voting` sends a single nudge message with a bot link.
         await announce_voting(bot, state)
     elif state.phase == Phase.HANGING_CONFIRM:
         # Get pending hang target from round log

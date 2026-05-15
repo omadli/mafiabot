@@ -238,7 +238,6 @@ async def broadcast_phase_change(bot: Bot, state: GameState) -> None:
     media_key_map = {
         Phase.NIGHT: "night_start",
         Phase.DAY: "day_start",
-        Phase.VOTING: "voting_start",
     }
     media_key = media_key_map.get(state.phase)
     media_file_id = media.get(media_key) if media_key else None
@@ -253,9 +252,6 @@ async def broadcast_phase_change(bot: Bot, state: GameState) -> None:
     elif state.phase == Phase.DAY:
         key = f"phase-day-start-{random.randint(1, variant_count)}"
         params = {"round": state.round_num}
-    elif state.phase == Phase.VOTING:
-        key = "phase-voting-start"
-        params = {}
     else:
         return
 

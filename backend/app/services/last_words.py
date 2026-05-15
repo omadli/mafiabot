@@ -6,8 +6,10 @@ import asyncio
 
 from aiogram import Bot
 from aiogram.exceptions import TelegramForbiddenError
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from loguru import logger
 
+from app.config import settings as app_settings
 from app.core.redis_state import get_state_backend
 from app.core.state import GameState
 from app.services.i18n_service import get_translator
@@ -98,11 +100,34 @@ async def broadcast_last_words(bot: Bot, state: GameState, user_id: int, message
         mention=player_mention(user_id, player.first_name),
         message=message_text,
     )
+    broadcast_ok = False
     try:
         await bot.send_message(state.chat_id, text, parse_mode="HTML")
+        broadcast_ok = True
     except Exception as e:
         logger.warning(f"Could not broadcast last words: {e}")
 
     # Persist to round log
     if state.rounds:
         state.rounds[-1].last_words[user_id] = message_text
+
+    # DM the user confirming their message was published in the group,
+    # plus a button taking them back to it.
+    if broadcast_ok:
+        from app.db.models import Group
+
+        group = await Group.get_or_none(id=state.group_id)
+        group_url = (
+            group.invite_link
+            if group and group.invite_link
+            else f"https://t.me/{app_settings.bot_username}"
+        )
+        kb = InlineKeyboardMarkup(
+            inline_keyboard=[[InlineKeyboardButton(text=_("btn-back-to-group"), url=group_url)]]
+        )
+        try:
+            await bot.send_message(user_id, _("last-words-sent-confirm"), reply_markup=kb)
+        except TelegramForbiddenError:
+            pass
+        except Exception as e:
+            logger.debug(f"last-words confirm DM to {user_id} failed: {e}")

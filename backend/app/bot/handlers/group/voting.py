@@ -317,9 +317,9 @@ async def announce_voting(bot: Bot, state: GameState) -> None:
     timings = state.settings.get("timings", {})
     seconds = timings.get("hanging_vote", 45)
 
-    deeplink = f"https://t.me/{app_settings.bot_username}?start=vote_{state.group_id}"
+    bot_url = f"https://t.me/{app_settings.bot_username}"
     group_kb = InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(text=_("voting-go-button"), url=deeplink)]]
+        inline_keyboard=[[InlineKeyboardButton(text=_("voting-go-button"), url=bot_url)]]
     )
     try:
         await bot.send_message(

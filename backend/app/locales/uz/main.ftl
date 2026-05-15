@@ -187,6 +187,8 @@ last-words-broadcast =
     Aholidan kimdir { $role_emoji } { $role_name } { $mention } o'limidan oldin:
     <i>{ $message }</i> deb qichqirganini eshitgan.
 
+last-words-sent-confirm = ✅ Sizning habaringiz guruhga yuborildi!
+
 
 # ===========================================================
 # O'YIN RO'YXATGA OLISH / BOSHLASH XATOLARI
@@ -243,8 +245,6 @@ phase-day-start-2 = 🌅 Kun #{ $round }. Shahar uyg'ondi — ammo kimdir endi u
 phase-day-start-3 = ☕ Kun #{ $round }. Nonushta vaqti keldi, lekin ba'zi joylar bo'sh qoldi...
 phase-day-start-4 = 🐓 Kun #{ $round }. Xo'roz qichqirdi — hisob-kitob qilish vaqti.
 phase-day-start-5 = 🌤 Kun #{ $round }. Tong otdi, lekin tunning qora soyalari hali ham ko'cha boshida.
-
-phase-voting-start = 🗳 Ovoz berish vaqti — kimnidir osishimiz kerakmi?
 
 
 # ===========================================================
