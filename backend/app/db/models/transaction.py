@@ -13,6 +13,7 @@ class TransactionType(StrEnum):
     GIFT_SEND = "gift_send"  # /give reply
     GIFT_RECEIVE = "gift_receive"
     ADMIN_GRANT = "admin_grant"  # super admin grant (system)
+    ADMIN_REVOKE = "admin_revoke"  # super admin revoke (system)
     GAME_BOUNTY_ESCROW = "game_bounty_escrow"
     GAME_BOUNTY_PAYOUT = "game_bounty_payout"
     GAME_BOUNTY_REFUND = "game_bounty_refund"

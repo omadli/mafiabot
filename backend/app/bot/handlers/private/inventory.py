@@ -80,7 +80,9 @@ async def _build_profile_message(
 
     text = _(
         "profile-info",
-        id=user.id,
+        # Pass as str so Fluent doesn't apply locale digit grouping
+        # (e.g., "1 234 567 890") to the Telegram user ID.
+        id=str(user.id),
         name=user.first_name,
         dollars=user.dollars,
         diamonds=user.diamonds,

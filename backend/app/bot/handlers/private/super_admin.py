@@ -30,6 +30,8 @@ from app.db.models import (
     Game,
     Group,
     Transaction,
+    TransactionStatus,
+    TransactionType,
     User,
 )
 from app.services.audit_service import log_action
@@ -71,28 +73,28 @@ async def sa_help(message: Message) -> None:
     text = (
         "<b>🛡 Super admin komandalar</b>\n\n"
         "<u>🌐 WebApp dashboard:</u>\n"
-        "<code>/sa_dashboard</code> — WebApp panelini ochish\n\n"
+        "/sa_dashboard — WebApp panelini ochish\n\n"
         "<u>Foydalanuvchi boshqaruvi:</u>\n"
-        "<code>/sa_grant &lt;user_id&gt; &lt;amount&gt;</code> — olmos berish\n"
-        "<code>/sa_revoke &lt;user_id&gt; &lt;amount&gt;</code> — olmos olib qo'yish\n"
-        "<code>/sa_setdollars &lt;user_id&gt; &lt;amount&gt;</code> — dollar o'rnatish\n"
-        "<code>/sa_premium &lt;user_id&gt; &lt;days&gt;</code> — premium berish\n"
-        "<code>/sa_grouppremium &lt;group_id&gt; &lt;days&gt;</code> — guruhga premium berish (days=0 → bekor qilish)\n"
-        "<code>/sa_ban &lt;user_id&gt; [sabab]</code> — ban qilish\n"
-        "<code>/sa_unban &lt;user_id&gt;</code> — banni olib tashlash\n"
-        "<code>/sa_userinfo &lt;user_id&gt;</code> — foydalanuvchi haqida\n\n"
+        "/sa_grant &lt;user_id&gt; &lt;amount&gt; — olmos berish\n"
+        "/sa_revoke &lt;user_id&gt; &lt;amount&gt; — olmos olib qo'yish\n"
+        "/sa_setdollars &lt;user_id&gt; &lt;amount&gt; — dollar o'rnatish\n"
+        "/sa_premium &lt;user_id&gt; &lt;days&gt; — premium berish\n"
+        "/sa_grouppremium &lt;group_id&gt; &lt;days&gt; — guruhga premium berish (days=0 → bekor qilish)\n"
+        "/sa_ban &lt;user_id&gt; [sabab] — ban qilish\n"
+        "/sa_unban &lt;user_id&gt; — banni olib tashlash\n"
+        "/sa_userinfo &lt;user_id&gt; — foydalanuvchi haqida\n\n"
         "<u>Tizim:</u>\n"
-        "<code>/sa_groups</code> — aktiv guruhlar\n"
-        "<code>/sa_broadcast &lt;matn&gt;</code> — barchaga DM\n"
-        "<code>/sa_stats</code> — umumiy KPI\n\n"
+        "/sa_groups — aktiv guruhlar\n"
+        "/sa_broadcast &lt;matn&gt; — barchaga DM\n"
+        "/sa_stats — umumiy KPI\n\n"
         "<u>Narxlar va sozlamalar:</u>\n"
-        "<code>/sa_prices</code> — barcha narxlar va sozlamalar\n"
-        "<code>/sa_setprice &lt;item&gt; &lt;currency&gt; &lt;amount&gt;</code> — item narxi\n"
-        "  Misol: <code>/sa_setprice shield dollars 150</code>\n"
-        "<code>/sa_setreward &lt;key&gt; &lt;value&gt;</code> — g'olib mukofoti\n"
+        "/sa_prices — barcha narxlar va sozlamalar\n"
+        "/sa_setprice &lt;item&gt; &lt;currency&gt; &lt;amount&gt; — item narxi\n"
+        "  Misol: /sa_setprice shield dollars 150\n"
+        "/sa_setreward &lt;key&gt; &lt;value&gt; — g'olib mukofoti\n"
         "  Keys: win_short_dollars, win_long_dollars, long_threshold_minutes,\n"
         "        mafia_singleton_bonus, xp_per_win\n"
-        "<code>/sa_setrate &lt;rate&gt;</code> — 1💎 = N💵 kursi\n"
+        "/sa_setrate &lt;rate&gt; — 1💎 = N💵 kursi\n"
     )
     await message.answer(text, parse_mode="HTML")
 
@@ -123,9 +125,9 @@ async def sa_grant(message: Message, command: CommandObject) -> None:
     await target.save(update_fields=["diamonds"])
     await Transaction.create(
         user=target,
-        type="admin_grant",
+        type=TransactionType.ADMIN_GRANT,
         diamonds_amount=amount,
-        status="completed",
+        status=TransactionStatus.COMPLETED,
         note=f"Super admin grant by tg_id={message.from_user.id}",
     )
     await log_action(
@@ -168,9 +170,9 @@ async def sa_revoke(message: Message, command: CommandObject) -> None:
     await target.save(update_fields=["diamonds"])
     await Transaction.create(
         user=target,
-        type="admin_revoke",
+        type=TransactionType.ADMIN_REVOKE,
         diamonds_amount=-actual,
-        status="completed",
+        status=TransactionStatus.COMPLETED,
         note=f"Super admin revoke by tg_id={message.from_user.id}",
     )
     await log_action(
