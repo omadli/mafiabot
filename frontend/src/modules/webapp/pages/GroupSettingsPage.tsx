@@ -35,6 +35,18 @@ const ITEM_CODES = [
 const PERMISSION_CODES = [
   "who_can_register", "who_can_start", "who_can_extend", "who_can_stop",
 ] as const;
+const AFK_CODES = [
+  "skip_phases_before_kick",
+  "xp_penalty_on_kick",
+  "elo_penalty_on_leave",
+  "consecutive_leaves_to_ban",
+  "ban_duration_hours",
+] as const;
+const LANG_CODES = [
+  { code: "uz", label: "🇺🇿 O'zbekcha" },
+  { code: "ru", label: "🇷🇺 Русский" },
+  { code: "en", label: "🇬🇧 English" },
+] as const;
 
 interface GroupSettings {
   group_id: number;
@@ -48,6 +60,7 @@ interface GroupSettings {
   permissions: Record<string, string | boolean>;
   gameplay: Record<string, string | number | boolean>;
   display: Record<string, boolean>;
+  afk: Record<string, number>;
 }
 
 type Tab =
@@ -58,7 +71,9 @@ type Tab =
   | "silence"
   | "permissions"
   | "gameplay"
-  | "display";
+  | "display"
+  | "afk"
+  | "language";
 
 const PLAYER_COUNTS = Array.from({ length: 27 }, (_, i) => i + 4); // 4..30
 
@@ -77,6 +92,7 @@ export function GroupSettingsPage() {
   const silenceLabel = (code: string) => t(`group_settings.silence_${code}`);
   const permissionLabel = (code: string) => t(`group_settings.perm_${code}`);
   const itemLabel = (code: string) => t(`sa.system.item_${code}`);
+  const afkLabel = (code: string) => t(`group_settings.afk_${code}`);
 
   const { data, isLoading } = useQuery({
     queryKey: ["settings", gid],
@@ -133,6 +149,9 @@ export function GroupSettingsPage() {
       saveMutation.mutate({ section: "gameplay", value: draft.gameplay });
     else if (tab === "display")
       saveMutation.mutate({ section: "display", value: draft.display });
+    else if (tab === "afk") saveMutation.mutate({ section: "afk", value: draft.afk });
+    else if (tab === "language")
+      saveMutation.mutate({ section: "language", value: draft.language });
   };
 
   const currentOverride: string[] | null =
@@ -179,6 +198,8 @@ export function GroupSettingsPage() {
         <Tab id="permissions" current={tab} setTab={setTab}>{t("group_settings.tab_permissions")}</Tab>
         <Tab id="gameplay" current={tab} setTab={setTab}>{t("group_settings.tab_gameplay")}</Tab>
         <Tab id="display" current={tab} setTab={setTab}>{t("group_settings.tab_display")}</Tab>
+        <Tab id="afk" current={tab} setTab={setTab}>{t("group_settings.tab_afk")}</Tab>
+        <Tab id="language" current={tab} setTab={setTab}>{t("group_settings.tab_language")}</Tab>
       </div>
 
       {tab === "roles" && (
@@ -393,6 +414,50 @@ export function GroupSettingsPage() {
             checked={!!draft.display.show_role_on_death}
             onChange={(v) => updateField("display", "show_role_on_death", v)}
           />
+        </div>
+      )}
+
+      {tab === "afk" && (
+        <div className="webapp-section">
+          <h3>{t("group_settings.section_afk")}</h3>
+          <p style={{ color: "var(--muted)", fontSize: "0.85rem", marginTop: 0 }}>
+            {t("group_settings.afk_hint")}
+          </p>
+          {AFK_CODES.map((key) => (
+            <NumInput
+              key={key}
+              label={afkLabel(key)}
+              value={draft.afk?.[key] ?? 0}
+              onChange={(v) => updateField("afk", key, v)}
+            />
+          ))}
+        </div>
+      )}
+
+      {tab === "language" && (
+        <div className="webapp-section">
+          <h3>{t("group_settings.section_language")}</h3>
+          <p style={{ color: "var(--muted)", fontSize: "0.85rem", marginTop: 0 }}>
+            {t("group_settings.language_hint")}
+          </p>
+          <div className="webapp-row">
+            <label>{t("group_settings.language_label")}</label>
+            <select
+              className="webapp-input"
+              style={{ width: "auto" }}
+              value={draft.language}
+              onChange={(e) => {
+                setDraft({ ...draft, language: e.target.value });
+                setDirty(true);
+              }}
+            >
+              {LANG_CODES.map(({ code, label }) => (
+                <option key={code} value={code}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       )}
 

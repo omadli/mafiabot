@@ -51,7 +51,7 @@ from app.db.models.group import (
     DEFAULT_TIMINGS,
 )
 from app.services.group_settings_helper import save_settings_fields
-from app.services.i18n_service import Translator, get_translator
+from app.services.i18n_service import Translator, get_plain_translator, get_translator
 
 router = Router(name="private_group_settings")
 
@@ -391,7 +391,7 @@ async def cb_timings(
     if group is None or s is None:
         return
     await query.answer()
-    await _edit(query, _build_timings_text(s, _, _plain), _build_timings_kb(s, gid, _))
+    await _edit(query, _build_timings_text(s, _, _plain), _build_timings_kb(s, gid, _, _plain))
 
 
 @router.callback_query(F.data.startswith("settings:timing:"))
@@ -420,7 +420,7 @@ async def cb_timing_adjust(
     await save_settings_fields(s, timings=t)
 
     await query.answer(f"{_(f'timing-{key}')}: {new_val}s")
-    await _edit(query, _build_timings_text(s, _, _plain), _build_timings_kb(s, gid, _))
+    await _edit(query, _build_timings_text(s, _, _plain), _build_timings_kb(s, gid, _, _plain))
 
 
 # === Items sub-menu ===
@@ -597,7 +597,7 @@ async def cb_gameplay(
     if group is None or s is None:
         return
     await query.answer()
-    await _edit(query, _build_gameplay_text(s, _, _plain), _build_gameplay_kb(s, gid, _))
+    await _edit(query, _build_gameplay_text(s, _, _plain), _build_gameplay_kb(s, gid, _, _plain))
 
 
 @router.callback_query(F.data.startswith("settings:gameplay:ratio:"))
@@ -623,7 +623,7 @@ async def cb_gameplay_ratio(
     await save_settings_fields(s, gameplay=g)
 
     await query.answer(f"{_('gameplay-ratio-' + ratio)} ✓")
-    await _edit(query, _build_gameplay_text(s, _, _plain), _build_gameplay_kb(s, gid, _))
+    await _edit(query, _build_gameplay_text(s, _, _plain), _build_gameplay_kb(s, gid, _, _plain))
 
 
 @router.callback_query(F.data.startswith("settings:gameplay:toggle:"))
@@ -651,7 +651,7 @@ async def cb_gameplay_toggle(
     await query.answer(
         f"{_('gameplay-' + key.replace('allow_skip_', 'skip-').replace('_', '-'))}: {_toggle_label(g[key])}"
     )
-    await _edit(query, _build_gameplay_text(s, _, _plain), _build_gameplay_kb(s, gid, _))
+    await _edit(query, _build_gameplay_text(s, _, _plain), _build_gameplay_kb(s, gid, _, _plain))
 
 
 # === Language sub-menu (group locale) ===
@@ -709,8 +709,9 @@ async def cb_lang_set(
 
     await save_settings_fields(s, language=new_lang)
     new_t = get_translator(new_lang)
-    await query.answer(new_t("language-switched"))
-    await _edit(query, new_t("settings-lang-prompt"), _build_lang_kb(s, gid, new_t))
+    new_plain = get_plain_translator(new_lang)
+    await query.answer(new_plain("language-switched"))
+    await _edit(query, new_t("settings-lang-prompt"), _build_lang_kb(s, gid, new_t, new_plain))
 
 
 # === Atmosphere info screen ===
@@ -855,7 +856,9 @@ async def cb_permissions(
     if group is None or s is None:
         return
     await query.answer()
-    await _edit(query, _build_permissions_text(s, _, _plain), _build_permissions_kb(s, gid, _))
+    await _edit(
+        query, _build_permissions_text(s, _, _plain), _build_permissions_kb(s, gid, _, _plain)
+    )
 
 
 @router.callback_query(F.data.startswith("settings:perm:cycle:"))
@@ -883,7 +886,9 @@ async def cb_perm_cycle(
     await save_settings_fields(s, permissions=p)
 
     await query.answer(f"{_(f'perm-{key}')}: {_(f'perm-target-{p[key]}')}")
-    await _edit(query, _build_permissions_text(s, _, _plain), _build_permissions_kb(s, gid, _))
+    await _edit(
+        query, _build_permissions_text(s, _, _plain), _build_permissions_kb(s, gid, _, _plain)
+    )
 
 
 @router.callback_query(F.data.startswith("settings:perm:toggle:"))
@@ -909,7 +914,9 @@ async def cb_perm_toggle(
     await save_settings_fields(s, permissions=p)
 
     await query.answer(f"{_(f'perm-{key}')}: {_toggle_label(p[key])}")
-    await _edit(query, _build_permissions_text(s, _, _plain), _build_permissions_kb(s, gid, _))
+    await _edit(
+        query, _build_permissions_text(s, _, _plain), _build_permissions_kb(s, gid, _, _plain)
+    )
 
 
 # === AFK sub-menu ===
@@ -957,7 +964,7 @@ async def cb_afk(
     if group is None or s is None:
         return
     await query.answer()
-    await _edit(query, _build_afk_text(s, _, _plain), _build_afk_kb(s, gid, _))
+    await _edit(query, _build_afk_text(s, _, _plain), _build_afk_kb(s, gid, _, _plain))
 
 
 @router.callback_query(F.data.startswith("settings:afk:adj:"))
@@ -991,7 +998,7 @@ async def cb_afk_adjust(
     await save_settings_fields(s, afk=a)
 
     await query.answer(f"{_(f'afk-{key}')}: {a[key]}")
-    await _edit(query, _build_afk_text(s, _, _plain), _build_afk_kb(s, gid, _))
+    await _edit(query, _build_afk_text(s, _, _plain), _build_afk_kb(s, gid, _, _plain))
 
 
 # === No-op (clicked header / spacer) ===

@@ -745,7 +745,19 @@
     "perm_value_registrar": "Регистратор",
     "perm_value_none": "Никто",
     "mafia_ratio_low": "Низкий",
-    "mafia_ratio_high": "Высокий"
+    "mafia_ratio_high": "Высокий",
+    "tab_afk": "💤 AFK",
+    "tab_language": "🌐 Язык",
+    "section_afk": "Правила AFK",
+    "section_language": "Язык группы",
+    "afk_hint": "Штрафы и баны для AFK-игроков.",
+    "afk_skip_phases_before_kick": "Сколько фаз пропустить до кика",
+    "afk_xp_penalty_on_kick": "Штраф XP при кике",
+    "afk_elo_penalty_on_leave": "Штраф ELO при выходе",
+    "afk_consecutive_leaves_to_ban": "Выходов подряд для бана",
+    "afk_ban_duration_hours": "Длительность бана (часов)",
+    "language_hint": "Сообщения бота и игры будут на этом языке.",
+    "language_label": "Язык"
   },
   "live": {
     "phase_waiting": "Ожидание",

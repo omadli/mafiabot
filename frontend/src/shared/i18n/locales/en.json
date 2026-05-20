@@ -745,7 +745,19 @@
     "perm_value_registrar": "Registrar",
     "perm_value_none": "Nobody",
     "mafia_ratio_low": "Low",
-    "mafia_ratio_high": "High"
+    "mafia_ratio_high": "High",
+    "tab_afk": "💤 AFK",
+    "tab_language": "🌐 Language",
+    "section_afk": "AFK rules",
+    "section_language": "Group language",
+    "afk_hint": "Penalties and bans for AFK players.",
+    "afk_skip_phases_before_kick": "Phases skipped before kick",
+    "afk_xp_penalty_on_kick": "XP penalty on kick",
+    "afk_elo_penalty_on_leave": "ELO penalty on leave",
+    "afk_consecutive_leaves_to_ban": "Consecutive leaves to ban",
+    "afk_ban_duration_hours": "Ban duration (hours)",
+    "language_hint": "Bot and game messages will use this language.",
+    "language_label": "Language"
   },
   "live": {
     "phase_waiting": "Waiting",

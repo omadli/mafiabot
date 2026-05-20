@@ -745,7 +745,19 @@
     "perm_value_registrar": "Ro'yxatga olgan",
     "perm_value_none": "Hech kim",
     "mafia_ratio_low": "Past",
-    "mafia_ratio_high": "Yuqori"
+    "mafia_ratio_high": "Yuqori",
+    "tab_afk": "💤 AFK",
+    "tab_language": "🌐 Til",
+    "section_afk": "AFK qoidalari",
+    "section_language": "Guruh tili",
+    "afk_hint": "AFK o'yinchilar uchun jarima va ban qoidalari.",
+    "afk_skip_phases_before_kick": "Nechta fazani o'tkazgandan keyin chiqarish",
+    "afk_xp_penalty_on_kick": "Chiqarilgan o'yinchining XP jarimasi",
+    "afk_elo_penalty_on_leave": "Tashlab ketgan o'yinchining ELO jarimasi",
+    "afk_consecutive_leaves_to_ban": "Ban uchun ketma-ket tashlash soni",
+    "afk_ban_duration_hours": "Ban davomiyligi (soat)",
+    "language_hint": "Bot va o'yin xabarlari shu tilda yuboriladi.",
+    "language_label": "Til"
   },
   "live": {
     "phase_waiting": "Kutilmoqda",
