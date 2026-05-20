@@ -408,7 +408,7 @@ async def callback_shop_diamonds(
                 )
             ]
         )
-    rows.append([InlineKeyboardButton(text=_plain("btn-back"), callback_data="shop:open")])
+    rows.append([InlineKeyboardButton(text=_plain("btn-back"), callback_data="inv:back")])
     if query.message:
         with contextlib.suppress(TelegramBadRequest):
             await query.message.edit_text(  # type: ignore[union-attr]
@@ -582,17 +582,27 @@ async def cmd_exchange(
     await message.answer(text, reply_markup=_build_exchange_kb(rate, _, _plain), parse_mode="HTML")
 
 
-@router.callback_query(F.data == "exchange:open")
-async def callback_exchange_open(
+async def _render_exchange_menu(
     query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
 ) -> None:
+    """Re-render exchange menu in-place, refreshing balance from DB."""
+    refreshed = await User.get(id=user.id)
+    user.diamonds = refreshed.diamonds
+    user.dollars = refreshed.dollars
     rate = await pricing_service.get_diamond_to_dollar_rate()
-    text = _("exchange-menu", diamonds=user.diamonds, dollars=user.dollars, rate=rate)
+    text = _("exchange-menu", diamonds=refreshed.diamonds, dollars=refreshed.dollars, rate=rate)
     if query.message:
         with contextlib.suppress(TelegramBadRequest):
             await query.message.edit_text(  # type: ignore[union-attr]
                 text, reply_markup=_build_exchange_kb(rate, _, _plain), parse_mode="HTML"
             )
+
+
+@router.callback_query(F.data == "exchange:open")
+async def callback_exchange_open(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
+    await _render_exchange_menu(query, user, _, _plain)
     await query.answer()
 
 
@@ -619,7 +629,7 @@ async def callback_exchange_d2d(
         return
 
     await query.answer(_plain("exchange-success", got=dollars, currency="💵"), show_alert=True)
-    await callback_exchange_open(query, user, _)
+    await _render_exchange_menu(query, user, _, _plain)
 
 
 @router.callback_query(F.data.startswith("exchange:r2d:"))
@@ -645,7 +655,7 @@ async def callback_exchange_r2d(
         return
 
     await query.answer(_plain("exchange-success", got=diamonds, currency="💎"), show_alert=True)
-    await callback_exchange_open(query, user, _)
+    await _render_exchange_menu(query, user, _, _plain)
 
 
 logger.info("Inventory + shop + exchange handlers loaded")
