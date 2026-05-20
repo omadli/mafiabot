@@ -412,11 +412,14 @@ async def callback_shop_diamonds(
     await query.answer()
 
 
-@router.callback_query(F.data == "shop:items")
-async def callback_shop_items(
+async def _render_shop_items(
     query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
 ) -> None:
-    """Items shop — fixed display order, special_role opens a role picker."""
+    """Render the items shop in-place. Refreshes balance from DB."""
+    refreshed = await User.get(id=user.id)
+    user.diamonds = refreshed.diamonds
+    user.dollars = refreshed.dollars
+
     rows: list[list[InlineKeyboardButton]] = []
     for code in SHOP_ITEM_ORDER:
         spec = payment_service.get_item(code)
@@ -445,13 +448,21 @@ async def callback_shop_items(
 
     rows.append([InlineKeyboardButton(text=_plain("btn-back"), callback_data="inv:back")])
     if query.message:
-        text = _("shop-items-header", diamonds=user.diamonds, dollars=user.dollars)
+        text = _("shop-items-header", diamonds=refreshed.diamonds, dollars=refreshed.dollars)
         with contextlib.suppress(TelegramBadRequest):
             await query.message.edit_text(  # type: ignore[union-attr]
                 text,
                 reply_markup=InlineKeyboardMarkup(inline_keyboard=rows),
                 parse_mode="HTML",
             )
+
+
+@router.callback_query(F.data == "shop:items")
+async def callback_shop_items(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
+    """Items shop — fixed display order, special_role opens a role picker."""
+    await _render_shop_items(query, user, _, _plain)
     await query.answer()
 
 
@@ -599,6 +610,17 @@ async def callback_buy_item(
         await query.answer("Invalid item", show_alert=True)
         return
 
+    # Auto-enable toggleable items right after purchase — saves the user
+    # the extra tap on the profile page. Rifle/special_role are not in
+    # TOGGLE_ITEMS so they are unaffected here.
+    if spec.code in TOGGLE_ITEMS:
+        inv = await UserInventory.get(user_id=user.id)
+        inv_settings = dict(inv.settings or {})
+        item_s = dict(inv_settings.get(spec.code, {}))
+        item_s["enabled"] = True
+        inv_settings[spec.code] = item_s
+        await UserInventory.filter(user_id=user.id).update(settings=inv_settings)
+
     emoji, name = ITEM_LABELS.get(spec.code, ("", spec.code))
     label = f"{emoji} {name}"
     cur_emoji = "💎" if used_currency == "diamonds" else "💵"
@@ -606,7 +628,9 @@ async def callback_buy_item(
         _plain("buy-success-detailed", item=label, cost=cost, currency=cur_emoji),
         show_alert=True,
     )
-    await _refresh_profile(query, user, _, _plain)
+    # Stay on the shop screen instead of jumping back to the profile —
+    # the user almost always wants to buy more than one item per visit.
+    await _render_shop_items(query, user, _, _plain)
 
 
 @router.callback_query(F.data.startswith("buy:premium:"))
