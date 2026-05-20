@@ -35,7 +35,7 @@ jobs:
 
       - name: MyPy
         working-directory: backend
-        run: mypy app/ --ignore-missing-imports --no-strict-optional || true
+        run: mypy app/ --ignore-missing-imports --no-strict-optional
 
       - name: Pytest
         working-directory: backend
@@ -50,10 +50,26 @@ jobs:
           FSM_STORAGE: memory
           BOT_MODE: polling
           ENVIRONMENT: development
-        run: pytest -v --tb=short || echo "No tests yet"
+        run: pytest -v --tb=short
+
+      # Validate every aerich migration file can be imported — catches
+      # syntax errors in raw SQL before they break the next deploy.
+      - name: Migrations compile
+        working-directory: backend
+        run: |
+          python - <<'PY'
+          import importlib.util
+          from pathlib import Path
+          for p in sorted(Path("migrations/models").glob("*.py")):
+              spec = importlib.util.spec_from_file_location(p.stem, p)
+              mod = importlib.util.module_from_spec(spec)
+              spec.loader.exec_module(mod)
+              assert hasattr(mod, "upgrade") and hasattr(mod, "downgrade"), p.name
+              print(f"  ✓ {p.name}")
+          PY
 
   frontend:
-    name: Frontend (lint + build)
+    name: Frontend (lint + tests + build)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -70,7 +86,11 @@ jobs:
 
       - name: Type check
         working-directory: frontend
-        run: npm run type-check || echo "Type check warnings"
+        run: npm run type-check
+
+      - name: Vitest
+        working-directory: frontend
+        run: npm test
 
       - name: Build
         working-directory: frontend

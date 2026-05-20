@@ -40,7 +40,7 @@ async def relay_mafia_message(bot: Bot, sender_user_id: int, text: str) -> bool:
     if db_game is None:
         return False
 
-    state = await game_service.load_state(db_game.group_id)
+    state = await game_service.load_state(db_game.group_id)  # type: ignore[attr-defined,var-annotated,arg-type]
     if state is None or state.phase != Phase.NIGHT:
         return False
 

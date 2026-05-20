@@ -12,6 +12,7 @@ class Achievement(Model):
     description_i18n: dict = fields.JSONField(default=dict)
     icon = fields.CharField(max_length=8, default="🏆")
     diamonds_reward = fields.IntField(default=0)
+    dollars_reward = fields.IntField(default=0)
     xp_reward = fields.IntField(default=0)
 
     class Meta:
@@ -24,10 +25,10 @@ class UserAchievement(Model):
     id = fields.UUIDField(pk=True)
     user = fields.ForeignKeyField(
         "models.User", related_name="achievements", on_delete=fields.CASCADE
-    )
+    )  # type: ignore[var-annotated]
     achievement = fields.ForeignKeyField(
         "models.Achievement", related_name="users", on_delete=fields.CASCADE
-    )
+    )  # type: ignore[var-annotated]
     unlocked_at = fields.DatetimeField(auto_now_add=True)
 
     class Meta:
@@ -44,13 +45,13 @@ class AuditLog(Model):
         related_name="audit_actions",
         null=True,
         on_delete=fields.SET_NULL,
-    )
+    )  # type: ignore[var-annotated]
     actor_admin = fields.ForeignKeyField(
         "models.AdminAccount",
         related_name="audit_actions",
         null=True,
         on_delete=fields.SET_NULL,
-    )
+    )  # type: ignore[var-annotated]
     action = fields.CharField(max_length=64)  # 'user.ban', 'group.block', 'diamonds.grant'
     target_type = fields.CharField(max_length=32, null=True)
     target_id = fields.CharField(max_length=64, null=True)
@@ -86,7 +87,7 @@ class OneTimeToken(Model):
     token = fields.CharField(max_length=64, pk=True)
     user = fields.ForeignKeyField(
         "models.User", related_name="login_tokens", on_delete=fields.CASCADE
-    )
+    )  # type: ignore[var-annotated]
     expires_at = fields.DatetimeField()
     used = fields.BooleanField(default=False)
     used_ip = fields.CharField(max_length=64, null=True)

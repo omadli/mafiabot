@@ -1,5 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 import { api } from "@shared/api/client";
 
@@ -14,6 +15,7 @@ interface LeaderItem {
 }
 
 export function LeaderboardPage() {
+  const { t } = useTranslation();
   const { groupId } = useParams();
   const { data, isLoading } = useQuery({
     queryKey: ["leaderboard", groupId],
@@ -28,14 +30,14 @@ export function LeaderboardPage() {
 
   return (
     <main>
-      <h2>🏆 Guruh leaderboard</h2>
+      <h2>🏆 {t("webapp.leaderboard.title")}</h2>
       {isLoading ? (
         <div className="webapp-loading">⏳</div>
       ) : (
         <div className="webapp-section" style={{ padding: 0 }}>
           {data?.items.length === 0 ? (
             <div style={{ padding: "1.5rem", textAlign: "center", color: "var(--muted)" }}>
-              Hali o'yinlar bo'lmagan
+              {t("webapp.leaderboard.empty")}
             </div>
           ) : (
             data?.items.map((p, idx) => (
@@ -55,7 +57,10 @@ export function LeaderboardPage() {
                 <div style={{ flex: 1 }}>
                   <div>{p.first_name}</div>
                   <small style={{ color: "var(--muted)" }}>
-                    {p.games_total} games · {(p.winrate * 100).toFixed(0)}% WR
+                    {t("webapp.leaderboard.games_winrate", {
+                      games: p.games_total,
+                      pct: (p.winrate * 100).toFixed(0),
+                    })}
                   </small>
                 </div>
                 <div style={{ color: "var(--accent)", fontWeight: 600 }}>{p.elo}</div>

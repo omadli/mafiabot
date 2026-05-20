@@ -80,7 +80,7 @@ async def _rollup_period(
 
     for r in results:
         # Per-user-per-group
-        key = (r.user_id, r.group_id)
+        key = (r.user_id, r.group_id)  # type: ignore[attr-defined,var-annotated,arg-type]
         a = agg.setdefault(
             key,
             {
@@ -102,7 +102,7 @@ async def _rollup_period(
         a["xp_earned"] += r.xp_earned
 
         # Also global aggregate (group_id = None)
-        global_key = (r.user_id, None)
+        global_key = (r.user_id, None)  # type: ignore[attr-defined,var-annotated,arg-type]
         ga = agg.setdefault(
             global_key,
             {"games": 0, "wins": 0, "role_stats": {}, "elo_change": 0, "xp_earned": 0},

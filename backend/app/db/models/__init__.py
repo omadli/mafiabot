@@ -7,8 +7,10 @@ from app.db.models.audit import (
     OneTimeToken,
     UserAchievement,
 )
+from app.db.models.emoji_config import EmojiConfig
 from app.db.models.game import Game, GameStatus, WinnerTeam
 from app.db.models.group import Group, GroupSettings
+from app.db.models.role_config import RoleConfig
 from app.db.models.statistics import (
     GameResult,
     GroupStats,
@@ -31,6 +33,7 @@ __all__ = [
     "Achievement",
     "AdminAccount",
     "AuditLog",
+    "EmojiConfig",
     "Game",
     "GameResult",
     "GameStatus",
@@ -42,6 +45,7 @@ __all__ = [
     "GroupStats",
     "GroupUserStats",
     "OneTimeToken",
+    "RoleConfig",
     "StatsPeriodSnapshot",
     "SystemSettings",
     "Transaction",

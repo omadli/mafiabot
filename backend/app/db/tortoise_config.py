@@ -10,6 +10,8 @@ MODELS_MODULES = [
     "app.db.models.transaction",
     "app.db.models.audit",
     "app.db.models.system_settings",
+    "app.db.models.role_config",
+    "app.db.models.emoji_config",
     "aerich.models",
 ]
 

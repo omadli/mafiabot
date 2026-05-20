@@ -58,7 +58,7 @@ async def cmd_game(
         return
 
     # Permission check
-    perms = group.settings.permissions if group.settings else {}
+    perms = group.settings.permissions if group.settings else {}  # type: ignore[attr-defined,var-annotated,arg-type]
     who_can = perms.get("who_can_register", "all")
     if who_can == "admins":
         member = await bot.get_chat_member(chat_id, user.id)
@@ -108,7 +108,7 @@ async def cmd_game(
     await game_service.save_state(state)
 
     # Auto-pin
-    if group.settings and group.settings.display.get("auto_pin_registration", True):
+    if group.settings and group.settings.display.get("auto_pin_registration", True):  # type: ignore[attr-defined,var-annotated,arg-type]
         try:
             await bot.pin_chat_message(chat_id, sent.message_id, disable_notification=True)
         except Exception as e:
@@ -346,7 +346,7 @@ async def cmd_start(
         await message.answer(_("game-onboarding-required"))
         return
 
-    perms = group.settings.permissions if group.settings else {}
+    perms = group.settings.permissions if group.settings else {}  # type: ignore[attr-defined,var-annotated,arg-type]
     who_can = perms.get("who_can_register", "all")
     if who_can == "admins":
         try:

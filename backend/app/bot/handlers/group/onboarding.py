@@ -126,7 +126,7 @@ async def onboarding_set_language(query: CallbackQuery, bot: Bot) -> None:
         ]
     )
     try:
-        await query.message.edit_text(
+        await query.message.edit_text(  # type: ignore[union-attr]
             _t("onboarding-grant-admin-perms", bot_username=(await bot.me()).username),
             reply_markup=keyboard,
         )
@@ -186,7 +186,7 @@ async def onboarding_check_perms(query: CallbackQuery, bot: Bot) -> None:
             logger.warning(f"Could not export invite link: {e}")
 
         try:
-            await query.message.edit_text(_t("onboarding-completed"))
+            await query.message.edit_text(_t("onboarding-completed"))  # type: ignore[union-attr]
         except Exception as e:
             logger.warning(f"onboarding-completed edit_text failed: {e}")
         await query.answer(_t("onboarding-success-toast"), show_alert=False)

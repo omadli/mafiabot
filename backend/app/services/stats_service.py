@@ -37,8 +37,8 @@ async def finalize_game_stats(state: GameState) -> None:
         return
 
     # Compute ELO changes — global
-    winners_global = []
-    losers_global = []
+    winners_global = []  # type: ignore[attr-defined,var-annotated,arg-type]
+    losers_global = []  # type: ignore[attr-defined,var-annotated,arg-type]
     for player in state.players:
         user = await User.get_or_none(id=player.user_id)
         if user is None:

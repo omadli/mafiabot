@@ -45,19 +45,19 @@ perm-pin-messages = Pin messages
 start-welcome =
     👋 Hi, <b>{ $username }</b>!
 
-    🎭 Welcome to <b>Mafia Baku Black</b>!
+    <e:item-mask> Welcome to <b>Mafia Baku Black</b>!
 
     Here you can:
     • 🎮 Play Mafia in your Telegram groups
-    • 💎 Earn diamonds, 💵 dollars, ⭐ XP
-    • 🏆 Unlock achievements and climb the ELO ladder
+    • <e:currency-diamond> Earn diamonds, <e:currency-dollar> dollars, ⭐ XP
+    • <e:status-trophy> Unlock achievements and climb the ELO ladder
     • 👑 Get premium status
 
     Pick an action:
 
 btn-profile = 👤 Profile
 btn-inventory = 🎒 Inventory
-btn-buy-diamonds = 💎 Buy Diamonds
+btn-buy-diamonds = <e:currency-diamond> Buy Diamonds
 btn-help = ❓ Help
 
 btn-add-to-group = ➕ Add to group
@@ -168,7 +168,7 @@ night-result-killed-single =
 
 night-result-no-deaths = 🌅 Hard to believe, but no one died last night...
 
-night-result-shield-used = 💫 Someone used their protection!
+night-result-shield-used = <e:status-spark> Someone used their protection!
 
 
 # ===========================================================
@@ -231,7 +231,7 @@ registration-message =
 
 registration-no-players-yet = — (no one has joined yet)
 
-registration-bounty = 💎 Each winner receives: { $per_winner } diamonds (escrow: { $pool })
+registration-bounty = <e:currency-diamond> Each winner receives: { $per_winner } diamonds (escrow: { $pool })
 
 btn-join-game = 🎮 Join Game
 
@@ -248,9 +248,9 @@ phase-night-start-3 = 🌃 Night #{ $round }. Lock your doors — there are foot
 phase-night-start-4 = 🦉 Night #{ $round }. The owl is watching, but even it can't see everything.
 phase-night-start-5 = 🌌 Night #{ $round }. The stars bear witness — the town doesn't sleep, it just pretends.
 
-phase-day-start = ☀️ Day #{ $round }. The sun dried the blood spilled in the night...
+phase-day-start = <e:scene-day> Day #{ $round }. The sun dried the blood spilled in the night...
 
-phase-day-start-1 = ☀️ Day #{ $round }. The sun dried the blood spilled in the night...
+phase-day-start-1 = <e:scene-day> Day #{ $round }. The sun dried the blood spilled in the night...
 phase-day-start-2 = 🌅 Day #{ $round }. The town wakes — but someone won't wake again.
 phase-day-start-3 = ☕ Day #{ $round }. Breakfast time, but a few seats are empty...
 phase-day-start-4 = 🐓 Day #{ $round }. The rooster crowed — time to count heads.
@@ -316,16 +316,17 @@ night-prompt-detective = 🕵🏼 Commissioner, your choice?
 
 night-prompt-detective-check-only = 🕵🏼 Commissioner, on night 1 you may only investigate. Who do you check?
 
-night-prompt-detective-both = 🕵🏼 Commissioner, who do you investigate or shoot? 🔍 = investigate, 🔫 = shoot
+night-prompt-detective-both = 🕵🏼 Commissioner, who do you investigate or shoot? <e:action-check> = investigate, <e:item-rifle> = shoot
 
 night-prompt-detective-prior-header = 🕵🏼 <b>Previously checked players:</b>
 night-prompt-detective-prior-line = • <b>{ $name }</b> — { $role }
 night-prompt-detective-chooser = 🕵🏼 What are we doing tonight?
-night-prompt-detective-target-list-check = 🔍 Who do we check?
-night-prompt-detective-target-list-kill = 🔫 Who do we take out?
-btn-detective-check = 🔍 Investigate
-btn-detective-kill = 🔫 Shoot
+night-prompt-detective-target-list-check = <e:action-check> Who do we check?
+night-prompt-detective-target-list-kill = <e:item-rifle> Who do we take out?
+btn-detective-check = <e:action-check> Investigate
+btn-detective-kill = <e:item-rifle> Shoot
 night-no-targets = ❌ No one to choose right now.
+night-no-rifle = <e:item-rifle> You're out of rifle rounds.
 
 btn-skip = ⏭ Skip
 
@@ -353,7 +354,7 @@ mafia-team-pick-broadcast = 🤵🏼 <b>{ $role }</b> ({ $actor }) picked: <b>{ 
 # ===========================================================
 
 game-end-winner =
-    🏆 Game over!
+    <e:status-trophy> Game over!
 
     { $team } wins!
 
@@ -443,7 +444,7 @@ feedback-doctor-target-visit = 👨🏻‍⚕ The doctor came to visit you.
 
 feedback-hooker-confirm = 💃 You put { $target } to sleep.
 
-feedback-hooker-target = There it is — 💊 the drug is kicking in. Sweet dreams for a whole day...
+feedback-hooker-target = There it is — <e:action-heal> the drug is kicking in. Sweet dreams for a whole day...
 
 mafia-kill-broadcast = 🤵🏼 During the Mafia vote, { $mention } was brutally killed 🩸
 
@@ -470,20 +471,20 @@ stats-role-no-data = You have not played as { $role } yet
 stats-role-detail =
     📊 Stats for { $role }:
     🎮 Games: { $games }
-    🏆 Wins: { $wins }
+    <e:status-trophy> Wins: { $wins }
     📈 WR: { $winrate }%
-    💎 ELO: { $elo }
+    <e:currency-diamond> ELO: { $elo }
 
 stats-personal =
     👤 { $name }
 
-    🎮 Games: { $games }   🏆 Wins: { $wins }   💔 Losses: { $losses }
-    📈 Winrate: { $winrate }%   💎 ELO: { $elo }
+    🎮 Games: { $games }   <e:status-trophy> Wins: { $wins }   💔 Losses: { $losses }
+    📈 Winrate: { $winrate }%   <e:currency-diamond> ELO: { $elo }
     ⭐ XP: { $xp }   🏅 Level: { $level }
 
     🔥 Current streak: { $streak }   📌 Best streak: { $longest }
 
-    🎭 Favourite roles: { $top_roles }
+    <e:item-mask> Favourite roles: { $top_roles }
 
     👨🏼 Civilian: { $citizen_games } games, { $citizen_wins } wins
     🤵🏼 Mafia: { $mafia_games } games, { $mafia_wins } wins
@@ -493,7 +494,7 @@ top-empty = The leaderboard is empty
 
 top-group-only = This command only works inside a group
 
-top-header = 🏆 Top 10 (by { $sort }):
+top-header = <e:status-trophy> Top 10 (by { $sort }):
 
 global-top-header = 🌍 Global Top 10:
 
@@ -524,16 +525,16 @@ profile-info =
 
     👤 { $name }
 
-    💵 Dollars: { $dollars }
-    💎 Diamonds: { $diamonds }
+    <e:currency-dollar> Dollars: { $dollars }
+    <e:currency-diamond> Diamonds: { $diamonds }
 
-    🛡 Shield: { $shield }
-    ⛑ Killer shield: { $killer_shield }
-    ⚖️ Vote shield: { $vote_shield }
-    🔫 Rifle: { $rifle }
+    <e:item-shield> Shield: { $shield }
+    <e:item-killer-shield> Killer shield: { $killer_shield }
+    <e:scene-hanging> Vote shield: { $vote_shield }
+    <e:item-rifle> Rifle: { $rifle }
 
-    🎭 Mask: { $mask }
-    📁 Fake document: { $fake_document }
+    <e:item-mask> Mask: { $mask }
+    <e:item-fake-document> Fake document: { $fake_document }
     🃏 Next game role: { $next_role }
 
     🎯 Wins: { $wins }
@@ -555,9 +556,9 @@ btn-toggle-empty = { $emoji } - 🚫 0
 
 btn-shop = 🛒 Shop
 
-btn-buy-dollars = 💵 Buy
+btn-buy-dollars = <e:currency-dollar> Buy
 
-btn-buy-diamonds = 💎 Buy
+btn-buy-diamonds = <e:currency-diamond> Buy
 
 btn-premium-groups = 👑 Premium groups
 btn-pick-next-role = 🃏 Pick next role
@@ -587,16 +588,16 @@ shop-welcome =
 shop-welcome-balance =
     🛒 <b>Shop</b>
 
-    Your balance: <b>{ $diamonds }</b> 💎  <b>{ $dollars }</b> 💵
+    Your balance: <b>{ $diamonds }</b> <e:currency-diamond>  <b>{ $dollars }</b> <e:currency-dollar>
 
-shop-diamonds-header = 💎 Diamond packages:
+shop-diamonds-header = <e:currency-diamond> Diamond packages:
 
 shop-no-items = 🚫 Nothing available in this currency
 
 shop-items-header =
-    🛡 <b>Items</b>
+    <e:item-shield> <b>Items</b>
 
-    Balance: <b>{ $diamonds }</b> 💎  <b>{ $dollars }</b> 💵
+    Balance: <b>{ $diamonds }</b> <e:currency-diamond>  <b>{ $dollars }</b> <e:currency-dollar>
 
     Pay in the listed currency.
 
@@ -610,7 +611,7 @@ btn-buy-items = 🎒 Weapons/shields
 
 btn-buy-premium = 👑 Premium
 
-btn-buy-premium-30d = ⭐ 30-day premium — { $price } 💎
+btn-buy-premium-30d = ⭐ 30-day premium — { $price } <e:currency-diamond>
 
 buy-insufficient = ❌ Not enough diamonds
 
@@ -618,13 +619,13 @@ buy-success = ✅ Purchased!
 
 buy-success-detailed = ✅ { $item } purchased! ({ $cost } { $currency })
 
-buy-insufficient-diamonds = 💎 Not enough diamonds
+buy-insufficient-diamonds = <e:currency-diamond> Not enough diamonds
 
-buy-insufficient-dollars = 💵 Not enough dollars
+buy-insufficient-dollars = <e:currency-dollar> Not enough dollars
 
 premium-activated = 👑 Premium activated: { $days } days
 
-payment-success = ✅ Payment successful! +💎 { $diamonds }
+payment-success = ✅ Payment successful! +<e:currency-diamond> { $diamonds }
 
 payment-failed = ❌ Payment failed
 
@@ -636,8 +637,8 @@ payment-failed = ❌ Payment failed
 exchange-menu =
     🔁 <b>Currency exchange</b>
 
-    Your balance: <b>{ $diamonds }</b> 💎  <b>{ $dollars }</b> 💵
-    Rate: 1 💎 = { $rate } 💵
+    Your balance: <b>{ $diamonds }</b> <e:currency-diamond>  <b>{ $dollars }</b> <e:currency-dollar>
+    Rate: 1 <e:currency-diamond> = { $rate } <e:currency-dollar>
 
     Pick a direction:
 
@@ -645,9 +646,9 @@ exchange-success = ✅ Credited { $got } { $currency }!
 
 exchange-disabled = 🚫 Exchange is currently disabled.
 
-exchange-insufficient-diamonds = 💎 Not enough diamonds for exchange
+exchange-insufficient-diamonds = <e:currency-diamond> Not enough diamonds for exchange
 
-exchange-insufficient-dollars = 💵 Not enough dollars for exchange
+exchange-insufficient-dollars = <e:currency-dollar> Not enough dollars for exchange
 
 exchange-below-minimum = ❌ Amount is below the minimum
 
@@ -662,13 +663,13 @@ give-amount-too-small = ❌ Amount must be at least 1
 
 give-cannot-self = ❌ You cannot gift diamonds to yourself
 
-give-insufficient = ❌ Not enough diamonds (you have 💎 { $have }, need 💎 { $need })
+give-insufficient = ❌ Not enough diamonds (you have <e:currency-diamond> { $have }, need <e:currency-diamond> { $need })
 
 give-target-not-found = ❌ User not found
 
-give-direct-success = { $sender } 💎 { $amount } gifted to { $receiver }!
+give-direct-success = { $sender } <e:currency-diamond> { $amount } gifted to { $receiver }!
 
-give-creating = 💎 Creating giveaway...
+give-creating = <e:currency-diamond> Creating giveaway...
 
 give-group-message =
     🎁 { $sender } started a { $amount }-diamond giveaway!
@@ -678,7 +679,7 @@ give-no-clicks = 🎁 Giveaway ended — nobody clicked
 
 give-results-header = 🎁 Giveaway results:
 
-btn-claim-diamond = 💎 Claim diamonds
+btn-claim-diamond = <e:currency-diamond> Claim diamonds
 
 giveaway-clicked-ok = ✅ Claimed!
 
@@ -689,7 +690,7 @@ giveaway-already-clicked-or-finished = ❌ You have already clicked or the givea
 # VOTING UI (inline buttons)
 # ===========================================================
 
-voting-prompt = 🗳 Time to vote! Living players: { $count }. Cast your vote using the button below:
+voting-prompt = <e:scene-voting> Time to vote! Living players: { $count }. Cast your vote using the button below:
 
 vote-skip-button = ❌ Nobody
 
@@ -709,7 +710,7 @@ vote-broadcast-abstain = 🚫 <b>{ $voter }</b> decided not to choose anyone..
 # ===========================================================
 
 hanging-confirm-prompt =
-    ⚖️ Confirm hanging { $target }?
+    <e:scene-hanging> Confirm hanging { $target }?
     👍 = yes, 👎 = no
 
 hanging-yes = 👍 Yes, hang them
@@ -756,7 +757,7 @@ mage-attacked =
 
 mage-forgive = 💚 Forgive
 
-mage-kill = 💀 Kill
+mage-kill = <e:status-death> Kill
 
 mage-forgive-confirm = Forgiven
 
@@ -764,7 +765,7 @@ mage-forgive-confirm-text = 💚 You forgave them. They live.
 
 mage-kill-confirm = Killed
 
-mage-kill-confirm-text = 💀 { $target } has been killed (by your curse)
+mage-kill-confirm-text = <e:status-death> { $target } has been killed (by your curse)
 
 
 # ===========================================================
@@ -819,7 +820,7 @@ help-text =
     <b>Main commands (private chat):</b>
     /start — Main menu
     /profile — Profile + inventory + stats
-    /exchange — 💎 diamonds ↔ 💵 dollars
+    /exchange — <e:currency-diamond> diamonds ↔ <e:currency-dollar> dollars
 
     <b>Group commands (after adding bot as admin):</b>
     /game — Start a new game
@@ -846,8 +847,8 @@ rules-text =
 
     <b>🔄 Game cycle:</b>
     🌃 <b>Night</b> (60s) — roles take actions
-    ☀️ <b>Day</b> (45s) — discuss results
-    🗳 <b>Vote</b> (25s) — pick who to hang
+    <e:scene-day> <b>Day</b> (45s) — discuss results
+    <e:scene-voting> <b>Vote</b> (25s) — pick who to hang
     👍/👎 (15s) — confirmation
 
     ━━━━━━━━━━━━━━━━━━━━
@@ -863,9 +864,9 @@ rules-text =
     🎯 <b>Singletons (6):</b>
     🔪 Maniac · 🐺 Werewolf · 🧙 Mage · 🧟 Arsonist · 🤹 Crook · 🤓 Snitch
 
-    🛡 <b>Items (from shop):</b>
-    🛡 Shield · ⛑ Killer shield · ⚖️ Vote shield · 🔫 Rifle
-    🎭 Mask · 📁 Fake document
+    <e:item-shield> <b>Items (from shop):</b>
+    <e:item-shield> Shield · <e:item-killer-shield> Killer shield · <e:scene-hanging> Vote shield · <e:item-rifle> Rifle
+    <e:item-mask> Mask · <e:item-fake-document> Fake document
 
 language-picker-prompt = 🌐 Pick a language:
 
@@ -909,11 +910,11 @@ rules-summary =
       4️⃣ <b>Confirm</b> 👍/👎 — enough "yes" votes hang them.
       5️⃣ <b>Last words</b> — the dead may send a final message to the group.
 
-    🗳 <b>Voting</b> happens in DMs — other players don't see your vote (if the admin enables anonymity).
+    <e:scene-voting> <b>Voting</b> happens in DMs — other players don't see your vote (if the admin enables anonymity).
 
-    💎 <b>Items:</b> 🛡 Shield, ⛑ Killer shield, ⚖️ Vote shield, 🔫 Rifle (pierces shields), 🎭 Mask (hides your role), 📁 Fake document (Detective sees "civilian").
+    <e:currency-diamond> <b>Items:</b> <e:item-shield> Shield, <e:item-killer-shield> Killer shield, <e:scene-hanging> Vote shield, <e:item-rifle> Rifle (pierces shields), <e:item-mask> Mask (hides your role), <e:item-fake-document> Fake document (Detective sees "civilian").
 
-    🏆 <b>Win conditions:</b>
+    <e:status-trophy> <b>Win conditions:</b>
       • <b>Civilians</b>: wipe out all mafia and singletons.
       • <b>Mafia</b>: equal or outnumber the civilians.
       • <b>Singletons</b> — each role has its own conditions (read more via the button below).
@@ -922,11 +923,11 @@ rules-summary =
 
     Tap below to learn exactly how every role works 👇
 
-btn-rules-roles = 🎭 Roles in detail
+btn-rules-roles = <e:item-mask> Roles in detail
 btn-rules-back = 🔙 Back
 
 rules-pick-team =
-    🎭 <b>Roles by team</b>
+    <e:item-mask> <b>Roles by team</b>
 
     Which side would you like to read about?
 
@@ -968,7 +969,7 @@ mafia-chat-opened =
     You can chat with your teammates:
     { $members }
 
-    💬 Any text you send here is relayed to other mafia members.
+    <e:scene-last-words> Any text you send here is relayed to other mafia members.
 
 
 # === Atmosphere media ===
@@ -1006,7 +1007,7 @@ leave-broadcast-with-role =
     { $mention } couldn't bear the evils of this city and took their own life.
     They were { $role_emoji } { $role_name }.
 
-crook-stole-vote-dm = 🎭 The Crook deceived you and stole your voting right for today's vote.
+crook-stole-vote-dm = <e:item-mask> The Crook deceived you and stole your voting right for today's vote.
 
 arsonist-self-burn = <b>{ $name }</b> (🧟 Arsonist) killed themselves!
 
@@ -1044,11 +1045,11 @@ btn-settings-webapp = 🌐 Full settings
 
 btn-settings-history = 📊 Game history
 
-btn-settings-roles = 🎭 Roles
+btn-settings-roles = <e:item-mask> Roles
 
 btn-settings-timings = ⏱ Phase timings
 
-btn-settings-items = 🛡 Items
+btn-settings-items = <e:item-shield> Items
 
 btn-settings-silence = 🔇 Silence
 
@@ -1061,7 +1062,7 @@ btn-settings-atmosphere = 📺 Atmosphere media
 # --- Section C: Roles sub-menu ---
 
 settings-roles-prompt =
-    🎭 <b>Manage roles</b>
+    <e:item-mask> <b>Manage roles</b>
 
     Pick which roles can appear in games:
 
@@ -1094,7 +1095,7 @@ timing-afsungar_carry = Kamikaze choice
 # --- Section E: Items sub-menu ---
 
 settings-items-prompt =
-    🛡 <b>Allowed items</b>
+    <e:item-shield> <b>Allowed items</b>
 
     Which protections are available in the shop and during games:
 
@@ -1206,23 +1207,23 @@ settings-atmosphere-info =
 # === Game start announcement + role descriptions ===
 
 game-started-announcement =
-    🎭 <b>The game has started!</b>
+    <e:item-mask> <b>The game has started!</b>
 
     Tap the button to see your role:
 
-btn-show-my-role = 🎭 Your role
+btn-show-my-role = <e:item-mask> Your role
 
 show-role-not-in-game = 🚫 You are not in this game
 
 show-role-no-game = 🚫 No active game right now
 
 show-role-alert =
-    🎭 Your role: { $role }
+    <e:item-mask> Your role: { $role }
 
     { $description }
 
 dm-your-role =
-    🎭 <b>You are { $role }!</b>
+    <e:item-mask> <b>You are { $role }!</b>
 
     { $description }
 
@@ -1326,13 +1327,13 @@ role-desc-snitch =
 # ===========================================================
 
 voting-group-prompt-short =
-    ⚖️ Time to find the guilty and pass judgement.
+    <e:scene-hanging> Time to find the guilty and pass judgement.
     Voting time: { $seconds } seconds.
 
-voting-go-button = 🗳 Cast vote
+voting-go-button = <e:scene-voting> Cast vote
 
 voting-dm-prompt =
-    ⚖️ <b>Time to find the guilty!</b>
+    <e:scene-hanging> <b>Time to find the guilty!</b>
 
     Who do you think should hang?
 
@@ -1341,7 +1342,7 @@ vote-recorded-dm-confirm = ✅ Your vote: <b>{ $target }</b>
 vote-skipped-confirm = ✅ You chose "Nobody".
 
 # Comedic rumor-style alerts for invalid voters in HANGING_CONFIRM
-vote-dead-alert = 💀 You're dead, you cannot vote! Even your ghost is silent.
+vote-dead-alert = <e:status-death> You're dead, you cannot vote! Even your ghost is silent.
 vote-not-in-game-alert = 😴 You're not in this game. We'll call you for the next one!
 vote-already-voted-alert = ✋ You already voted!
 
@@ -1352,17 +1353,17 @@ afk-last-words =
 
 # Per-player game-end DM
 game-end-dm-win =
-    🏆 <b>Congratulations, you won!</b>
+    <e:status-trophy> <b>Congratulations, you won!</b>
 
-    🎭 Role: { $role }
+    <e:item-mask> Role: { $role }
     ⭐ XP: +{ $xp }
     📊 ELO: { $elo_delta }
-    💵 Reward: { $dollars }$
+    <e:currency-dollar> Reward: { $dollars }$
 
 game-end-dm-loss =
-    💀 <b>No luck this time.</b>
+    <e:status-death> <b>No luck this time.</b>
 
-    🎭 Role: { $role }
+    <e:item-mask> Role: { $role }
     ⭐ XP: +{ $xp }
     📊 ELO: { $elo_delta }
-    💵 Money: { $dollars }$
+    <e:currency-dollar> Money: { $dollars }$

@@ -202,7 +202,7 @@ async def callback_vote_cast(query: CallbackQuery, user: User, _: Translator, bo
     if query.message is not None:
         back_kb = await _back_to_group_kb(state, _)
         with contextlib.suppress(Exception):
-            await query.message.edit_text(confirm_text, reply_markup=back_kb, parse_mode="HTML")
+            await query.message.edit_text(confirm_text, reply_markup=back_kb, parse_mode="HTML")  # type: ignore[union-attr]
 
     # Public broadcast (non-anonymous only) — group locale, not voter's.
     if not show_anon:
@@ -306,7 +306,7 @@ async def callback_hanging_confirm(
         target=player_mention(target_id, target.first_name),
     )
     with contextlib.suppress(Exception):
-        await query.message.edit_text(new_text, reply_markup=new_kb, parse_mode="HTML")
+        await query.message.edit_text(new_text, reply_markup=new_kb, parse_mode="HTML")  # type: ignore[union-attr]
 
 
 # === Helpers called from PhaseManager hook ===
@@ -412,7 +412,7 @@ async def _state_for_user(user: User) -> GameState | None:
     game = await Game.get_or_none(id=user.active_game_id)
     if game is None:
         return None
-    return await game_service.load_state(game.group_id)
+    return await game_service.load_state(game.group_id)  # type: ignore[attr-defined,var-annotated,arg-type]
 
 
 async def _back_to_group_kb(state: GameState, _: Translator) -> InlineKeyboardMarkup:

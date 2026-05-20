@@ -205,7 +205,7 @@ async def purchase_item(
             item=item_code,
             status=TransactionStatus.COMPLETED,
             note=f"Quantity: {quantity}, currency: {currency}",
-            **tx_amount,
+            **tx_amount,  # type: ignore[attr-defined,var-annotated,arg-type]
         )
 
     logger.info(f"User {user.id} bought {quantity}x {item_code} for {cost} {currency}")

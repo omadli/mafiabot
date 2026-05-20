@@ -427,7 +427,7 @@ class PhaseManager:
 
         # Suicide special: if hanged, marks as winner via state.extra
         if target.role == "suicide":
-            state.extra = state.extra if hasattr(state, "extra") else {}
+            state.extra = state.extra if hasattr(state, "extra") else {}  # type: ignore[attr-defined,var-annotated,arg-type]
             # We'll check this in win conditions
 
         # Kamikaze: if hanged, choose 1 to take

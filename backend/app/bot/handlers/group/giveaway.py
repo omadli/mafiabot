@@ -129,7 +129,7 @@ async def _finish_after_delay(bot: Bot, giveaway_id, chat_id: int, message_id: i
         for click in clicks:
             await click.fetch_related("user")
             lines.append(
-                f"  {click.click_order}. {player_mention(click.user_id, click.user.first_name)} — 💎 {click.diamonds_received}"
+                f"  {click.click_order}. {player_mention(click.user_id, click.user.first_name)} — 💎 {click.diamonds_received}"  # type: ignore[attr-defined,var-annotated,arg-type]
             )
         text = _("give-results-header") + "\n" + "\n".join(lines)
 
@@ -152,7 +152,7 @@ async def callback_giveaway_click(
         await query.answer("Invalid", show_alert=True)
         return
 
-    result = await giveaway_service.click_giveaway(giveaway_id, user)
+    result = await giveaway_service.click_giveaway(giveaway_id, user)  # type: ignore[attr-defined,var-annotated,arg-type]
     if result is None:
         await query.answer(_("giveaway-already-clicked-or-finished"), show_alert=False)
         return
@@ -163,7 +163,7 @@ async def callback_giveaway_click(
     # If max reached, finalize immediately
     if gw.status == GiveawayStatus.FINISHED:
         await giveaway_service.finish_giveaway(gw.id)
-        clicks = await gw.clicks.all().order_by("click_order")
+        clicks = await gw.clicks.all().order_by("click_order")  # type: ignore[attr-defined,var-annotated,arg-type]
         lines = []
         for c in clicks:
             await c.fetch_related("user")

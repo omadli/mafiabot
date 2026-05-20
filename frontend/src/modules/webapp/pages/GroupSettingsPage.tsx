@@ -312,6 +312,12 @@ export function GroupSettingsPage() {
               label={permissionLabel(key)}
               value={String(draft.permissions[key] ?? "all")}
               options={["all", "admins", "registrar", "none"]}
+              optionLabels={{
+                all: t("group_settings.perm_value_all"),
+                admins: t("group_settings.perm_value_admins"),
+                registrar: t("group_settings.perm_value_registrar"),
+                none: t("group_settings.perm_value_none"),
+              }}
               onChange={(v) => updateField("permissions", key, v)}
             />
           ))}
@@ -330,6 +336,10 @@ export function GroupSettingsPage() {
             label={t("group_settings.mafia_ratio")}
             value={String(draft.gameplay.mafia_ratio || "low")}
             options={["low", "high"]}
+            optionLabels={{
+              low: t("group_settings.mafia_ratio_low"),
+              high: t("group_settings.mafia_ratio_high"),
+            }}
             onChange={(v) => updateField("gameplay", "mafia_ratio", v)}
           />
           <NumInput
@@ -472,11 +482,13 @@ function SelectField({
   label,
   value,
   options,
+  optionLabels,
   onChange,
 }: {
   label: string;
   value: string;
   options: string[];
+  optionLabels?: Record<string, string>;
   onChange: (v: string) => void;
 }) {
   return (
@@ -490,7 +502,7 @@ function SelectField({
       >
         {options.map((o) => (
           <option key={o} value={o}>
-            {o}
+            {optionLabels?.[o] ?? o}
           </option>
         ))}
       </select>

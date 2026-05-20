@@ -242,22 +242,26 @@ async def sa_premium(message: Message, command: CommandObject) -> None:
         return
 
     now = datetime.now(UTC)
-    base = target.premium_until if target.premium_until and target.premium_until > now else now
-    target.premium_until = base + timedelta(days=days)
+    base = (
+        target.premium_expires_at
+        if target.premium_expires_at and target.premium_expires_at > now
+        else now
+    )
+    target.premium_expires_at = base + timedelta(days=days)
     target.is_premium = True
-    await target.save(update_fields=["premium_until", "is_premium"])
+    await target.save(update_fields=["premium_expires_at", "is_premium"])
     await log_action(
         action="sa.grant.premium",
         target_type="user",
         target_id=str(target_id),
         payload={
             "days": days,
-            "until": target.premium_until.isoformat(),
+            "until": target.premium_expires_at.isoformat(),
             "actor_tg_id": message.from_user.id,
         },
     )
     await message.answer(
-        f"✅ Premium berildi: {days} kun\nMuddat: <b>{target.premium_until:%Y-%m-%d %H:%M}</b>",
+        f"✅ Premium berildi: {days} kun\nMuddat: <b>{target.premium_expires_at:%Y-%m-%d %H:%M}</b>",
         parse_mode="HTML",
     )
 
@@ -349,7 +353,7 @@ async def sa_userinfo(message: Message, command: CommandObject) -> None:
         return
 
     await target.fetch_related("stats")
-    s = target.stats
+    s = target.stats  # type: ignore[attr-defined]
     text = (
         f"👤 <b>{target.first_name}</b> {target.last_name or ''}\n"
         f"id: <code>{target.id}</code>\n"

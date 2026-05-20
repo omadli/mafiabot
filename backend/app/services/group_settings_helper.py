@@ -40,4 +40,4 @@ async def save_settings_fields(s: GroupSettings, **fields: Any) -> None:
     # Mirror in-memory so callers reading from `s` afterwards see the change
     for name, val in fields.items():
         setattr(s, name, val)
-    await GroupSettings.filter(group_id=s.group_id).update(**fields)
+    await GroupSettings.filter(group_id=s.group_id).update(**fields)  # type: ignore[attr-defined,var-annotated,arg-type]

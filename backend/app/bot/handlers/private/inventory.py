@@ -165,7 +165,7 @@ async def _refresh_profile(query: CallbackQuery, user: User, _: Translator) -> N
     text, kb = await _build_profile_message(refreshed, inv, _)
     if query.message:
         with contextlib.suppress(TelegramBadRequest):
-            await query.message.edit_text(text, reply_markup=kb, parse_mode="HTML")
+            await query.message.edit_text(text, reply_markup=kb, parse_mode="HTML")  # type: ignore[union-attr]
 
 
 # === Toggles ===
@@ -213,7 +213,7 @@ async def callback_toggle_item(query: CallbackQuery, user: User, _: Translator) 
 async def callback_inv_close(query: CallbackQuery, _: Translator) -> None:
     if query.message:
         with contextlib.suppress(TelegramBadRequest):
-            await query.message.delete()
+            await query.message.delete()  # type: ignore[union-attr]
     await query.answer()
 
 
@@ -281,7 +281,7 @@ async def callback_pick_role(query: CallbackQuery, user: User, _: Translator) ->
         return
     if query.message:
         with contextlib.suppress(TelegramBadRequest):
-            await query.message.edit_text(
+            await query.message.edit_text(  # type: ignore[union-attr]
                 _("pick-role-prompt"),
                 reply_markup=_build_role_picker_kb(_),
                 parse_mode="HTML",
@@ -361,7 +361,7 @@ async def callback_shop(query: CallbackQuery, user: User, _: Translator) -> None
             dollars=user.dollars,
         )
         with contextlib.suppress(TelegramBadRequest):
-            await query.message.edit_text(text, reply_markup=keyboard, parse_mode="HTML")
+            await query.message.edit_text(text, reply_markup=keyboard, parse_mode="HTML")  # type: ignore[union-attr]
     await query.answer()
 
 
@@ -382,7 +382,7 @@ async def callback_shop_diamonds(query: CallbackQuery, user: User, _: Translator
     rows.append([InlineKeyboardButton(text=_("btn-back"), callback_data="shop:open")])
     if query.message:
         with contextlib.suppress(TelegramBadRequest):
-            await query.message.edit_text(
+            await query.message.edit_text(  # type: ignore[union-attr]
                 _("shop-diamonds-header"),
                 reply_markup=InlineKeyboardMarkup(inline_keyboard=rows),
                 parse_mode="HTML",
@@ -433,7 +433,7 @@ async def callback_shop_items(query: CallbackQuery, user: User, _: Translator) -
     if query.message:
         text = _("shop-items-header", diamonds=user.diamonds, dollars=user.dollars)
         with contextlib.suppress(TelegramBadRequest):
-            await query.message.edit_text(
+            await query.message.edit_text(  # type: ignore[union-attr]
                 text,
                 reply_markup=InlineKeyboardMarkup(inline_keyboard=rows),
                 parse_mode="HTML",
@@ -457,7 +457,7 @@ async def callback_shop_premium(query: CallbackQuery, user: User, _: Translator)
     )
     if query.message:
         with contextlib.suppress(TelegramBadRequest):
-            await query.message.edit_text(
+            await query.message.edit_text(  # type: ignore[union-attr]
                 _("shop-premium-info"), reply_markup=keyboard, parse_mode="HTML"
             )
     await query.answer()
@@ -547,7 +547,7 @@ async def callback_exchange_open(query: CallbackQuery, user: User, _: Translator
     text = _("exchange-menu", diamonds=user.diamonds, dollars=user.dollars, rate=rate)
     if query.message:
         with contextlib.suppress(TelegramBadRequest):
-            await query.message.edit_text(
+            await query.message.edit_text(  # type: ignore[union-attr]
                 text, reply_markup=_build_exchange_kb(rate, _), parse_mode="HTML"
             )
     await query.answer()

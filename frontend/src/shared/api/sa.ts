@@ -82,6 +82,38 @@ export const saApi = {
   ): Promise<{ ok: boolean; section: string; key: string; value: unknown }> =>
     (await api.post("/sa/system-settings", { section, key, value })).data,
 
+  // === Role configs (per-role names + emojis, cached) ===
+  // Note: `/sa/role-configs` is initData-auth (Telegram WebApp).
+  // For the web `/admin` (JWT auth) use `adminApi.roleConfigs()` from admin.ts.
+  roleConfigs: async (): Promise<{ items: RoleConfig[] }> =>
+    (await api.get("/sa/role-configs")).data,
+
+  updateRoleConfig: async (
+    role: string,
+    patch: Partial<Pick<
+      RoleConfig,
+      | "name_uz" | "name_ru" | "name_en"
+      | "static_emoji" | "custom_emoji_id"
+      | "team" | "order_idx"
+    >>,
+  ): Promise<RoleConfig> =>
+    (await api.post(`/sa/role-configs/${role}`, patch)).data,
+
+  // === Emoji configs (scene / item / action / status / currency) ===
+  emojiConfigs: async (): Promise<{ items: EmojiConfig[] }> =>
+    (await api.get("/sa/emoji-configs")).data,
+
+  updateEmojiConfig: async (
+    code: string,
+    patch: Partial<Pick<
+      EmojiConfig,
+      | "name_uz" | "name_ru" | "name_en"
+      | "static_emoji" | "custom_emoji_id"
+      | "category" | "order_idx"
+    >>,
+  ): Promise<EmojiConfig> =>
+    (await api.post(`/sa/emoji-configs/${code}`, patch)).data,
+
   // === Charts ===
   chartElo: async (): Promise<{ bins: { label: string; count: number }[] }> =>
     (await api.get("/sa/charts/elo")).data,
@@ -93,7 +125,185 @@ export const saApi = {
 
   chartRoleWinrates: async (): Promise<{ items: RoleWinrate[] }> =>
     (await api.get("/sa/charts/role-winrates")).data,
+
+  // === Users browser + moderation ===
+  users: async (params: {
+    search?: string; is_banned?: boolean; is_premium?: boolean;
+    page?: number; page_size?: number;
+  } = {}): Promise<SaUsersPage> =>
+    (await api.get("/sa/users", { params })).data,
+
+  user: async (userId: number): Promise<SaUserDetail> =>
+    (await api.get(`/sa/users/${userId}`)).data,
+
+  banUser: async (userId: number, reason: string, durationHours: number | null = null) =>
+    (await api.post(`/sa/users/${userId}/ban`, {
+      reason, duration_hours: durationHours,
+    })).data,
+
+  unbanUser: async (userId: number) =>
+    (await api.post(`/sa/users/${userId}/unban`)).data,
+
+  grantDiamonds: async (userId: number, amount: number, reason = "sa grant") =>
+    (await api.post(`/sa/users/${userId}/grant-diamonds`, { amount, reason })).data,
+
+  grantPremium: async (userId: number, days: number) =>
+    (await api.post(`/sa/users/${userId}/grant-premium`, { days })).data,
+
+  userTransactions: async (userId: number, page = 1, page_size = 50):
+    Promise<{ total: number; page: number; items: SaTransaction[] }> =>
+    (await api.get(`/sa/users/${userId}/transactions`, { params: { page, page_size } })).data,
+
+  userGames: async (userId: number, page = 1, page_size = 20):
+    Promise<{ total: number; page: number; items: SaUserGame[] }> =>
+    (await api.get(`/sa/users/${userId}/games`, { params: { page, page_size } })).data,
+
+  userAchievements: async (userId: number): Promise<{ items: SaAchievement[] }> =>
+    (await api.get(`/sa/users/${userId}/achievements`)).data,
+
+  // === Groups moderation ===
+  blockGroup: async (groupId: number, reason: string) =>
+    (await api.post(`/sa/groups/${groupId}/block`, { reason })).data,
+
+  unblockGroup: async (groupId: number) =>
+    (await api.post(`/sa/groups/${groupId}/unblock`)).data,
+
+  // === Games list + replay ===
+  games: async (params: {
+    status?: string; group_id?: number; page?: number; page_size?: number;
+  } = {}): Promise<SaGamesPage> =>
+    (await api.get("/sa/games", { params })).data,
+
+  game: async (gameId: string): Promise<SaGameDetail> =>
+    (await api.get(`/sa/games/${gameId}`)).data,
+
+  // === Audit log ===
+  audit: async (params: {
+    action?: string; actor_id?: number; page?: number; page_size?: number;
+  } = {}): Promise<SaAuditPage> =>
+    (await api.get("/sa/audit", { params })).data,
 };
+
+export interface SaUserListItem {
+  id: number;
+  username: string | null;
+  first_name: string;
+  diamonds: number;
+  dollars: number;
+  xp: number;
+  level: number;
+  is_premium: boolean;
+  is_banned: boolean;
+  games_total: number;
+  elo: number;
+  created_at: string;
+}
+
+export interface SaUsersPage {
+  total: number;
+  page: number;
+  page_size: number;
+  items: SaUserListItem[];
+}
+
+export interface SaUserDetail extends SaUserListItem {
+  last_name: string | null;
+  language_code: string | null;
+  premium_expires_at: string | null;
+  banned_until: string | null;
+  ban_reason: string | null;
+  afk_warnings: number;
+  joined_at: string;
+  stats: {
+    games_total: number;
+    games_won: number;
+    games_lost: number;
+    elo: number;
+    longest_win_streak: number;
+    role_stats: Record<string, unknown>;
+    citizen_wins: number;
+    mafia_wins: number;
+    singleton_wins: number;
+  } | null;
+}
+
+export interface SaTransaction {
+  id: string;
+  type: string;
+  stars_amount: number | null;
+  diamonds_amount: number | null;
+  dollars_amount: number | null;
+  item: string | null;
+  status: string;
+  note: string | null;
+  created_at: string;
+}
+
+export interface SaUserGame {
+  id: string;
+  game_id: string;
+  group_id: number;
+  role: string;
+  team: string;
+  won: boolean;
+  survived: boolean;
+  death_reason: string | null;
+  elo_before: number;
+  elo_after: number;
+  elo_change: number;
+  xp_earned: number;
+  played_at: string;
+}
+
+export interface SaAchievement {
+  code: string;
+  name_i18n: Record<string, string>;
+  icon: string | null;
+  diamonds_reward: number;
+  unlocked_at: string;
+}
+
+export interface SaGameListItem {
+  id: string;
+  group_id: number;
+  status: string;
+  winner_team: string | null;
+  started_at: string | null;
+  finished_at: string | null;
+  bounty_per_winner: number | null;
+}
+
+export interface SaGamesPage {
+  total: number;
+  page: number;
+  page_size: number;
+  items: SaGameListItem[];
+}
+
+export interface SaGameDetail extends SaGameListItem {
+  history: unknown;
+  settings_snapshot: unknown;
+  bounty_pool: number | null;
+}
+
+export interface SaAuditEntry {
+  id: string;
+  actor_id: number | null;
+  actor_admin_id: string | null;
+  action: string;
+  target_type: string | null;
+  target_id: string | null;
+  payload: Record<string, unknown> | null;
+  ip_address: string | null;
+  created_at: string;
+}
+
+export interface SaAuditPage {
+  total: number;
+  page: number;
+  page_size: number;
+  items: SaAuditEntry[];
+}
 
 export interface CohortChart {
   new_users: number;
@@ -244,6 +454,36 @@ export interface GroupSettings {
   display: Record<string, boolean>;
   messages: Record<string, unknown>;
   atmosphere_media: Record<string, string | null>;
+}
+
+export type RoleTeam = "civilians" | "mafia" | "singletons";
+
+export interface RoleConfig {
+  role: string;
+  team: RoleTeam;
+  name_uz: string;
+  name_ru: string;
+  name_en: string;
+  static_emoji: string;
+  custom_emoji_id: string;
+  order_idx: number;
+  updated_at: string | null;
+  updated_by_tg_id: number | null;
+}
+
+export type EmojiCategory = "scene" | "status" | "item" | "action" | "currency";
+
+export interface EmojiConfig {
+  code: string;
+  category: EmojiCategory;
+  name_uz: string;
+  name_ru: string;
+  name_en: string;
+  static_emoji: string;
+  custom_emoji_id: string;
+  order_idx: number;
+  updated_at: string | null;
+  updated_by_tg_id: number | null;
 }
 
 export interface SystemSettings {

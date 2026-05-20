@@ -20,10 +20,13 @@ Provides:
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from datetime import timedelta as _td
 from typing import Any, Literal
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
+from tortoise.expressions import Q as _Q
 from tortoise.functions import Avg, Count
 
 from app.api.deps import SuperAdminContext, get_current_super_admin
@@ -441,17 +444,77 @@ async def update_system_settings(
     return {"ok": True, "section": payload.section, "key": payload.key, "value": payload.value}
 
 
-# === Roles config (which roles are globally enabled by default) ===
+# === Role configurations (per-role names + emojis, cached) ===
+# Note: /role-defaults endpoint was removed — it was never consumed by
+# any client. The relevant defaults live in `RoleConfig.DEFAULTS` (seeded
+# on first boot, editable via /role-configs).
 
 
-@router.get("/role-defaults")
-async def get_role_defaults(
+def _role_config_dict(cfg) -> dict:
+    return {
+        "role": cfg.role,
+        "team": cfg.team,
+        "name_uz": cfg.name_uz,
+        "name_ru": cfg.name_ru,
+        "name_en": cfg.name_en,
+        "static_emoji": cfg.static_emoji,
+        "custom_emoji_id": cfg.custom_emoji_id,
+        "order_idx": cfg.order_idx,
+        "updated_at": cfg.updated_at.isoformat() if cfg.updated_at else None,
+        "updated_by_tg_id": cfg.updated_by_tg_id,
+    }
+
+
+@router.get("/role-configs")
+async def list_role_configs(
     sa: SuperAdminContext = Depends(get_current_super_admin),
 ) -> dict:
-    """Default roles enabled in new groups (from app.db.models.group.DEFAULT_ROLES_ENABLED)."""
-    from app.db.models.group import DEFAULT_ROLES_ENABLED
+    """All role display configs (name in 3 langs, static emoji, custom_emoji_id).
 
-    return {"defaults": DEFAULT_ROLES_ENABLED}
+    Sorted by `order_idx` — same order the dashboard table renders in.
+    """
+    from app.services import role_config_service
+
+    configs = await role_config_service.get_all_configs(force=True)
+    items = sorted(configs.values(), key=lambda c: c.order_idx)
+    return {"items": [_role_config_dict(c) for c in items]}
+
+
+class UpdateRoleConfigRequest(BaseModel):
+    name_uz: str | None = None
+    name_ru: str | None = None
+    name_en: str | None = None
+    static_emoji: str | None = None
+    custom_emoji_id: str | None = None  # empty string clears the override
+    team: Literal["civilians", "mafia", "singletons"] | None = None
+    order_idx: int | None = None
+
+
+@router.post("/role-configs/{role}")
+async def update_role_config(
+    role: str,
+    payload: UpdateRoleConfigRequest,
+    sa: SuperAdminContext = Depends(get_current_super_admin),
+) -> dict:
+    """Partial update of a single role's display config."""
+    from app.services import role_config_service
+
+    fields = {k: v for k, v in payload.model_dump().items() if v is not None}
+    if not fields:
+        raise HTTPException(status_code=400, detail="No fields to update")
+
+    try:
+        cfg = await role_config_service.update_config(role, by_tg_id=sa.telegram_id, **fields)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    await log_action(
+        action="sa.role_config.update",
+        target_type="role_config",
+        target_id=role,
+        payload={"fields": fields, "by_tg_id": sa.telegram_id},
+    )
+    return _role_config_dict(cfg)
 
 
 # === Charts ===
@@ -575,3 +638,510 @@ async def chart_role_winrates(
         )
     items.sort(key=lambda x: x["games"], reverse=True)
     return {"items": items[:12]}
+
+
+# =====================================================================
+# === Users / Groups moderation / Games / Audit ========================
+# Mirror of /api/admin endpoints, exposed for the Telegram-initData
+# WebApp /webapp/sa pages. All actions log to AuditLog with
+# sa.telegram_id embedded in the payload.
+# =====================================================================
+
+# --- Users ----------------------------------------------------------
+
+
+@router.get("/users")
+async def sa_list_users(
+    sa: SuperAdminContext = Depends(get_current_super_admin),
+    search: str | None = None,
+    is_banned: bool | None = None,
+    is_premium: bool | None = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+) -> dict:
+    qs = User.all()
+    if search:
+        qs = qs.filter(_Q(username__icontains=search) | _Q(first_name__icontains=search))
+    if is_banned is not None:
+        qs = qs.filter(is_banned=is_banned)
+    if is_premium is not None:
+        qs = qs.filter(is_premium=is_premium)
+
+    total = await qs.count()
+    rows = await qs.offset((page - 1) * page_size).limit(page_size).order_by("-id")
+
+    items = []
+    for u in rows:
+        stats = await UserStats.get_or_none(user_id=u.id)
+        items.append(
+            {
+                "id": u.id,
+                "username": u.username,
+                "first_name": u.first_name,
+                "diamonds": u.diamonds,
+                "dollars": u.dollars,
+                "xp": u.xp,
+                "level": u.level,
+                "is_premium": u.is_premium,
+                "is_banned": u.is_banned,
+                "games_total": stats.games_total if stats else 0,
+                "elo": stats.elo if stats else 1000,
+                "created_at": u.created_at.isoformat(),
+            }
+        )
+    return {"total": total, "page": page, "page_size": page_size, "items": items}
+
+
+@router.get("/users/{user_id}")
+async def sa_get_user(
+    user_id: int,
+    sa: SuperAdminContext = Depends(get_current_super_admin),
+) -> dict:
+    user = await User.get_or_none(id=user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    stats = await UserStats.get_or_none(user_id=user_id)
+    return {
+        "id": user.id,
+        "username": user.username,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "language_code": user.language_code,
+        "diamonds": user.diamonds,
+        "dollars": user.dollars,
+        "xp": user.xp,
+        "level": user.level,
+        "is_premium": user.is_premium,
+        "premium_expires_at": (
+            user.premium_expires_at.isoformat() if user.premium_expires_at else None
+        ),
+        "is_banned": user.is_banned,
+        "banned_until": user.banned_until.isoformat() if user.banned_until else None,
+        "ban_reason": user.ban_reason,
+        "afk_warnings": user.afk_warnings,
+        "joined_at": user.joined_at.isoformat(),
+        "stats": (
+            {
+                "games_total": stats.games_total,
+                "games_won": stats.games_won,
+                "games_lost": stats.games_lost,
+                "elo": stats.elo,
+                "longest_win_streak": stats.longest_win_streak,
+                "role_stats": stats.role_stats,
+                "citizen_wins": stats.citizen_wins,
+                "mafia_wins": stats.mafia_wins,
+                "singleton_wins": stats.singleton_wins,
+            }
+            if stats
+            else None
+        ),
+    }
+
+
+class SaBanRequest(BaseModel):
+    reason: str
+    duration_hours: int | None = None
+
+
+@router.post("/users/{user_id}/ban")
+async def sa_ban_user(
+    user_id: int,
+    payload: SaBanRequest,
+    sa: SuperAdminContext = Depends(get_current_super_admin),
+) -> dict:
+    user = await User.get_or_none(id=user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.is_banned = True
+    user.ban_reason = payload.reason
+    user.banned_until = (
+        datetime.now(UTC) + _td(hours=payload.duration_hours) if payload.duration_hours else None
+    )
+    await user.save(update_fields=["is_banned", "ban_reason", "banned_until"])
+    await log_action(
+        action="user.ban",
+        target_type="user",
+        target_id=str(user_id),
+        payload={
+            "reason": payload.reason,
+            "duration_hours": payload.duration_hours,
+            "by_tg_id": sa.telegram_id,
+        },
+    )
+    return {"ok": True}
+
+
+@router.post("/users/{user_id}/unban")
+async def sa_unban_user(
+    user_id: int,
+    sa: SuperAdminContext = Depends(get_current_super_admin),
+) -> dict:
+    user = await User.get_or_none(id=user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.is_banned = False
+    user.banned_until = None
+    user.ban_reason = None
+    await user.save(update_fields=["is_banned", "banned_until", "ban_reason"])
+    await log_action(
+        action="user.unban",
+        target_type="user",
+        target_id=str(user_id),
+        payload={"by_tg_id": sa.telegram_id},
+    )
+    return {"ok": True}
+
+
+class SaGrantDiamondsRequest(BaseModel):
+    amount: int
+    reason: str = "sa grant"
+
+
+@router.post("/users/{user_id}/grant-diamonds")
+async def sa_grant_diamonds(
+    user_id: int,
+    payload: SaGrantDiamondsRequest,
+    sa: SuperAdminContext = Depends(get_current_super_admin),
+) -> dict:
+    from app.db.models import Transaction, TransactionStatus, TransactionType
+
+    if payload.amount <= 0:
+        raise HTTPException(status_code=400, detail="amount must be > 0")
+    user = await User.get_or_none(id=user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.diamonds += payload.amount
+    await user.save(update_fields=["diamonds"])
+    await Transaction.create(
+        user=user,
+        type=TransactionType.ADMIN_GRANT,
+        diamonds_amount=payload.amount,
+        status=TransactionStatus.COMPLETED,
+        note=f"SA grant: {payload.reason}",
+    )
+    await log_action(
+        action="diamonds.grant",
+        target_type="user",
+        target_id=str(user_id),
+        payload={
+            "amount": payload.amount,
+            "reason": payload.reason,
+            "by_tg_id": sa.telegram_id,
+        },
+    )
+    return {"ok": True, "new_balance": user.diamonds}
+
+
+class SaGrantPremiumRequest(BaseModel):
+    days: int
+
+
+@router.post("/users/{user_id}/grant-premium")
+async def sa_grant_premium(
+    user_id: int,
+    payload: SaGrantPremiumRequest,
+    sa: SuperAdminContext = Depends(get_current_super_admin),
+) -> dict:
+    if payload.days <= 0 or payload.days > 365:
+        raise HTTPException(status_code=400, detail="days must be 1..365")
+    user = await User.get_or_none(id=user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    now = datetime.now(UTC)
+    if user.premium_expires_at and user.premium_expires_at > now:
+        user.premium_expires_at = user.premium_expires_at + _td(days=payload.days)
+    else:
+        user.premium_expires_at = now + _td(days=payload.days)
+    user.is_premium = True
+    await user.save(update_fields=["is_premium", "premium_expires_at"])
+    await log_action(
+        action="premium.grant",
+        target_type="user",
+        target_id=str(user_id),
+        payload={"days": payload.days, "by_tg_id": sa.telegram_id},
+    )
+    return {"ok": True, "premium_expires_at": user.premium_expires_at.isoformat()}
+
+
+@router.get("/users/{user_id}/transactions")
+async def sa_user_transactions(
+    user_id: int,
+    sa: SuperAdminContext = Depends(get_current_super_admin),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+) -> dict:
+    from app.db.models import Transaction
+
+    qs = Transaction.filter(user_id=user_id)
+    total = await qs.count()
+    rows = await qs.offset((page - 1) * page_size).limit(page_size).order_by("-created_at")
+    items = [
+        {
+            "id": str(t.id),
+            "type": t.type,
+            "stars_amount": t.stars_amount,
+            "diamonds_amount": t.diamonds_amount,
+            "dollars_amount": t.dollars_amount,
+            "item": t.item,
+            "status": t.status,
+            "note": t.note,
+            "created_at": t.created_at.isoformat(),
+        }
+        for t in rows
+    ]
+    return {"total": total, "page": page, "items": items}
+
+
+@router.get("/users/{user_id}/games")
+async def sa_user_games(
+    user_id: int,
+    sa: SuperAdminContext = Depends(get_current_super_admin),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+) -> dict:
+    qs = GameResult.filter(user_id=user_id)
+    total = await qs.count()
+    rows = await qs.offset((page - 1) * page_size).limit(page_size).order_by("-played_at")
+    items = [
+        {
+            "id": str(r.id),
+            "game_id": str(r.game_id),  # type: ignore[attr-defined,var-annotated,arg-type]
+            "group_id": r.group_id,  # type: ignore[attr-defined,var-annotated,arg-type]
+            "role": r.role,
+            "team": r.team,
+            "won": r.won,
+            "survived": r.survived,
+            "death_reason": r.death_reason,
+            "elo_before": r.elo_before,
+            "elo_after": r.elo_after,
+            "elo_change": r.elo_change,
+            "xp_earned": r.xp_earned,
+            "played_at": r.played_at.isoformat(),
+        }
+        for r in rows
+    ]
+    return {"total": total, "page": page, "items": items}
+
+
+@router.get("/users/{user_id}/achievements")
+async def sa_user_achievements(
+    user_id: int,
+    sa: SuperAdminContext = Depends(get_current_super_admin),
+) -> dict:
+    from app.db.models import UserAchievement
+
+    rows = await UserAchievement.filter(user_id=user_id).order_by("-unlocked_at").all()
+    items = []
+    for r in rows:
+        await r.fetch_related("achievement")
+        items.append(
+            {
+                "code": r.achievement.code,
+                "name_i18n": r.achievement.name_i18n,
+                "icon": r.achievement.icon,
+                "diamonds_reward": r.achievement.diamonds_reward,
+                "unlocked_at": r.unlocked_at.isoformat(),
+            }
+        )
+    return {"items": items}
+
+
+# --- Group moderation -----------------------------------------------
+
+
+class SaBlockGroupRequest(BaseModel):
+    reason: str
+
+
+@router.post("/groups/{group_id}/block")
+async def sa_block_group(
+    group_id: int,
+    payload: SaBlockGroupRequest,
+    sa: SuperAdminContext = Depends(get_current_super_admin),
+) -> dict:
+    group = await Group.get_or_none(id=group_id)
+    if group is None:
+        raise HTTPException(status_code=404, detail="Group not found")
+    group.is_blocked = True
+    await group.save(update_fields=["is_blocked"])
+    await log_action(
+        action="group.block",
+        target_type="group",
+        target_id=str(group_id),
+        payload={"reason": payload.reason, "by_tg_id": sa.telegram_id},
+    )
+    return {"ok": True}
+
+
+@router.post("/groups/{group_id}/unblock")
+async def sa_unblock_group(
+    group_id: int,
+    sa: SuperAdminContext = Depends(get_current_super_admin),
+) -> dict:
+    group = await Group.get_or_none(id=group_id)
+    if group is None:
+        raise HTTPException(status_code=404, detail="Group not found")
+    group.is_blocked = False
+    await group.save(update_fields=["is_blocked"])
+    await log_action(
+        action="group.unblock",
+        target_type="group",
+        target_id=str(group_id),
+        payload={"by_tg_id": sa.telegram_id},
+    )
+    return {"ok": True}
+
+
+# --- Games (global list + replay) -----------------------------------
+
+
+@router.get("/games")
+async def sa_list_games(
+    sa: SuperAdminContext = Depends(get_current_super_admin),
+    status_filter: str | None = Query(None, alias="status"),
+    group_id: int | None = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+) -> dict:
+    qs = Game.all()
+    if status_filter:
+        qs = qs.filter(status=status_filter)
+    if group_id:
+        qs = qs.filter(group_id=group_id)
+    total = await qs.count()
+    rows = await qs.offset((page - 1) * page_size).limit(page_size).order_by("-started_at")
+    items = [
+        {
+            "id": str(g.id),
+            "group_id": g.group_id,  # type: ignore[attr-defined,var-annotated,arg-type]
+            "status": g.status,
+            "winner_team": g.winner_team,
+            "started_at": g.started_at.isoformat() if g.started_at else None,
+            "finished_at": g.finished_at.isoformat() if g.finished_at else None,
+            "bounty_per_winner": g.bounty_per_winner,
+        }
+        for g in rows
+    ]
+    return {"total": total, "page": page, "page_size": page_size, "items": items}
+
+
+@router.get("/games/{game_id}")
+async def sa_get_game(
+    game_id: UUID,
+    sa: SuperAdminContext = Depends(get_current_super_admin),
+) -> dict:
+    game = await Game.get_or_none(id=game_id)
+    if game is None:
+        raise HTTPException(status_code=404, detail="Game not found")
+    return {
+        "id": str(game.id),
+        "group_id": game.group_id,  # type: ignore[attr-defined,var-annotated,arg-type]
+        "status": game.status,
+        "winner_team": game.winner_team,
+        "started_at": game.started_at.isoformat() if game.started_at else None,
+        "finished_at": game.finished_at.isoformat() if game.finished_at else None,
+        "history": game.history,
+        "settings_snapshot": game.settings_snapshot,
+        "bounty_per_winner": game.bounty_per_winner,
+        "bounty_pool": game.bounty_pool,
+    }
+
+
+# --- Audit log ------------------------------------------------------
+
+
+@router.get("/audit")
+async def sa_list_audit(
+    sa: SuperAdminContext = Depends(get_current_super_admin),
+    action: str | None = None,
+    actor_id: int | None = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+) -> dict:
+    from app.db.models import AuditLog
+
+    qs = AuditLog.all()
+    if action:
+        qs = qs.filter(action__icontains=action)
+    if actor_id:
+        qs = qs.filter(actor_id=actor_id)
+    total = await qs.count()
+    rows = await qs.offset((page - 1) * page_size).limit(page_size).order_by("-created_at")
+    items = [
+        {
+            "id": str(log.id),
+            "actor_id": log.actor_id,  # type: ignore[attr-defined,var-annotated,arg-type]
+            "actor_admin_id": str(log.actor_admin_id) if log.actor_admin_id else None,  # type: ignore[attr-defined,var-annotated,arg-type]
+            "action": log.action,
+            "target_type": log.target_type,
+            "target_id": log.target_id,
+            "payload": log.payload,
+            "ip_address": log.ip_address,
+            "created_at": log.created_at.isoformat(),
+        }
+        for log in rows
+    ]
+    return {"total": total, "page": page, "page_size": page_size, "items": items}
+
+
+# === Emoji configs (per-code scene/item/action/currency emojis) ===
+
+
+def _sa_emoji_config_dict(cfg) -> dict:
+    return {
+        "code": cfg.code,
+        "category": cfg.category,
+        "name_uz": cfg.name_uz,
+        "name_ru": cfg.name_ru,
+        "name_en": cfg.name_en,
+        "static_emoji": cfg.static_emoji,
+        "custom_emoji_id": cfg.custom_emoji_id,
+        "order_idx": cfg.order_idx,
+        "updated_at": cfg.updated_at.isoformat() if cfg.updated_at else None,
+        "updated_by_tg_id": cfg.updated_by_tg_id,
+    }
+
+
+@router.get("/emoji-configs")
+async def sa_list_emoji_configs(
+    sa: SuperAdminContext = Depends(get_current_super_admin),
+) -> dict:
+    from app.services import emoji_config_service
+
+    configs = await emoji_config_service.get_all_configs(force=True)
+    items = sorted(configs.values(), key=lambda c: c.order_idx)
+    return {"items": [_sa_emoji_config_dict(c) for c in items]}
+
+
+class SaUpdateEmojiConfigRequest(BaseModel):
+    name_uz: str | None = None
+    name_ru: str | None = None
+    name_en: str | None = None
+    static_emoji: str | None = None
+    custom_emoji_id: str | None = None
+    category: str | None = None
+    order_idx: int | None = None
+
+
+@router.post("/emoji-configs/{code}")
+async def sa_update_emoji_config(
+    code: str,
+    payload: SaUpdateEmojiConfigRequest,
+    sa: SuperAdminContext = Depends(get_current_super_admin),
+) -> dict:
+    from app.services import emoji_config_service
+
+    fields = {k: v for k, v in payload.model_dump().items() if v is not None}
+    if not fields:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    try:
+        cfg = await emoji_config_service.update_config(code, by_tg_id=sa.telegram_id, **fields)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    await log_action(
+        action="sa.emoji_config.update",
+        target_type="emoji_config",
+        target_id=code,
+        payload={"fields": fields, "by_tg_id": sa.telegram_id},
+    )
+    return _sa_emoji_config_dict(cfg)

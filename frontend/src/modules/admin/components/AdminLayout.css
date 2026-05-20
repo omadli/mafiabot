@@ -228,3 +228,50 @@
 .admin-lang-select:focus {
   outline: 1px solid var(--accent);
 }
+
+
+/* === Role configs page === */
+
+.admin-hint {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: -0.5rem 0 1.25rem;
+  max-width: 880px;
+}
+
+.admin-section-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+  color: var(--fg);
+}
+
+.admin-btn.primary {
+  background: var(--accent);
+  color: #16162a;
+  font-weight: 600;
+}
+
+.admin-btn.primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.role-configs-table input.admin-input {
+  width: 100%;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.5rem;
+}
+
+.role-configs-table td {
+  vertical-align: middle;
+}
+
+.row-saved-flash {
+  animation: row-flash-anim 1.2s ease-out;
+}
+
+@keyframes row-flash-anim {
+  0%   { background: rgba(80, 200, 120, 0.25); }
+  100% { background: transparent; }
+}

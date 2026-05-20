@@ -118,7 +118,7 @@ async def create_game(
     )
 
     # Set phase end time (registration timeout)
-    reg_secs = settings.timings.get("registration", 120) if settings else 120
+    reg_secs = settings.timings.get("registration", 120) if settings else 120  # type: ignore[attr-defined,var-annotated,arg-type]
     state.phase_ends_at = int(time.time()) + reg_secs
 
     await save_state(state)

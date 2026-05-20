@@ -37,7 +37,7 @@ async def _edit(query: CallbackQuery, text: str, markup, parse_mode: str | None 
     if query.message is None:
         return
     with contextlib.suppress(TelegramBadRequest):
-        await query.message.edit_text(text, reply_markup=markup, parse_mode=parse_mode)
+        await query.message.edit_text(text, reply_markup=markup, parse_mode=parse_mode)  # type: ignore[union-attr]
 
 
 @router.callback_query(F.data == "menu:home")

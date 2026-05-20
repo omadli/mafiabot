@@ -335,3 +335,326 @@ export function LanguageEditor({ settings, onSave }: EditorProps) {
     </div>
   );
 }
+
+
+// === Per-group role-emoji overrides ===========================
+// Writes/reads to `display.role_emojis` (a dict keyed by role slug).
+// Value shape: { custom_id: string, fallback: string }.
+// Empty fields are removed on save so we never persist no-op entries.
+
+import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { saApi, type RoleConfig } from "@shared/api/sa";
+
+type Override = { custom_id: string; fallback: string };
+
+export function RoleEmojiOverridesEditor({ settings, onSave }: EditorProps) {
+  const { t } = useTranslation();
+  const { data: configs } = useQuery({
+    queryKey: ["sa-role-configs"],
+    queryFn: saApi.roleConfigs,
+    staleTime: 60_000,
+  });
+
+  const stored: Record<string, Override | unknown> =
+    ((settings.display as Record<string, unknown>)?.role_emojis as Record<string, unknown>) || {};
+
+  const [draft, setDraft] = useState<Record<string, Override>>(() =>
+    Object.fromEntries(
+      Object.entries(stored).map(([k, v]) => [k, normalize(v)]),
+    ),
+  );
+  useEffect(() => {
+    setDraft(
+      Object.fromEntries(
+        Object.entries(stored).map(([k, v]) => [k, normalize(v)]),
+      ),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.group_id]);
+
+  const updateDraft = (role: string, patch: Partial<Override>) => {
+    setDraft((prev) => ({
+      ...prev,
+      [role]: { ...(prev[role] ?? { custom_id: "", fallback: "" }), ...patch },
+    }));
+  };
+
+  const clear = (role: string) => {
+    setDraft((prev) => {
+      const { [role]: _drop, ...rest } = prev;
+      return rest;
+    });
+  };
+
+  const onCommit = () => {
+    // Drop entries where both fields are blank
+    const clean: Record<string, Override> = {};
+    for (const [k, v] of Object.entries(draft)) {
+      if (v.custom_id.trim() || v.fallback.trim()) {
+        clean[k] = {
+          custom_id: v.custom_id.trim(),
+          fallback: v.fallback.trim(),
+        };
+      }
+    }
+    onSave("display", {
+      ...((settings.display as Record<string, unknown>) || {}),
+      role_emojis: clean,
+    });
+  };
+
+  const items = (configs?.items ?? []).slice().sort((a, b) => a.order_idx - b.order_idx);
+
+  if (items.length === 0)
+    return <p style={{ color: "var(--muted)" }}>{t("loading")}…</p>;
+
+  return (
+    <>
+      <p style={{ color: "var(--muted)", fontSize: "0.85rem", margin: "0 0 0.75rem" }}>
+        {t("sa.group_detail.role_emojis_hint")}
+      </p>
+      <div style={{ display: "grid", gap: 6 }}>
+        {items.map((cfg) => (
+          <RoleOverrideRow
+            key={cfg.role}
+            cfg={cfg}
+            override={draft[cfg.role]}
+            onChange={(patch) => updateDraft(cfg.role, patch)}
+            onClear={() => clear(cfg.role)}
+          />
+        ))}
+      </div>
+      <button
+        className="sa-chip active"
+        onClick={onCommit}
+        style={{ marginTop: 12, padding: "0.5rem 1rem" }}
+      >
+        💾 {t("save")}
+      </button>
+    </>
+  );
+}
+
+function RoleOverrideRow({
+  cfg, override, onChange, onClear,
+}: {
+  cfg: RoleConfig;
+  override: Override | undefined;
+  onChange: (patch: Partial<Override>) => void;
+  onClear: () => void;
+}) {
+  const { t } = useTranslation();
+  const customId = override?.custom_id ?? "";
+  const fallback = override?.fallback ?? "";
+  const effective = fallback || cfg.static_emoji;
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "32px 1fr auto",
+        gap: 6,
+        alignItems: "center",
+        padding: "6px 0",
+        borderBottom: "1px solid #2a2a45",
+      }}
+    >
+      <div style={{ fontSize: 22, textAlign: "center" }} title={cfg.role}>{effective}</div>
+      <div style={{ display: "grid", gap: 4 }}>
+        <div style={{ fontSize: 12 }}>
+          <strong>{cfg.name_uz}</strong>
+          <code style={{ marginLeft: 6, color: "var(--muted)", fontSize: 10 }}>{cfg.role}</code>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "44px 1fr", gap: 4 }}>
+          <input
+            className="sa-input"
+            value={fallback}
+            onChange={(e) => onChange({ fallback: e.target.value })}
+            placeholder={cfg.static_emoji}
+            style={{ width: 44, textAlign: "center", fontSize: 16, padding: "3px 4px" }}
+          />
+          <input
+            className="sa-input"
+            value={customId}
+            onChange={(e) => onChange({ custom_id: e.target.value })}
+            placeholder={cfg.custom_emoji_id || t("admin.role_configs.custom_id_placeholder")}
+            style={{ fontFamily: "monospace", fontSize: 11, padding: "3px 6px" }}
+          />
+        </div>
+      </div>
+      {(customId || fallback) && (
+        <button
+          className="sa-chip"
+          onClick={onClear}
+          style={{ padding: "2px 8px", fontSize: 11 }}
+          title="reset"
+        >
+          ✕
+        </button>
+      )}
+    </div>
+  );
+}
+
+function normalize(v: unknown): Override {
+  if (Array.isArray(v) && v.length === 2) {
+    return { custom_id: String(v[0] ?? ""), fallback: String(v[1] ?? "") };
+  }
+  if (v && typeof v === "object") {
+    const o = v as Record<string, unknown>;
+    return {
+      custom_id: String(o.custom_id ?? ""),
+      fallback: String(o.fallback ?? o.emoji ?? ""),
+    };
+  }
+  return { custom_id: "", fallback: "" };
+}
+
+
+// === Per-group standalone-emoji overrides (scene / item / action / …) ====
+// Writes/reads `display.custom_emojis`. Shape: `{ code: {custom_id, fallback} }`.
+// Empty rows are dropped on save.
+
+import type { EmojiConfig } from "@shared/api/sa";
+
+export function CustomEmojiOverridesEditor({ settings, onSave }: EditorProps) {
+  const { t } = useTranslation();
+  const { data: configs } = useQuery({
+    queryKey: ["sa-emoji-configs"],
+    queryFn: saApi.emojiConfigs,
+    staleTime: 60_000,
+  });
+
+  const stored = (((settings.display as Record<string, unknown>)?.custom_emojis as
+    Record<string, unknown>) || {});
+  const [draft, setDraft] = useState<Record<string, Override>>(() =>
+    Object.fromEntries(Object.entries(stored).map(([k, v]) => [k, normalize(v)])),
+  );
+  useEffect(() => {
+    setDraft(Object.fromEntries(Object.entries(stored).map(([k, v]) => [k, normalize(v)])));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.group_id]);
+
+  const items = (configs?.items ?? []).slice().sort((a, b) => a.order_idx - b.order_idx);
+  const grouped = useMemo(() => {
+    const out: Record<string, EmojiConfig[]> = {};
+    items.forEach((c) => {
+      (out[c.category] ??= []).push(c);
+    });
+    return out;
+  }, [items]);
+
+  const updateDraft = (code: string, patch: Partial<Override>) =>
+    setDraft((p) => ({
+      ...p,
+      [code]: { ...(p[code] ?? { custom_id: "", fallback: "" }), ...patch },
+    }));
+  const clear = (code: string) =>
+    setDraft((p) => {
+      const { [code]: _, ...rest } = p;
+      return rest;
+    });
+
+  const onCommit = () => {
+    const clean: Record<string, Override> = {};
+    for (const [k, v] of Object.entries(draft)) {
+      if (v.custom_id.trim() || v.fallback.trim()) {
+        clean[k] = { custom_id: v.custom_id.trim(), fallback: v.fallback.trim() };
+      }
+    }
+    onSave("display", {
+      ...((settings.display as Record<string, unknown>) || {}),
+      custom_emojis: clean,
+    });
+  };
+
+  if (items.length === 0)
+    return <p style={{ color: "var(--muted)" }}>{t("loading")}…</p>;
+
+  const CAT_ORDER: string[] = ["scene", "status", "item", "action", "currency"];
+
+  return (
+    <>
+      <p style={{ color: "var(--muted)", fontSize: "0.85rem", margin: "0 0 0.75rem" }}>
+        {t("sa.group_detail.custom_emojis_hint")}
+      </p>
+      {CAT_ORDER.map((cat) =>
+        grouped[cat] && grouped[cat].length > 0 ? (
+          <details key={cat} style={{ marginBottom: 12 }}>
+            <summary style={{ cursor: "pointer", color: "var(--accent)" }}>
+              {t(`admin.emoji_configs.cat_${cat}`)}
+              <span style={{ color: "var(--muted)" }}> ({grouped[cat].length})</span>
+            </summary>
+            <div style={{ display: "grid", gap: 6, marginTop: 6 }}>
+              {grouped[cat].map((cfg) => (
+                <EmojiOverrideRow
+                  key={cfg.code}
+                  cfg={cfg}
+                  override={draft[cfg.code]}
+                  onChange={(patch) => updateDraft(cfg.code, patch)}
+                  onClear={() => clear(cfg.code)}
+                />
+              ))}
+            </div>
+          </details>
+        ) : null,
+      )}
+      <button
+        className="sa-chip active"
+        onClick={onCommit}
+        style={{ marginTop: 12, padding: "0.5rem 1rem" }}
+      >
+        💾 {t("save")}
+      </button>
+    </>
+  );
+}
+
+function EmojiOverrideRow({
+  cfg, override, onChange, onClear,
+}: {
+  cfg: EmojiConfig;
+  override: Override | undefined;
+  onChange: (patch: Partial<Override>) => void;
+  onClear: () => void;
+}) {
+  const { t } = useTranslation();
+  const customId = override?.custom_id ?? "";
+  const fallback = override?.fallback ?? "";
+  const effective = fallback || cfg.static_emoji;
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "32px 1fr auto",
+        gap: 6,
+        alignItems: "center",
+        padding: "5px 0",
+        borderBottom: "1px solid #2a2a45",
+      }}
+    >
+      <div style={{ fontSize: 20, textAlign: "center" }}>{effective}</div>
+      <div style={{ display: "grid", gap: 4 }}>
+        <div style={{ fontSize: 11 }}>
+          <strong>{cfg.name_uz}</strong>
+          <code style={{ marginLeft: 6, color: "var(--muted)", fontSize: 9 }}>{cfg.code}</code>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "40px 1fr", gap: 4 }}>
+          <input className="sa-input" value={fallback} placeholder={cfg.static_emoji}
+            onChange={(e) => onChange({ fallback: e.target.value })}
+            style={{ width: 40, textAlign: "center", fontSize: 14, padding: "2px 3px" }} />
+          <input className="sa-input" value={customId}
+            placeholder={cfg.custom_emoji_id || t("admin.role_configs.custom_id_placeholder")}
+            onChange={(e) => onChange({ custom_id: e.target.value })}
+            style={{ fontFamily: "monospace", fontSize: 10, padding: "2px 5px" }} />
+        </div>
+      </div>
+      {(customId || fallback) && (
+        <button className="sa-chip" onClick={onClear}
+          style={{ padding: "2px 6px", fontSize: 10 }} title="reset">
+          ✕
+        </button>
+      )}
+    </div>
+  );
+}

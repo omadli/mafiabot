@@ -39,36 +39,24 @@ ROLE_TEAMS: dict[str, list[str]] = {
         "hooker",
         "hobo",
         "lucky",
-        "suicide",
         "kamikaze",
     ],
     "mafia": ["don", "mafia", "lawyer", "journalist", "killer"],
-    "singletons": ["maniac", "werewolf", "mage", "arsonist", "crook", "snitch"],
+    "singletons": [
+        "suicide",
+        "maniac",
+        "werewolf",
+        "mage",
+        "arsonist",
+        "crook",
+        "snitch",
+    ],
 }
 
-ROLE_EMOJI: dict[str, str] = {
-    "citizen": "👨🏼",
-    "detective": "🕵🏻‍♂",
-    "sergeant": "👮🏻‍♂",
-    "mayor": "🎖",
-    "doctor": "👨🏻‍⚕",
-    "hooker": "💃",
-    "hobo": "🧙‍♂",
-    "lucky": "🤞🏼",
-    "suicide": "🤦🏼",
-    "kamikaze": "💣",
-    "don": "🤵🏻",
-    "mafia": "🤵🏼",
-    "lawyer": "👨‍💼",
-    "journalist": "👩🏼‍💻",
-    "killer": "🥷",
-    "maniac": "🔪",
-    "werewolf": "🐺",
-    "mage": "🧙",
-    "arsonist": "🧟",
-    "crook": "🤹",
-    "snitch": "🤓",
-}
+# Every role slug from ROLE_TEAMS, used as a membership set for callback
+# validation. Real emoji rendering goes through role_config_service via
+# the translator (see `_("role-X")` callsites).
+_KNOWN_ROLES: frozenset[str] = frozenset(slug for team in ROLE_TEAMS.values() for slug in team)
 
 
 def _rules_root_keyboard(_: Translator) -> InlineKeyboardMarkup:
@@ -110,9 +98,8 @@ def _rules_role_keyboard(team: str, _: Translator) -> InlineKeyboardMarkup:
     rows: list[list[InlineKeyboardButton]] = []
     row: list[InlineKeyboardButton] = []
     for code in codes:
-        emoji = ROLE_EMOJI.get(code, "❓")
-        label = f"{emoji} {_(f'role-{code}')}"
-        row.append(InlineKeyboardButton(text=label, callback_data=f"rules:role:{code}"))
+        # `_("role-X")` already returns "emoji + name" (dynamic from RoleConfig).
+        row.append(InlineKeyboardButton(text=_(f"role-{code}"), callback_data=f"rules:role:{code}"))
         if len(row) == 2:
             rows.append(row)
             row = []
@@ -141,7 +128,7 @@ async def _safe_edit(query: CallbackQuery, text: str, kb: InlineKeyboardMarkup) 
     if query.message is None:
         return
     with contextlib.suppress(TelegramBadRequest):
-        await query.message.edit_text(text, reply_markup=kb, parse_mode="HTML")
+        await query.message.edit_text(text, reply_markup=kb, parse_mode="HTML")  # type: ignore[union-attr]
 
 
 @router.message(Command("help", prefix="/!"), F.chat.type == "private")
@@ -193,16 +180,17 @@ async def cb_rules_role(query: CallbackQuery, _: Translator) -> None:
         await query.answer()
         return
     code = query.data.split(":")[2]
-    if code not in ROLE_EMOJI:
+    if code not in _KNOWN_ROLES:
         await query.answer("?", show_alert=True)
         return
     await query.answer()
-    emoji = ROLE_EMOJI.get(code, "❓")
+    # `_("role-X")` already returns "emoji + name". Pass empty emoji to the
+    # template so the prefix isn't duplicated.
     role_label = _(f"role-{code}")
     role_desc = _(f"role-desc-{code}")
     text = _(
         "rules-role-detail",
-        emoji=emoji,
+        emoji="",
         role=role_label,
         description=role_desc,
     )

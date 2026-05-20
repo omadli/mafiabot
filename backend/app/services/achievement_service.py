@@ -327,6 +327,7 @@ async def seed_achievements() -> None:
                 "description_i18n": ach.description,
                 "icon": ach.icon,
                 "diamonds_reward": ach.diamonds,
+                "dollars_reward": ach.dollars,
                 "xp_reward": ach.xp,
             },
         )

@@ -1,32 +1,23 @@
 import { Link, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 
+import { saApi } from "@shared/api/sa";
 import { LiveGameState, useSaLiveGame } from "../../hooks/useSaLiveGame";
 
-const ROLE_EMOJI: Record<string, string> = {
-  citizen: "👨🏼",
-  detective: "🕵🏻‍♂",
-  sergeant: "👮🏻‍♂",
-  mayor: "🎖",
-  doctor: "👨🏻‍⚕",
-  hooker: "💃",
-  hobo: "🧙‍♂",
-  lucky: "🤞🏼",
-  suicide: "🤦🏼",
-  kamikaze: "💣",
-  don: "🤵🏻",
-  mafia: "🤵🏼",
-  lawyer: "👨‍💼",
-  journalist: "👩🏼‍💻",
-  killer: "🥷",
-  maniac: "🔪",
-  werewolf: "🐺",
-  mage: "🧙",
-  arsonist: "🧟",
-  crook: "🤹",
-  snitch: "🤓",
-};
+function useRoleEmojiMap(): Record<string, string> {
+  const { data } = useQuery({
+    queryKey: ["sa-role-configs"],
+    queryFn: saApi.roleConfigs,
+    staleTime: 60_000,
+  });
+  return useMemo(() => {
+    const out: Record<string, string> = {};
+    (data?.items ?? []).forEach((c) => { out[c.role] = c.static_emoji; });
+    return out;
+  }, [data]);
+}
 
 const PHASE_EMOJI: Record<string, string> = {
   waiting: "📋",
@@ -49,10 +40,14 @@ function useCountdown(deadline: number | null): number {
   return deadline ? Math.max(0, deadline - now) : 0;
 }
 
-function nameOf(data: LiveGameState, id: number): string {
+function nameOf(
+  data: LiveGameState,
+  id: number,
+  emojiMap: Record<string, string> = {},
+): string {
   const p = data.players.find((x) => x.user_id === id);
   if (!p) return `#${id}`;
-  return `${ROLE_EMOJI[p.role] || ""} ${p.first_name}`;
+  return `${emojiMap[p.role] || ""} ${p.first_name}`;
 }
 
 export function SaLiveGamePage() {
@@ -61,6 +56,7 @@ export function SaLiveGamePage() {
   const gid = parseInt(raw || "0");
   const { data, isLoading, error, wsConnected, ended } = useSaLiveGame(gid);
   const remaining = useCountdown(data?.phase_ends_at ?? null);
+  const emojiMap = useRoleEmojiMap();
 
   if (isLoading)
     return <div className="webapp-section">⏳ {t("loading")}</div>;
@@ -111,7 +107,8 @@ export function SaLiveGamePage() {
               {t("admin.live.phase")}
             </div>
             <div style={{ fontWeight: 600 }}>
-              {PHASE_EMOJI[data.phase] || ""} {data.phase}
+              {PHASE_EMOJI[data.phase] || ""}{" "}
+              {t(`live.phase_${data.phase}`, { defaultValue: data.phase })}
             </div>
           </div>
           <div>
@@ -163,7 +160,7 @@ export function SaLiveGamePage() {
                 }}
               >
                 <span>
-                  {p.join_order}. {ROLE_EMOJI[p.role] || ""} <strong>{p.first_name}</strong>{" "}
+                  {p.join_order}. {emojiMap[p.role] || ""} <strong>{p.first_name}</strong>{" "}
                   <small style={{ color: "var(--muted)" }}>({t(`role-${p.role}`)})</small>
                 </span>
                 <span style={{ fontSize: "0.75rem" }}>
@@ -189,9 +186,15 @@ export function SaLiveGamePage() {
               const actor = data.players.find((p) => p.user_id === parseInt(uid));
               return (
                 <li key={uid}>
-                  <strong>{actor?.first_name}</strong> ({actor?.role}) → {a.action_type}{" "}
+                  <strong>{actor?.first_name}</strong>{" "}
+                  (
+                  {actor?.role
+                    ? t(`role-${actor.role}`, { defaultValue: actor.role })
+                    : ""}
+                  ) →{" "}
+                  {t(`live.action_${a.action_type}`, { defaultValue: a.action_type })}{" "}
                   {a.target_id !== null && a.target_id !== 0
-                    ? `→ ${nameOf(data, a.target_id)}`
+                    ? `→ ${nameOf(data,a.target_id, emojiMap)}`
                     : ""}
                 </li>
               );
@@ -205,12 +208,12 @@ export function SaLiveGamePage() {
           <summary style={{ cursor: "pointer", color: "var(--accent)" }}>
             🗳 {t("admin.live.section_current_votes")} ({Object.keys(data.current_votes).length})
           </summary>
-          <VotingTally data={data} />
+          <VotingTally data={data} emojiMap={emojiMap} />
         </details>
       )}
 
       {data.rounds.length > 0 && (
-        <HangingConfirmPanel data={data} />
+        <HangingConfirmPanel data={data} emojiMap={emojiMap} />
       )}
 
       <details className="webapp-section" style={{ marginTop: "0.5rem" }}>
@@ -223,7 +226,7 @@ export function SaLiveGamePage() {
               {t("admin.live.round_label")} #{r.round_num}
               {r.hanged && (
                 <span style={{ color: "#f0a020" }}>
-                  {" "}— {t("admin.live.hanged")}: {nameOf(data, r.hanged)}
+                  {" "}— {t("admin.live.hanged")}: {nameOf(data,r.hanged, emojiMap)}
                 </span>
               )}
             </summary>
@@ -234,9 +237,11 @@ export function SaLiveGamePage() {
                   <ul style={{ marginLeft: "1.2rem" }}>
                     {r.night_actions.map((a, i) => (
                       <li key={i}>
-                        {a.role} ({nameOf(data, a.actor_id)}) → {a.action_type}{" "}
+                        {t(`role-${a.role}`, { defaultValue: a.role })}{" "}
+                        ({nameOf(data,a.actor_id, emojiMap)}) →{" "}
+                        {t(`live.action_${a.action_type}`, { defaultValue: a.action_type })}{" "}
                         {a.target_id !== null && a.target_id !== 0
-                          ? `→ ${nameOf(data, a.target_id)}`
+                          ? `→ ${nameOf(data,a.target_id, emojiMap)}`
                           : ""}
                       </li>
                     ))}
@@ -249,10 +254,10 @@ export function SaLiveGamePage() {
                   <ul style={{ marginLeft: "1.2rem" }}>
                     {r.day_votes.map((v, i) => (
                       <li key={i}>
-                        {nameOf(data, v.voter_id)} →{" "}
+                        {nameOf(data,v.voter_id, emojiMap)} →{" "}
                         {v.target_id === 0
                           ? t("admin.live.nobody")
-                          : nameOf(data, v.target_id)}
+                          : nameOf(data,v.target_id, emojiMap)}
                       </li>
                     ))}
                   </ul>
@@ -261,7 +266,7 @@ export function SaLiveGamePage() {
               {r.night_deaths.length > 0 && (
                 <div style={{ color: "#e74c3c" }}>
                   <strong>{t("admin.live.deaths")}:</strong>{" "}
-                  {r.night_deaths.map((id) => nameOf(data, id)).join(", ")}
+                  {r.night_deaths.map((id) => nameOf(data,id, emojiMap)).join(", ")}
                 </div>
               )}
               {Object.keys(r.last_words || {}).length > 0 && (
@@ -278,7 +283,7 @@ export function SaLiveGamePage() {
                         fontStyle: "italic",
                       }}
                     >
-                      <strong>{nameOf(data, parseInt(uid))}:</strong> {words}
+                      <strong>{nameOf(data, parseInt(uid), emojiMap)}:</strong> {words}
                     </blockquote>
                   ))}
                 </div>
@@ -291,7 +296,10 @@ export function SaLiveGamePage() {
   );
 }
 
-function VotingTally({ data }: { data: LiveGameState }) {
+function VotingTally({ data, emojiMap }: {
+  data: LiveGameState;
+  emojiMap: Record<string, string>;
+}) {
   const { t } = useTranslation();
   const entries = Object.values(data.current_votes);
   const tally = new Map<number, number>();
@@ -305,7 +313,7 @@ function VotingTally({ data }: { data: LiveGameState }) {
       <ul style={{ margin: "0.5rem 0 0 1.2rem", fontSize: "0.85rem" }}>
         {sortedTally.map(([tid, count]) => (
           <li key={tid}>
-            <strong>{tid === 0 ? t("admin.live.nobody") : nameOf(data, tid)}</strong>: {count}
+            <strong>{tid === 0 ? t("admin.live.nobody") : nameOf(data,tid, emojiMap)}</strong>: {count}
           </li>
         ))}
       </ul>
@@ -316,8 +324,8 @@ function VotingTally({ data }: { data: LiveGameState }) {
         <ul style={{ margin: "0.3rem 0 0 1.2rem", fontSize: "0.8rem" }}>
           {entries.map((v, i) => (
             <li key={i}>
-              {nameOf(data, v.voter_id)} →{" "}
-              {v.target_id === 0 ? t("admin.live.nobody") : nameOf(data, v.target_id)}{" "}
+              {nameOf(data,v.voter_id, emojiMap)} →{" "}
+              {v.target_id === 0 ? t("admin.live.nobody") : nameOf(data,v.target_id, emojiMap)}{" "}
               {v.weight > 1 && `(×${v.weight})`}
             </li>
           ))}
@@ -327,7 +335,10 @@ function VotingTally({ data }: { data: LiveGameState }) {
   );
 }
 
-function HangingConfirmPanel({ data }: { data: LiveGameState }) {
+function HangingConfirmPanel({ data, emojiMap }: {
+  data: LiveGameState;
+  emojiMap: Record<string, string>;
+}) {
   const { t } = useTranslation();
   const current = data.rounds[data.rounds.length - 1];
   if (!current) return null;
@@ -347,7 +358,7 @@ function HangingConfirmPanel({ data }: { data: LiveGameState }) {
         {target && (
           <p style={{ margin: 0 }}>
             <strong>{t("admin.live.hang_target")}:</strong>{" "}
-            {nameOf(data, target as number)}
+            {nameOf(data,target as number, emojiMap)}
           </p>
         )}
         <p style={{ margin: "0.5rem 0 0 0" }}>

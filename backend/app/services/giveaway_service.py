@@ -123,7 +123,7 @@ async def click_giveaway(giveaway_id: UUID, user: User) -> tuple[Giveaway, Givea
             return None
         if datetime.now(UTC) > giveaway.expires_at:
             return None
-        if giveaway.sender_id == user.id:
+        if giveaway.sender_id == user.id:  # type: ignore[attr-defined,var-annotated,arg-type]
             return None  # self-click not allowed
 
         # Already clicked?
@@ -162,7 +162,7 @@ async def finish_giveaway(giveaway_id: UUID) -> list[GiveawayClick]:
 
         if not clicks:
             # Refund sender
-            sender_locked = await User.select_for_update().get(id=giveaway.sender_id)
+            sender_locked = await User.select_for_update().get(id=giveaway.sender_id)  # type: ignore[attr-defined,var-annotated,arg-type]
             sender_locked.diamonds += giveaway.total_diamonds
             await sender_locked.save(update_fields=["diamonds"])
             await Transaction.create(
@@ -196,7 +196,7 @@ async def finish_giveaway(giveaway_id: UUID) -> list[GiveawayClick]:
             click.diamonds_received = amount
             await click.save(update_fields=["diamonds_received"])
 
-            user_locked = await User.select_for_update().get(id=click.user_id)
+            user_locked = await User.select_for_update().get(id=click.user_id)  # type: ignore[attr-defined,var-annotated,arg-type]
             user_locked.diamonds += amount
             await user_locked.save(update_fields=["diamonds"])
 

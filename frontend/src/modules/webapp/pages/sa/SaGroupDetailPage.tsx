@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -7,9 +7,11 @@ import { saApi } from "@shared/api/sa";
 import { useI18n } from "@shared/i18n/useI18n";
 
 import {
+  CustomEmojiOverridesEditor,
   GameplayEditor,
   ItemsEditor,
   LanguageEditor,
+  RoleEmojiOverridesEditor,
   RolesEditor,
   SilenceEditor,
   TimingsEditor,
@@ -38,22 +40,23 @@ export function SaGroupDetailPage() {
         🏘 {t("sa.group_detail.group_label")} {groupId}
       </h2>
 
-      <Link
-        to={`/webapp/sa/groups/${groupId}/live`}
-        style={{
-          display: "inline-block",
-          padding: "0.5rem 0.75rem",
-          marginBottom: "0.75rem",
-          background: "var(--accent)",
-          color: "#fff",
-          borderRadius: "0.4rem",
-          textDecoration: "none",
-          fontWeight: 600,
-          fontSize: "0.9rem",
-        }}
-      >
-        🎥 {t("admin.live.title")}
-      </Link>
+      <div style={{ display: "flex", gap: 8, marginBottom: "0.75rem", flexWrap: "wrap" }}>
+        <Link
+          to={`/webapp/sa/groups/${groupId}/live`}
+          style={{
+            padding: "0.5rem 0.75rem",
+            background: "var(--accent)",
+            color: "#fff",
+            borderRadius: "0.4rem",
+            textDecoration: "none",
+            fontWeight: 600,
+            fontSize: "0.9rem",
+          }}
+        >
+          🎥 {t("admin.live.title")}
+        </Link>
+        <GroupModerationButtons groupId={groupId} />
+      </div>
 
       <div className="webapp-tabs" style={{ marginBottom: "1rem" }}>
         <button
@@ -277,6 +280,18 @@ function SettingsTab({ groupId }: { groupId: number }) {
       title: t("sa.settings.language"),
       render: () => <LanguageEditor settings={data} onSave={onSave} />,
     },
+    {
+      code: "role_emojis",
+      emoji: "🎭",
+      title: t("sa.settings.role_emojis"),
+      render: () => <RoleEmojiOverridesEditor settings={data} onSave={onSave} />,
+    },
+    {
+      code: "custom_emojis",
+      emoji: "✨",
+      title: t("sa.settings.custom_emojis"),
+      render: () => <CustomEmojiOverridesEditor settings={data} onSave={onSave} />,
+    },
   ];
 
   return (
@@ -311,5 +326,56 @@ function SettingsTab({ groupId }: { groupId: number }) {
         </details>
       ))}
     </>
+  );
+}
+
+
+function GroupModerationButtons({ groupId }: { groupId: number }) {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+
+  const { data: groups } = useQuery({
+    queryKey: ["sa-groups"],
+    queryFn: () => saApi.groups(1, 200),
+    staleTime: 30_000,
+  });
+  const isBlocked = useMemo(
+    () => groups?.items.find((g) => g.id === groupId)?.is_blocked,
+    [groups, groupId],
+  );
+
+  const blockMut = useMutation({
+    mutationFn: (reason: string) => saApi.blockGroup(groupId, reason),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["sa-groups"] }),
+  });
+  const unblockMut = useMutation({
+    mutationFn: () => saApi.unblockGroup(groupId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["sa-groups"] }),
+  });
+
+  if (isBlocked) {
+    return (
+      <button
+        className="sa-chip active"
+        disabled={unblockMut.isPending}
+        onClick={() => unblockMut.mutate()}
+        style={{ padding: "0.5rem 0.75rem", color: "#4ade80" }}
+      >
+        ✅ {t("admin.groups.unblock")}
+      </button>
+    );
+  }
+  return (
+    <button
+      className="sa-chip"
+      disabled={blockMut.isPending}
+      onClick={() => {
+        const r = prompt(t("sa.users.ban") + ":");
+        if (r) blockMut.mutate(r);
+      }}
+      style={{ padding: "0.5rem 0.75rem", color: "#e74c3c" }}
+    >
+      🚫 {t("admin.groups.block")}
+    </button>
   );
 }

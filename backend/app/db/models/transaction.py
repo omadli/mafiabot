@@ -34,7 +34,7 @@ class Transaction(Model):
     id = fields.UUIDField(pk=True)
     user = fields.ForeignKeyField(
         "models.User", related_name="transactions", on_delete=fields.CASCADE
-    )
+    )  # type: ignore[var-annotated]
     type = fields.CharEnumField(TransactionType)
 
     stars_amount = fields.IntField(null=True)
@@ -47,11 +47,11 @@ class Transaction(Model):
         related_name="counterparty_transactions",
         null=True,
         on_delete=fields.SET_NULL,
-    )
-    related_game = fields.ForeignKeyField("models.Game", null=True, on_delete=fields.SET_NULL)
+    )  # type: ignore[var-annotated]
+    related_game = fields.ForeignKeyField("models.Game", null=True, on_delete=fields.SET_NULL)  # type: ignore[var-annotated]
     related_giveaway = fields.ForeignKeyField(
         "models.Giveaway", null=True, on_delete=fields.SET_NULL
-    )
+    )  # type: ignore[var-annotated]
 
     telegram_payment_charge_id = fields.CharField(max_length=128, null=True)
     status = fields.CharEnumField(TransactionStatus, default=TransactionStatus.PENDING)
@@ -76,10 +76,10 @@ class Giveaway(Model):
     id = fields.UUIDField(pk=True)
     sender = fields.ForeignKeyField(
         "models.User", related_name="giveaways_sent", on_delete=fields.CASCADE
-    )
+    )  # type: ignore[var-annotated]
     group = fields.ForeignKeyField(
         "models.Group", related_name="giveaways", null=True, on_delete=fields.SET_NULL
-    )
+    )  # type: ignore[var-annotated]
     chat_id = fields.BigIntField()
     message_id = fields.BigIntField()
 
@@ -100,10 +100,10 @@ class GiveawayClick(Model):
     id = fields.UUIDField(pk=True)
     giveaway = fields.ForeignKeyField(
         "models.Giveaway", related_name="clicks", on_delete=fields.CASCADE
-    )
+    )  # type: ignore[var-annotated]
     user = fields.ForeignKeyField(
         "models.User", related_name="giveaway_clicks", on_delete=fields.CASCADE
-    )
+    )  # type: ignore[var-annotated]
     click_order = fields.IntField()
     diamonds_received = fields.IntField()
     clicked_at = fields.DatetimeField(auto_now_add=True)

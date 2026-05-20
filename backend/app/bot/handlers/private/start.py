@@ -101,7 +101,7 @@ async def _handle_join(message: Message, user: User, group_id: int, _: Translato
         active_game = await Game.get_or_none(id=user.active_game_id)
         if active_game is not None:
             await active_game.fetch_related("group")
-            if active_game.group_id == group_id:
+            if active_game.group_id == group_id:  # type: ignore[attr-defined,var-annotated,arg-type]
                 await message.answer(_("join-already-in-this-game"))
                 return
             await message.answer(

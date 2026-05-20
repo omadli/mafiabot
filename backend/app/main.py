@@ -104,6 +104,22 @@ async def init_db() -> None:
     except Exception as e:
         logger.warning(f"SystemSettings seed failed: {e}")
 
+    # Seed RoleConfig (per-role names/emojis) on first boot; warms cache.
+    try:
+        from app.services.role_config_service import seed_default_role_configs
+
+        await seed_default_role_configs()
+    except Exception as e:
+        logger.warning(f"RoleConfig seed failed: {e}")
+
+    # Seed EmojiConfig (scene/item/action/currency emojis) on first boot.
+    try:
+        from app.services.emoji_config_service import seed_default_emoji_configs
+
+        await seed_default_emoji_configs()
+    except Exception as e:
+        logger.warning(f"EmojiConfig seed failed: {e}")
+
 
 async def close_db() -> None:
     await Tortoise.close_connections()
@@ -257,6 +273,7 @@ def create_app() -> FastAPI:
     from app.api.routers import (
         admin,
         health,
+        public,
         super_admin,
         webhook,
         ws,
@@ -269,6 +286,7 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(health.router, tags=["health"])
+    app.include_router(public.router)  # /api/public/* — no auth, read-only
     app.include_router(webhook.router, prefix="/webhook", tags=["webhook"])
     app.include_router(auth_router.router, prefix="/api", tags=["auth"])
     app.include_router(admin.router, prefix="/api", tags=["admin"])

@@ -1,31 +1,8 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-import { saApi } from "@shared/api/sa";
+import { saApi, type RoleConfig } from "@shared/api/sa";
 import { useI18n } from "@shared/i18n/useI18n";
-
-const ROLE_EMOJI: Record<string, string> = {
-  citizen: "👨🏼",
-  detective: "🕵🏻‍♂",
-  sergeant: "👮🏻‍♂",
-  mayor: "🎖",
-  doctor: "👨🏻‍⚕",
-  hooker: "💃",
-  hobo: "🧙‍♂",
-  lucky: "🤞🏼",
-  suicide: "🤦🏼",
-  kamikaze: "💣",
-  don: "🤵🏻",
-  mafia: "🤵🏼",
-  lawyer: "👨‍💼",
-  journalist: "👩🏼‍💻",
-  killer: "🥷",
-  maniac: "🔪",
-  werewolf: "🐺",
-  mage: "🧙",
-  arsonist: "🧟",
-  crook: "🤹",
-  snitch: "🤓",
-};
 
 export function SaRolesPage() {
   const { t } = useI18n();
@@ -33,6 +10,28 @@ export function SaRolesPage() {
     queryKey: ["sa-role-stats"],
     queryFn: saApi.roleStats,
   });
+
+  // Fetch role configs so we can show real localized name + emoji
+  // (cached by the same key as the role-configs page; no extra request).
+  const { data: configs } = useQuery({
+    queryKey: ["sa-role-configs"],
+    queryFn: saApi.roleConfigs,
+    staleTime: 60_000,
+  });
+
+  const roleMap = useMemo(() => {
+    const out: Record<string, RoleConfig> = {};
+    (configs?.items ?? []).forEach((c) => { out[c.role] = c; });
+    return out;
+  }, [configs]);
+
+  const lang = (document.documentElement.lang as "uz" | "ru" | "en") || "uz";
+  const labelFor = (slug: string): string => {
+    const cfg = roleMap[slug];
+    if (!cfg) return `❓ ${slug}`;
+    const name = lang === "ru" ? cfg.name_ru : lang === "en" ? cfg.name_en : cfg.name_uz;
+    return `${cfg.static_emoji} ${name}`;
+  };
 
   if (isLoading || !data) {
     return <div className="webapp-section">⏳ {t("loading")}</div>;
@@ -56,9 +55,7 @@ export function SaRolesPage() {
           <tbody>
             {data.roles.map((r) => (
               <tr key={r.role}>
-                <td>
-                  {ROLE_EMOJI[r.role] ?? "❓"} {r.role}
-                </td>
+                <td>{labelFor(r.role)}</td>
                 <td style={{ textAlign: "right" }}>{r.games_played}</td>
                 <td style={{ textAlign: "right" }}>{r.wins}</td>
                 <td

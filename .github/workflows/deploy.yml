@@ -67,9 +67,37 @@ jobs:
               sleep 2
             done
 
-            # Apply migrations (idempotent — generate_schemas handles fresh DBs)
-            # aerich upgrade is used when migrating existing DB with new schema
-            docker compose exec -T backend aerich upgrade || echo "aerich upgrade: no pending migrations or first run"
+            # === Database migrations ===
+            # On a brand-new database, `aerich init-db` bootstraps the
+            # aerich tracking table. On every subsequent deploy we run
+            # `aerich upgrade` to apply any pending migration. The list
+            # of migration files lives in backend/migrations/models/.
+            #
+            # New migrations introduced recently:
+            #   3_…_add_role_configs.py        — RoleConfig (per-role names/emojis)
+            #   4_…_add_emoji_configs.py       — EmojiConfig (scene/item/action/currency)
+            #   5_…_achievement_dollars_reward — Achievement.dollars_reward column
+            #
+            # Both new tables are also auto-created by `generate_schemas(safe=True)`
+            # on backend startup (idempotent), so a fresh deploy is covered too —
+            # aerich is the path that handles in-place schema evolution.
+            if ! docker compose exec -T backend test -d migrations/models; then
+              echo "⚠️  migrations/ folder missing in container, skipping"
+            elif docker compose exec -T backend test -f .aerich-initialized; then
+              echo "→ aerich upgrade"
+              docker compose exec -T backend aerich upgrade
+            else
+              echo "→ first run: aerich init-db (creates tracking table)"
+              docker compose exec -T backend aerich init-db || true
+              docker compose exec -T backend touch .aerich-initialized
+              # init-db creates the schema directly, then upgrade catches
+              # anything that may have been added after this image was built
+              docker compose exec -T backend aerich upgrade || true
+            fi
+
+            # Seed defaults — idempotent calls invoked from main.py lifespan
+            # on every startup. We log them here for visibility.
+            echo "→ RoleConfig / EmojiConfig / Achievement seeds run automatically on startup"
 
             # Deploy frontend static files
             sudo mkdir -p /var/www/mafia

@@ -18,6 +18,11 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/admin/users", emoji: "👥", i18nKey: "admin.nav.users" },
   { to: "/admin/groups", emoji: "💬", i18nKey: "admin.nav.groups" },
   { to: "/admin/games", emoji: "🎲", i18nKey: "admin.nav.games" },
+  { to: "/admin/role-stats", emoji: "📈", i18nKey: "admin.nav.role_stats" },
+  { to: "/admin/role-configs", emoji: "🎭", i18nKey: "admin.nav.role_configs" },
+  { to: "/admin/emoji-configs", emoji: "✨", i18nKey: "admin.nav.emoji_configs" },
+  { to: "/admin/top-players", emoji: "🏆", i18nKey: "admin.nav.top_players" },
+  { to: "/admin/system-settings", emoji: "⚙️", i18nKey: "admin.nav.system_settings" },
   { to: "/admin/audit", emoji: "📝", i18nKey: "admin.nav.audit" },
 ];
 

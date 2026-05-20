@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from typing import Literal as _Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -395,7 +396,7 @@ async def list_games(
     items = [
         {
             "id": str(g.id),
-            "group_id": g.group_id,
+            "group_id": g.group_id,  # type: ignore[attr-defined,var-annotated,arg-type]
             "status": g.status,
             "winner_team": g.winner_team,
             "started_at": g.started_at.isoformat() if g.started_at else None,
@@ -414,7 +415,7 @@ async def get_game(game_id: UUID, admin: AdminAccount = Depends(get_current_admi
         raise HTTPException(status_code=404, detail="Game not found")
     return {
         "id": str(game.id),
-        "group_id": game.group_id,
+        "group_id": game.group_id,  # type: ignore[attr-defined,var-annotated,arg-type]
         "status": game.status,
         "winner_team": game.winner_team,
         "started_at": game.started_at.isoformat() if game.started_at else None,
@@ -468,8 +469,8 @@ async def list_audit(
     items = [
         {
             "id": str(log.id),
-            "actor_id": log.actor_id,
-            "actor_admin_id": str(log.actor_admin_id) if log.actor_admin_id else None,
+            "actor_id": log.actor_id,  # type: ignore[attr-defined,var-annotated,arg-type]
+            "actor_admin_id": str(log.actor_admin_id) if log.actor_admin_id else None,  # type: ignore[attr-defined,var-annotated,arg-type]
             "action": log.action,
             "target_type": log.target_type,
             "target_id": log.target_id,
@@ -614,8 +615,8 @@ async def user_games(
     items = [
         {
             "id": str(r.id),
-            "game_id": str(r.game_id),
-            "group_id": r.group_id,
+            "game_id": str(r.game_id),  # type: ignore[attr-defined,var-annotated,arg-type]
+            "group_id": r.group_id,  # type: ignore[attr-defined,var-annotated,arg-type]
             "role": r.role,
             "team": r.team,
             "won": r.won,
@@ -655,6 +656,76 @@ async def user_achievements(user_id: int, admin: AdminAccount = Depends(get_curr
 # === Me (current admin info) ===
 
 
+# === Role configs (per-role names + emojis, cached) ===
+
+
+def _admin_role_config_dict(cfg) -> dict:
+    return {
+        "role": cfg.role,
+        "team": cfg.team,
+        "name_uz": cfg.name_uz,
+        "name_ru": cfg.name_ru,
+        "name_en": cfg.name_en,
+        "static_emoji": cfg.static_emoji,
+        "custom_emoji_id": cfg.custom_emoji_id,
+        "order_idx": cfg.order_idx,
+        "updated_at": cfg.updated_at.isoformat() if cfg.updated_at else None,
+        "updated_by_tg_id": cfg.updated_by_tg_id,
+    }
+
+
+@router.get("/admin/role-configs")
+async def admin_list_role_configs(
+    admin: AdminAccount = Depends(get_current_admin),
+) -> dict:
+    """All role display configs, sorted by order_idx."""
+    from app.services import role_config_service
+
+    configs = await role_config_service.get_all_configs(force=True)
+    items = sorted(configs.values(), key=lambda c: c.order_idx)
+    return {"items": [_admin_role_config_dict(c) for c in items]}
+
+
+class AdminUpdateRoleConfigRequest(BaseModel):
+    name_uz: str | None = None
+    name_ru: str | None = None
+    name_en: str | None = None
+    static_emoji: str | None = None
+    custom_emoji_id: str | None = None
+    team: str | None = None
+    order_idx: int | None = None
+
+
+@router.post("/admin/role-configs/{role}")
+async def admin_update_role_config(
+    role: str,
+    payload: AdminUpdateRoleConfigRequest,
+    admin: AdminAccount = Depends(get_current_admin),
+) -> dict:
+    """Partial update of one role's display config."""
+    from app.services import role_config_service
+
+    fields = {k: v for k, v in payload.model_dump().items() if v is not None}
+    if not fields:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    if "team" in fields and fields["team"] not in ("civilians", "mafia", "singletons"):
+        raise HTTPException(status_code=400, detail="invalid team")
+
+    try:
+        cfg = await role_config_service.update_config(role, by_tg_id=admin.telegram_id, **fields)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    await log_action(
+        action="role_config.update",
+        actor=admin,
+        target_type="role_config",
+        target_id=role,
+        payload={"fields": fields},
+    )
+    return _admin_role_config_dict(cfg)
+
+
 @router.get("/admin/me")
 async def me(admin: AdminAccount = Depends(get_current_admin)) -> dict:
     return {
@@ -665,3 +736,371 @@ async def me(admin: AdminAccount = Depends(get_current_admin)) -> dict:
         "telegram_id": admin.telegram_id,
         "last_login_at": admin.last_login_at.isoformat() if admin.last_login_at else None,
     }
+
+
+# =====================================================================
+# === Mirrors of /api/sa endpoints (JWT auth path) =====================
+# Same impl as the /api/sa siblings but using AdminAccount (JWT) auth so
+# the web `/admin` dashboard can stay on its existing auth dance.
+# =====================================================================
+
+# --- Role stats -----------------------------------------------------
+
+
+@router.get("/admin/role-stats")
+async def admin_role_stats(
+    admin: AdminAccount = Depends(get_current_admin),
+) -> dict:
+    from tortoise.functions import Avg as _Avg
+    from tortoise.functions import Count as _Count
+
+    from app.db.models import GameResult as _GR
+
+    rows = (
+        await _GR.all()
+        .group_by("role")
+        .annotate(games=_Count("id"), avg_elo_change=_Avg("elo_change"), avg_xp=_Avg("xp_earned"))
+        .values("role", "games", "avg_elo_change", "avg_xp")
+    )
+    wins: dict[str, int] = {}
+    for r in await _GR.filter(won=True).all().values("role"):
+        wins[r["role"]] = wins.get(r["role"], 0) + 1
+    out = []
+    for row in rows:
+        g = row["games"] or 0
+        w = wins.get(row["role"], 0)
+        out.append(
+            {
+                "role": row["role"],
+                "games_played": g,
+                "wins": w,
+                "winrate_pct": round(w / g * 100, 1) if g else 0.0,
+                "avg_elo_change": round(row["avg_elo_change"] or 0, 2),
+                "avg_xp_earned": round(row["avg_xp"] or 0, 1),
+            }
+        )
+    out.sort(key=lambda x: x["games_played"], reverse=True)
+    return {"roles": out}
+
+
+# --- Top players ----------------------------------------------------
+
+_SortKey = _Literal["elo", "games_won", "games_total", "longest_win_streak", "level"]
+
+
+@router.get("/admin/top-players")
+async def admin_top_players(
+    admin: AdminAccount = Depends(get_current_admin),
+    sort: _SortKey = "elo",
+    limit: int = Query(50, ge=1, le=500),
+) -> dict:
+    stats = await UserStats.all().order_by(f"-{sort}").limit(limit).prefetch_related("user")
+    out = []
+    for i, s in enumerate(stats, start=1):
+        u = s.user
+        wr = round(s.games_won / s.games_total * 100, 1) if s.games_total else 0.0
+        out.append(
+            {
+                "rank": i,
+                "user_id": u.id,
+                "first_name": u.first_name,
+                "username": u.username,
+                "is_premium": u.is_premium,
+                "level": u.level,
+                "xp": s.xp,
+                "elo": s.elo,
+                "games_total": s.games_total,
+                "games_won": s.games_won,
+                "winrate_pct": wr,
+                "longest_win_streak": s.longest_win_streak,
+                "citizen_wins": s.citizen_wins,
+                "mafia_wins": s.mafia_wins,
+                "singleton_wins": s.singleton_wins,
+            }
+        )
+    return {"sort": sort, "items": out}
+
+
+# --- System settings (prices/rewards/exchange/premium) --------------
+
+
+@router.get("/admin/system-settings")
+async def admin_get_system_settings(
+    admin: AdminAccount = Depends(get_current_admin),
+) -> dict:
+    from app.services import pricing_service as _ps
+
+    s = await _ps.get_settings(force=True)
+    return {
+        "item_prices": s.item_prices,
+        "rewards": s.rewards,
+        "exchange": s.exchange,
+        "premium": s.premium,
+        "updated_at": s.updated_at.isoformat() if s.updated_at else None,
+        "updated_by_tg_id": s.updated_by_tg_id,
+    }
+
+
+class AdminUpdateSystemSettingRequest(BaseModel):
+    section: _Literal["item_prices", "rewards", "exchange", "premium"]
+    key: str
+    value: object
+
+
+@router.post("/admin/system-settings")
+async def admin_update_system_settings(
+    payload: AdminUpdateSystemSettingRequest,
+    admin: AdminAccount = Depends(get_current_admin),
+) -> dict:
+    from app.services import pricing_service as _ps
+
+    try:
+        await _ps.update_setting(
+            payload.section, payload.key, payload.value, by_tg_id=admin.telegram_id
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    await log_action(
+        action="system.settings.update",
+        actor=admin,
+        target_type="system",
+        target_id=payload.section,
+        payload={"key": payload.key, "value": payload.value},
+    )
+    return {"ok": True, "section": payload.section, "key": payload.key, "value": payload.value}
+
+
+# --- Per-group detail (games / leaderboard / settings) -------------
+
+
+@router.get("/admin/groups/{group_id}/games")
+async def admin_group_games(
+    group_id: int,
+    admin: AdminAccount = Depends(get_current_admin),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+) -> dict:
+    qs = Game.filter(group_id=group_id)
+    total = await qs.count()
+    rows = await qs.offset((page - 1) * page_size).limit(page_size).order_by("-started_at")
+    out = []
+    for g in rows:
+        duration = None
+        if g.started_at and g.finished_at:
+            duration = int((g.finished_at - g.started_at).total_seconds())
+        pc = (
+            await __import__("app.db.models", fromlist=["GameResult"])
+            .GameResult.filter(game_id=g.id)
+            .count()
+        )
+        out.append(
+            {
+                "id": str(g.id),
+                "status": g.status,
+                "winner_team": g.winner_team,
+                "started_at": g.started_at.isoformat() if g.started_at else None,
+                "finished_at": g.finished_at.isoformat() if g.finished_at else None,
+                "duration_seconds": duration,
+                "players_count": pc,
+                "bounty_per_winner": g.bounty_per_winner,
+            }
+        )
+    return {"group_id": group_id, "total": total, "page": page, "items": out}
+
+
+@router.get("/admin/groups/{group_id}/leaderboard")
+async def admin_group_leaderboard(
+    group_id: int,
+    admin: AdminAccount = Depends(get_current_admin),
+    limit: int = Query(30, ge=1, le=200),
+) -> dict:
+    rows = (
+        await __import__("app.db.models", fromlist=["GroupUserStats"])
+        .GroupUserStats.filter(group_id=group_id)
+        .order_by("-elo")
+        .limit(limit)
+        .prefetch_related("user")
+    )
+    items = []
+    for i, gs in enumerate(rows, start=1):
+        u = gs.user
+        wr = round(gs.games_won / gs.games_total * 100, 1) if gs.games_total else 0.0
+        items.append(
+            {
+                "rank": i,
+                "user_id": u.id,
+                "first_name": u.first_name,
+                "username": u.username,
+                "elo": gs.elo,
+                "games_total": gs.games_total,
+                "games_won": gs.games_won,
+                "winrate_pct": wr,
+            }
+        )
+    return {"group_id": group_id, "items": items}
+
+
+@router.get("/admin/groups/{group_id}/settings")
+async def admin_get_group_settings(
+    group_id: int,
+    admin: AdminAccount = Depends(get_current_admin),
+) -> dict:
+    from app.db.models import GroupSettings as _GS
+
+    gs = await _GS.get_or_none(group_id=group_id)
+    if gs is None:
+        raise HTTPException(status_code=404, detail="Group settings not found")
+    return {
+        "group_id": gs.group_id,  # type: ignore[attr-defined,var-annotated,arg-type]
+        "language": gs.language,
+        "roles": gs.roles,
+        "timings": gs.timings,
+        "silence": gs.silence,
+        "items_allowed": gs.items_allowed,
+        "afk": gs.afk,
+        "permissions": getattr(gs, "permissions", {}),
+        "gameplay": getattr(gs, "gameplay", {}),
+        "display": getattr(gs, "display", {}),
+        "messages": getattr(gs, "messages", {}),
+        "atmosphere_media": getattr(gs, "atmosphere_media", {}),
+        "misc": getattr(gs, "misc", {}),
+    }
+
+
+class AdminUpdateGroupSettingsRequest(BaseModel):
+    section: str
+    value: object
+
+
+@router.post("/admin/groups/{group_id}/settings")
+async def admin_update_group_settings(
+    group_id: int,
+    payload: AdminUpdateGroupSettingsRequest,
+    admin: AdminAccount = Depends(get_current_admin),
+) -> dict:
+    from app.db.models import GroupSettings as _GS
+    from app.services.group_settings_helper import save_settings_fields
+
+    gs = await _GS.get_or_none(group_id=group_id)
+    if gs is None:
+        raise HTTPException(status_code=404, detail="Group settings not found")
+    allowed = {
+        "language",
+        "roles",
+        "timings",
+        "silence",
+        "items_allowed",
+        "afk",
+        "permissions",
+        "gameplay",
+        "display",
+        "messages",
+        "atmosphere_media",
+        "misc",
+    }
+    if payload.section not in allowed:
+        raise HTTPException(status_code=400, detail=f"section not editable: {payload.section}")
+    await save_settings_fields(gs, **{payload.section: payload.value})
+    await log_action(
+        action="group.settings.update",
+        actor=admin,
+        target_type="group",
+        target_id=str(group_id),
+        payload={"section": payload.section},
+    )
+    return {"ok": True, "section": payload.section}
+
+
+# --- Role win-rates chart ------------------------------------------
+
+
+@router.get("/admin/charts/role-winrates")
+async def admin_chart_role_winrates(
+    admin: AdminAccount = Depends(get_current_admin),
+) -> dict:
+    from tortoise.functions import Count as _Count
+
+    from app.db.models import GameResult as _GR
+
+    rows = await _GR.all().group_by("role").annotate(games=_Count("id")).values("role", "games")
+    wins: dict[str, int] = {}
+    for r in await _GR.filter(won=True).all().values("role"):
+        wins[r["role"]] = wins.get(r["role"], 0) + 1
+    items = []
+    for r in rows:
+        g = r["games"] or 0
+        w = wins.get(r["role"], 0)
+        items.append(
+            {
+                "role": r["role"],
+                "games": g,
+                "wins": w,
+                "winrate_pct": round(w / g * 100, 1) if g else 0.0,
+            }
+        )
+    items.sort(key=lambda x: x["games"], reverse=True)
+    return {"items": items[:12]}
+
+
+# === Emoji configs (per-code scene/item/action/currency emojis) ===
+
+
+def _admin_emoji_config_dict(cfg) -> dict:
+    return {
+        "code": cfg.code,
+        "category": cfg.category,
+        "name_uz": cfg.name_uz,
+        "name_ru": cfg.name_ru,
+        "name_en": cfg.name_en,
+        "static_emoji": cfg.static_emoji,
+        "custom_emoji_id": cfg.custom_emoji_id,
+        "order_idx": cfg.order_idx,
+        "updated_at": cfg.updated_at.isoformat() if cfg.updated_at else None,
+        "updated_by_tg_id": cfg.updated_by_tg_id,
+    }
+
+
+@router.get("/admin/emoji-configs")
+async def admin_list_emoji_configs(
+    admin: AdminAccount = Depends(get_current_admin),
+) -> dict:
+    from app.services import emoji_config_service
+
+    configs = await emoji_config_service.get_all_configs(force=True)
+    items = sorted(configs.values(), key=lambda c: c.order_idx)
+    return {"items": [_admin_emoji_config_dict(c) for c in items]}
+
+
+class AdminUpdateEmojiConfigRequest(BaseModel):
+    name_uz: str | None = None
+    name_ru: str | None = None
+    name_en: str | None = None
+    static_emoji: str | None = None
+    custom_emoji_id: str | None = None
+    category: str | None = None
+    order_idx: int | None = None
+
+
+@router.post("/admin/emoji-configs/{code}")
+async def admin_update_emoji_config(
+    code: str,
+    payload: AdminUpdateEmojiConfigRequest,
+    admin: AdminAccount = Depends(get_current_admin),
+) -> dict:
+    from app.services import emoji_config_service
+
+    fields = {k: v for k, v in payload.model_dump().items() if v is not None}
+    if not fields:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    try:
+        cfg = await emoji_config_service.update_config(code, by_tg_id=admin.telegram_id, **fields)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    await log_action(
+        action="emoji_config.update",
+        actor=admin,
+        target_type="emoji_config",
+        target_id=code,
+        payload={"fields": fields},
+    )
+    return _admin_emoji_config_dict(cfg)

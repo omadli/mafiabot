@@ -95,7 +95,7 @@ async def callback_mage_reaction(query: CallbackQuery, user: User, _: Translator
         await query.answer(_("mage-forgive-confirm"), show_alert=False)
         if query.message:
             with contextlib.suppress(Exception):
-                await query.message.edit_text(_("mage-forgive-confirm-text"))
+                await query.message.edit_text(_("mage-forgive-confirm-text"))  # type: ignore[union-attr]
     else:  # kill
         if attacker.alive:
             attacker.alive = False
@@ -106,7 +106,7 @@ async def callback_mage_reaction(query: CallbackQuery, user: User, _: Translator
         await query.answer(_("mage-kill-confirm"), show_alert=False)
         if query.message:
             with contextlib.suppress(Exception):
-                await query.message.edit_text(
+                await query.message.edit_text(  # type: ignore[union-attr]
                     _("mage-kill-confirm-text", target=attacker.first_name)
                 )
 
@@ -286,7 +286,7 @@ async def callback_kamikaze_take(query: CallbackQuery, user: User, _: Translator
     await query.answer(_("kamikaze-took-confirm"), show_alert=True)
     if query.message:
         with contextlib.suppress(Exception):
-            await query.message.edit_text(_("kamikaze-took-confirm-text", target=victim.first_name))
+            await query.message.edit_text(_("kamikaze-took-confirm-text", target=victim.first_name))  # type: ignore[union-attr]
 
 
 # === Helpers ===
@@ -298,4 +298,4 @@ async def _find_state(game_id) -> GameState | None:
     db_game = await Game.get_or_none(id=game_id)
     if db_game is None:
         return None
-    return await game_service.load_state(db_game.group_id)
+    return await game_service.load_state(db_game.group_id)  # type: ignore[attr-defined,var-annotated,arg-type]

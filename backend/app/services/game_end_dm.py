@@ -54,11 +54,11 @@ async def send_per_player_game_end_dm(bot: Bot, state: GameState) -> None:
                 elo_delta=f"{elo_sign}{result.elo_change}",
                 dollars=result.dollars_earned,
             )
-            await bot.send_message(result.user_id, text, reply_markup=back_kb, parse_mode="HTML")
+            await bot.send_message(result.user_id, text, reply_markup=back_kb, parse_mode="HTML")  # type: ignore[attr-defined,var-annotated,arg-type]
         except TelegramForbiddenError:
             pass
         except Exception as e:
-            logger.debug(f"Game-end DM to {result.user_id} failed: {e}")
+            logger.debug(f"Game-end DM to {result.user_id} failed: {e}")  # type: ignore[attr-defined,var-annotated,arg-type]
 
     with contextlib.suppress(Exception):
         await asyncio.gather(*(_send(r) for r in results), return_exceptions=True)

@@ -6,10 +6,15 @@ import { useI18n } from "@shared/i18n/useI18n";
 
 const NAV = [
   { path: "/webapp/sa", label: "📊", labelKey: "sa-nav-dashboard" },
-  { path: "/webapp/sa/roles", label: "🎭", labelKey: "sa-nav-roles" },
-  { path: "/webapp/sa/players", label: "🏆", labelKey: "sa-nav-players" },
+  { path: "/webapp/sa/users", label: "👥", labelKey: "sa-nav-users" },
   { path: "/webapp/sa/groups", label: "🏘", labelKey: "sa-nav-groups" },
+  { path: "/webapp/sa/games", label: "🎲", labelKey: "sa-nav-games" },
+  { path: "/webapp/sa/roles", label: "📈", labelKey: "sa-nav-roles" },
+  { path: "/webapp/sa/role-configs", label: "🎭", labelKey: "sa-nav-role-configs" },
+  { path: "/webapp/sa/emoji-configs", label: "✨", labelKey: "sa-nav-emoji-configs" },
+  { path: "/webapp/sa/players", label: "🏆", labelKey: "sa-nav-players" },
   { path: "/webapp/sa/system", label: "⚙️", labelKey: "sa-nav-system" },
+  { path: "/webapp/sa/audit", label: "📝", labelKey: "sa-nav-audit" },
 ];
 
 export function SaLayout() {

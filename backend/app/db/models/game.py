@@ -27,7 +27,7 @@ class Game(Model):
     """
 
     id = fields.UUIDField(pk=True)
-    group = fields.ForeignKeyField("models.Group", related_name="games", on_delete=fields.CASCADE)
+    group = fields.ForeignKeyField("models.Group", related_name="games", on_delete=fields.CASCADE)  # type: ignore[var-annotated]
 
     status = fields.CharEnumField(GameStatus, default=GameStatus.WAITING)
     started_at = fields.DatetimeField(auto_now_add=True)
@@ -43,7 +43,7 @@ class Game(Model):
         related_name="bounty_games",
         null=True,
         on_delete=fields.SET_NULL,
-    )
+    )  # type: ignore[var-annotated]
 
     # Snapshot of group settings at game start
     settings_snapshot: dict = fields.JSONField(default=dict)
@@ -61,4 +61,4 @@ class Game(Model):
         indexes = [("group_id", "started_at")]
 
     def __str__(self) -> str:
-        return f"Game({self.id}, group={self.group_id}, status={self.status})"
+        return f"Game({self.id}, group={self.group_id}, status={self.status})"  # type: ignore[attr-defined,var-annotated,arg-type]

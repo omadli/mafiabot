@@ -8,8 +8,14 @@ import { AuditPage } from "./pages/AuditPage";
 import { Dashboard } from "./pages/Dashboard";
 import { GameReplayPage } from "./pages/GameReplayPage";
 import { GamesPage } from "./pages/GamesPage";
+import { EmojiConfigsPage } from "./pages/EmojiConfigsPage";
+import { GroupDetailPage } from "./pages/GroupDetailPage";
 import { GroupsPage } from "./pages/GroupsPage";
 import { LoginPage } from "./pages/LoginPage";
+import { RoleConfigsPage } from "./pages/RoleConfigsPage";
+import { RoleStatsPage } from "./pages/RoleStatsPage";
+import { SystemSettingsPage } from "./pages/SystemSettingsPage";
+import { TopPlayersPage } from "./pages/TopPlayersPage";
 import { UserDetailPage } from "./pages/UserDetailPage";
 import { UsersPage } from "./pages/UsersPage";
 
@@ -25,9 +31,15 @@ export function AdminApp() {
           <Route path="users" element={<UsersPage />} />
           <Route path="users/:userId" element={<UserDetailPage />} />
           <Route path="groups" element={<GroupsPage />} />
+          <Route path="groups/:groupId" element={<GroupDetailPage />} />
           <Route path="groups/:groupId/live" element={<AdminLiveGamePage />} />
           <Route path="games" element={<GamesPage />} />
           <Route path="games/:gameId" element={<GameReplayPage />} />
+          <Route path="role-stats" element={<RoleStatsPage />} />
+          <Route path="role-configs" element={<RoleConfigsPage />} />
+          <Route path="emoji-configs" element={<EmojiConfigsPage />} />
+          <Route path="top-players" element={<TopPlayersPage />} />
+          <Route path="system-settings" element={<SystemSettingsPage />} />
           <Route path="audit" element={<AuditPage />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Route>

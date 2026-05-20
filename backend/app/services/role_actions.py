@@ -50,17 +50,32 @@ async def _send_prompt_to_player(
             logger.warning(f"Cannot DM user {actor.user_id} (bot blocked)")
         return
 
+    # Attackers (don/mafia/killer/maniac/detective-kill) who own a rifle get a
+    # secondary "🔫 Miltiq" button per target. Rifle pierces all defences
+    # (see core/actions.py:247) and is consumed on use.
+    has_rifle = (
+        await _player_has_rifle(actor.user_id)
+        if (actor.role in {"don", "mafia", "killer", "maniac"})
+        else False
+    )
+
     # Build keyboard with target buttons
     rows: list[list[InlineKeyboardButton]] = []
     for target in targets:
-        rows.append(
-            [
+        target_row = [
+            InlineKeyboardButton(
+                text=f"{target.first_name} (#{target.join_order})",
+                callback_data=f"night:{actor.role}:{target.user_id}",
+            )
+        ]
+        if has_rifle:
+            target_row.append(
                 InlineKeyboardButton(
-                    text=f"{target.first_name} (#{target.join_order})",
-                    callback_data=f"night:{actor.role}:{target.user_id}",
+                    text="🔫",
+                    callback_data=f"night:{actor.role}:{target.user_id}:rifle",
                 )
-            ]
-        )
+            )
+        rows.append(target_row)
 
     # Skip option (if allowed)
     if state.settings.get("gameplay", {}).get("allow_skip_night_action", True):
@@ -152,20 +167,41 @@ async def send_detective_target_keyboard(
         return None
 
     callback_prefix = f"night:detective:{action_kind}"
-    rows = [
-        [
+    # Detective's "kill" branch can use the rifle too (pierces all defences).
+    has_rifle = action_kind == "kill" and await _player_has_rifle(actor.user_id)
+    rows = []
+    for target in targets:
+        row = [
             InlineKeyboardButton(
-                text=f"{t.first_name} (#{t.join_order})",
-                callback_data=f"{callback_prefix}:{t.user_id}",
+                text=f"{target.first_name} (#{target.join_order})",
+                callback_data=f"{callback_prefix}:{target.user_id}",
             )
         ]
-        for t in targets
-    ]
+        if has_rifle:
+            row.append(
+                InlineKeyboardButton(
+                    text="🔫",
+                    callback_data=f"{callback_prefix}:{target.user_id}:rifle",
+                )
+            )
+        rows.append(row)
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
+async def _player_has_rifle(user_id: int) -> bool:
+    """Quick UserInventory lookup — returns True only if `rifle >= 1`."""
+    from app.db.models import UserInventory
+
+    inv = await UserInventory.get_or_none(user_id=user_id)
+    return bool(inv and inv.rifle >= 1)
+
+
 def role_action_type(role_code: str) -> str:
-    """Map role → default action type."""
+    """Map role → default action type. Must match the keys the resolver
+    in `core/actions.py` filters on (e.g. lawyer.protect, journalist.check).
+    Roles not listed here fall back to "visit", which the resolver tolerates
+    for passive roles (werewolf/mage/kamikaze react to being targeted) and
+    role-only filters (arsonist/crook/snitch don't gate on action_type)."""
     return {
         "detective": "check",
         "doctor": "heal",
@@ -175,4 +211,8 @@ def role_action_type(role_code: str) -> str:
         "killer": "kill",
         "maniac": "kill",
         "hobo": "visit",
+        "lawyer": "protect",  # core/actions.py:195 — was silently broken
+        "journalist": "check",  # core/actions.py:353 — was silently broken
+        "snitch": "reveal",  # semantic clarity (resolver ignores action_type)
+        "arsonist": "queue",  # docstring spec; resolver-tolerant today
     }.get(role_code, "visit")

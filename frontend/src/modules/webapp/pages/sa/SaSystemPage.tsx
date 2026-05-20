@@ -88,7 +88,8 @@ export function SaSystemPage() {
         {Object.entries(data.rewards).map(([k, v]) => (
           <SettingRow
             key={k}
-            label={k}
+            label={t(`sa.system.reward_${k}`, { defaultValue: k })}
+            rawKey={k}
             initial={Number(v)}
             onSave={(val) => mutation.mutate({ section: "rewards", key: k, value: val })}
           />
@@ -101,7 +102,8 @@ export function SaSystemPage() {
         {Object.entries(data.exchange).map(([k, v]) => (
           <SettingRow
             key={k}
-            label={k}
+            label={t(`sa.system.exchange_${k}`, { defaultValue: k })}
+            rawKey={k}
             initial={typeof v === "boolean" ? (v ? 1 : 0) : Number(v)}
             onSave={(val) => mutation.mutate({ section: "exchange", key: k, value: val })}
           />
@@ -114,7 +116,8 @@ export function SaSystemPage() {
         {Object.entries(data.premium).map(([k, v]) => (
           <SettingRow
             key={k}
-            label={k}
+            label={t(`sa.system.premium_${k}`, { defaultValue: k })}
+            rawKey={k}
             initial={Number(v)}
             onSave={(val) => mutation.mutate({ section: "premium", key: k, value: val })}
           />
@@ -124,7 +127,8 @@ export function SaSystemPage() {
       {data.updated_at && (
         <p style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
           🕒 {new Date(data.updated_at).toLocaleString()}
-          {data.updated_by_tg_id && ` · tg_id ${data.updated_by_tg_id}`}
+          {data.updated_by_tg_id &&
+            ` · ${t("sa.system.updated_by")}: ${data.updated_by_tg_id}`}
         </p>
       )}
     </>
@@ -133,17 +137,20 @@ export function SaSystemPage() {
 
 function SettingRow({
   label,
+  rawKey,
   initial,
   onSave,
 }: {
   label: string;
+  rawKey: string;
   initial: number;
   onSave: (v: number) => void;
 }) {
   return (
     <div className="webapp-row">
       <label>
-        <code style={{ fontSize: "0.85rem" }}>{label}</code>
+        {label}
+        <code className="row-hint" style={{ marginTop: 2 }}>{rawKey}</code>
       </label>
       <NumberInput initial={initial} onSave={onSave} />
     </div>

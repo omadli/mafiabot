@@ -20,22 +20,40 @@ class I18nMiddleware(BaseMiddleware):
         data: dict[str, Any],
     ) -> Any:
         locale = "uz"  # default
+        role_overrides: dict | None = None
+        emoji_overrides: dict | None = None
 
         # 1. User-level (private chat)
         user: User | None = data.get("user")
         if user is not None and user.language_code:
             locale = user.language_code
 
-        # 2. Group-level (overrides for group context)
+        # 2. Group-level (overrides for group context — language and emojis)
         if isinstance(event, Update):
             chat = self._extract_chat(event)
             if chat is not None and chat.type in ("group", "supergroup"):
                 group = await Group.get_or_none(id=chat.id).prefetch_related("settings")
                 if group is not None and group.settings is not None:
-                    locale = group.settings.language
+                    locale = group.settings.language  # type: ignore[attr-defined,var-annotated,arg-type]
+                    # Per-group emoji overrides live inside GroupSettings.display
+                    # (existing JSONField — no migration required).
+                    display = getattr(group.settings, "display", None) or {}
+                    if isinstance(display, dict):
+                        r_ov = display.get("role_emojis")
+                        if isinstance(r_ov, dict) and r_ov:
+                            role_overrides = r_ov
+                        e_ov = display.get("custom_emojis")
+                        if isinstance(e_ov, dict) and e_ov:
+                            emoji_overrides = e_ov
 
         data["locale"] = locale
-        data["_"] = get_translator(locale)
+        data["role_overrides"] = role_overrides
+        data["emoji_overrides"] = emoji_overrides
+        data["_"] = get_translator(
+            locale,
+            role_overrides=role_overrides,
+            emoji_overrides=emoji_overrides,
+        )
         return await handler(event, data)
 
     @staticmethod

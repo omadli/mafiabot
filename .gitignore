@@ -81,3 +81,9 @@ temp/
 *.tmp
 *.bak
 *~
+
+# === Local generation artifacts ===
+# Generated WebM emoji files + preview PNGs — rebuildable from scripts/generate_*.py
+scripts/output/
+# Twemoji PNG cache fetched at run-time by generate_custom_emojis.py
+scripts/cache/

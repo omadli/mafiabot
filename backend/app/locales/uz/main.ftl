@@ -45,19 +45,19 @@ perm-pin-messages = Xabarlarni qadash
 start-welcome =
     👋 Salom, <b>{ $username }</b>!
 
-    🎭 <b>Mafia Baku Black</b> botiga xush kelibsiz!
+    <e:item-mask> <b>Mafia Baku Black</b> botiga xush kelibsiz!
 
     Bu yerda siz:
     • 🎮 Telegram guruhingizda mafia o'yini o'ynay olasiz
-    • 💎 Olmos, 💵 dollar, ⭐ XP yig'asiz
-    • 🏆 Yutuqlarni qo'lga kiritasiz va ELO oshirasiz
+    • <e:currency-diamond> Olmos, <e:currency-dollar> dollar, ⭐ XP yig'asiz
+    • <e:status-trophy> Yutuqlarni qo'lga kiritasiz va ELO oshirasiz
     • 👑 Premium maqomga ega bo'lasiz
 
     Quyidagi tugmalardan birini tanlang:
 
 btn-profile = 👤 Profil
 btn-inventory = 🎒 Inventar
-btn-buy-diamonds = 💎 Olmos sotib olish
+btn-buy-diamonds = <e:currency-diamond> Olmos sotib olish
 btn-help = ❓ Yordam
 
 btn-add-to-group = ➕ Guruhga qo'shish
@@ -168,7 +168,7 @@ night-result-killed-single =
 
 night-result-no-deaths = 🌅 Ishonish qiyin, lekin bu tunda hech kim o'lmadi...
 
-night-result-shield-used = 💫 Kimdir himoyasini ishlatdi!
+night-result-shield-used = <e:status-spark> Kimdir himoyasini ishlatdi!
 
 
 # ===========================================================
@@ -231,7 +231,7 @@ registration-message =
 
 registration-no-players-yet = — (hali hech kim qo'shilmagan)
 
-registration-bounty = 💎 Har g'olibga: { $per_winner } olmos (escrow: { $pool })
+registration-bounty = <e:currency-diamond> Har g'olibga: { $per_winner } olmos (escrow: { $pool })
 
 btn-join-game = 🎮 O'yinga qo'shilish
 
@@ -248,9 +248,9 @@ phase-night-start-3 = 🌃 Tun #{ $round }. Eshiklarni mahkamlang, ko'chada qada
 phase-night-start-4 = 🦉 Tun #{ $round }. Boyqush hushyor, lekin u ham hammasini ko'ra olmaydi...
 phase-night-start-5 = 🌌 Tun #{ $round }. Yulduzlar guvoh — kechasi shahar uxlamaydi, faqat o'zini uxlayotgandek ko'rsatadi.
 
-phase-day-start = ☀️ Kun #{ $round }. Quyosh chiqib tunda to'kilgan qonlarni quritdi...
+phase-day-start = <e:scene-day> Kun #{ $round }. Quyosh chiqib tunda to'kilgan qonlarni quritdi...
 
-phase-day-start-1 = ☀️ Kun #{ $round }. Quyosh chiqib tunda to'kilgan qonlarni quritdi...
+phase-day-start-1 = <e:scene-day> Kun #{ $round }. Quyosh chiqib tunda to'kilgan qonlarni quritdi...
 phase-day-start-2 = 🌅 Kun #{ $round }. Shahar uyg'ondi — ammo kimdir endi uyg'onmaydi.
 phase-day-start-3 = ☕ Kun #{ $round }. Nonushta vaqti keldi, lekin ba'zi joylar bo'sh qoldi...
 phase-day-start-4 = 🐓 Kun #{ $round }. Xo'roz qichqirdi — hisob-kitob qilish vaqti.
@@ -315,16 +315,17 @@ night-prompt-detective = 🕵🏼 Komissar, tanlovingiz?
 
 night-prompt-detective-check-only = 🕵🏼 Komissar, 1-tunda faqat tekshirish mumkin. Kimni tekshirasiz?
 
-night-prompt-detective-both = 🕵🏼 Komissar, kimni tekshirasiz yoki o'ldirasiz? 🔍 = tekshirish, 🔫 = o'ldirish
+night-prompt-detective-both = 🕵🏼 Komissar, kimni tekshirasiz yoki o'ldirasiz? <e:action-check> = tekshirish, <e:item-rifle> = o'ldirish
 
 night-prompt-detective-prior-header = 🕵🏼 <b>Avval tekshirgan o'yinchilar:</b>
 night-prompt-detective-prior-line = • <b>{ $name }</b> — { $role }
 night-prompt-detective-chooser = 🕵🏼 Bu tunda nima qilamiz?
-night-prompt-detective-target-list-check = 🔍 Kimni tekshirasiz?
-night-prompt-detective-target-list-kill = 🔫 Kimni otasiz?
-btn-detective-check = 🔍 Tekshirish
-btn-detective-kill = 🔫 O'ldirish
+night-prompt-detective-target-list-check = <e:action-check> Kimni tekshirasiz?
+night-prompt-detective-target-list-kill = <e:item-rifle> Kimni otasiz?
+btn-detective-check = <e:action-check> Tekshirish
+btn-detective-kill = <e:item-rifle> O'ldirish
 night-no-targets = ❌ Hozir hech kimni tanlay olmaysiz.
+night-no-rifle = <e:item-rifle> Sizda miltiq qolmadi.
 
 btn-skip = ⏭ O'tkazib yuborish
 
@@ -352,7 +353,7 @@ mafia-team-pick-broadcast = 🤵🏼 <b>{ $role }</b> ({ $actor }) tanlovi: <b>{
 # ===========================================================
 
 game-end-winner =
-    🏆 O'yin tugadi!
+    <e:status-trophy> O'yin tugadi!
 
     { $team } g'olib bo'ldi!
 
@@ -442,7 +443,7 @@ feedback-doctor-target-visit = 👨🏻‍⚕ Doktor siznikiga mehmonga keldi.
 
 feedback-hooker-confirm = 💃 Siz { $target } ni uxlatdingiz.
 
-feedback-hooker-target = Ana 💊 dori ta'sir qila boshladi endi sen bir kun uxlaysan...
+feedback-hooker-target = Ana <e:action-heal> dori ta'sir qila boshladi endi sen bir kun uxlaysan...
 
 mafia-kill-broadcast = 🤵🏼 Mafianing ovoz berish jarayonida { $mention } shavqatsizlarcha o'ldirildi 🩸
 
@@ -469,20 +470,20 @@ stats-role-no-data = { $role } rol bo'yicha o'yin o'ynamadingiz
 stats-role-detail =
     📊 { $role } bo'yicha:
     🎮 O'yinlar: { $games }
-    🏆 G'alabalar: { $wins }
+    <e:status-trophy> G'alabalar: { $wins }
     📈 WR: { $winrate }%
-    💎 ELO: { $elo }
+    <e:currency-diamond> ELO: { $elo }
 
 stats-personal =
     👤 { $name }
 
-    🎮 O'yinlar: { $games }   🏆 G'alabalar: { $wins }   💔 Mag'lubiyat: { $losses }
-    📈 Winrate: { $winrate }%   💎 ELO: { $elo }
+    🎮 O'yinlar: { $games }   <e:status-trophy> G'alabalar: { $wins }   💔 Mag'lubiyat: { $losses }
+    📈 Winrate: { $winrate }%   <e:currency-diamond> ELO: { $elo }
     ⭐ XP: { $xp }   🏅 Level: { $level }
 
     🔥 Joriy seriya: { $streak }   📌 Eng uzun: { $longest }
 
-    🎭 Sevimli rollar: { $top_roles }
+    <e:item-mask> Sevimli rollar: { $top_roles }
 
     👨🏼 Tinch aholi: { $citizen_games } o'yin, { $citizen_wins } g'alaba
     🤵🏼 Mafiya: { $mafia_games } o'yin, { $mafia_wins } g'alaba
@@ -492,7 +493,7 @@ top-empty = Leaderboard hali bo'sh
 
 top-group-only = Bu buyruq faqat guruhda ishlaydi
 
-top-header = 🏆 Top 10 ({ $sort } bo'yicha):
+top-header = <e:status-trophy> Top 10 ({ $sort } bo'yicha):
 
 global-top-header = 🌍 Global Top 10:
 
@@ -523,16 +524,16 @@ profile-info =
 
     👤 { $name }
 
-    💵 Dollar: { $dollars }
-    💎 Olmos: { $diamonds }
+    <e:currency-dollar> Dollar: { $dollars }
+    <e:currency-diamond> Olmos: { $diamonds }
 
-    🛡 Himoya: { $shield }
-    ⛑ Qotildan himoya: { $killer_shield }
-    ⚖️ Ovoz berishni himoya qilish: { $vote_shield }
-    🔫 Miltiq: { $rifle }
+    <e:item-shield> Himoya: { $shield }
+    <e:item-killer-shield> Qotildan himoya: { $killer_shield }
+    <e:scene-hanging> Ovoz berishni himoya qilish: { $vote_shield }
+    <e:item-rifle> Miltiq: { $rifle }
 
-    🎭 Maska: { $mask }
-    📁 Soxta hujjat: { $fake_document }
+    <e:item-mask> Maska: { $mask }
+    <e:item-fake-document> Soxta hujjat: { $fake_document }
     🃏 Keyingi o'yindagi rolingiz: { $next_role }
 
     🎯 G'alabalar: { $wins }
@@ -553,8 +554,8 @@ btn-toggle-off = { $emoji } - 🔴 OFF
 btn-toggle-empty = { $emoji } - 🚫 0
 
 btn-shop = 🛒 Do'kon
-btn-buy-dollars = 💵 Xarid qilish
-btn-buy-diamonds = 💎 Xarid qilish
+btn-buy-dollars = <e:currency-dollar> Xarid qilish
+btn-buy-diamonds = <e:currency-diamond> Xarid qilish
 btn-premium-groups = 👑 Premium guruhlar
 btn-news = 📢 Yangiliklar
 btn-pick-next-role = 🃏 Keyingi rolni tanlash
@@ -581,16 +582,16 @@ shop-welcome =
 shop-welcome-balance =
     🛒 <b>Do'kon</b>
 
-    Sizning balansingiz: <b>{ $diamonds }</b> 💎  <b>{ $dollars }</b> 💵
+    Sizning balansingiz: <b>{ $diamonds }</b> <e:currency-diamond>  <b>{ $dollars }</b> <e:currency-dollar>
 
-shop-diamonds-header = 💎 Olmos paketlari:
+shop-diamonds-header = <e:currency-diamond> Olmos paketlari:
 
 shop-no-items = 🚫 Bu valyutada hech narsa yo'q
 
 shop-items-header =
-    🛡 <b>Itemlar</b>
+    <e:item-shield> <b>Itemlar</b>
 
-    Balans: <b>{ $diamonds }</b> 💎  <b>{ $dollars }</b> 💵
+    Balans: <b>{ $diamonds }</b> <e:currency-diamond>  <b>{ $dollars }</b> <e:currency-dollar>
 
     Narxni belgilangan valyutada to'lang.
 
@@ -604,7 +605,7 @@ btn-buy-items = 🎒 Qurol/himoya
 
 btn-buy-premium = 👑 Premium
 
-btn-buy-premium-30d = ⭐ 30 kun premium — { $price } 💎
+btn-buy-premium-30d = ⭐ 30 kun premium — { $price } <e:currency-diamond>
 
 buy-insufficient = ❌ Olmos yetarli emas
 
@@ -612,13 +613,13 @@ buy-success = ✅ Sotib olindi!
 
 buy-success-detailed = ✅ { $item } sotib olindi! ({ $cost } { $currency })
 
-buy-insufficient-diamonds = 💎 Olmosingiz yetarli emas
+buy-insufficient-diamonds = <e:currency-diamond> Olmosingiz yetarli emas
 
-buy-insufficient-dollars = 💵 Dollarlaringiz yetarli emas
+buy-insufficient-dollars = <e:currency-dollar> Dollarlaringiz yetarli emas
 
 premium-activated = 👑 Premium aktivlashtirildi: { $days } kun
 
-payment-success = ✅ To'lov muvaffaqiyatli! +💎 { $diamonds }
+payment-success = ✅ To'lov muvaffaqiyatli! +<e:currency-diamond> { $diamonds }
 
 payment-failed = ❌ To'lov xato bo'ldi
 
@@ -630,8 +631,8 @@ payment-failed = ❌ To'lov xato bo'ldi
 exchange-menu =
     🔁 <b>Valyuta konvertatsiyasi</b>
 
-    Sizning balans: <b>{ $diamonds }</b> 💎  <b>{ $dollars }</b> 💵
-    Kurs: 1 💎 = { $rate } 💵
+    Sizning balans: <b>{ $diamonds }</b> <e:currency-diamond>  <b>{ $dollars }</b> <e:currency-dollar>
+    Kurs: 1 <e:currency-diamond> = { $rate } <e:currency-dollar>
 
     Yo'nalishni tanlang:
 
@@ -639,9 +640,9 @@ exchange-success = ✅ Sizga { $got } { $currency } qo'shildi!
 
 exchange-disabled = 🚫 Konvertatsiya hozir o'chirilgan.
 
-exchange-insufficient-diamonds = 💎 Konvertatsiya uchun olmos yetarli emas
+exchange-insufficient-diamonds = <e:currency-diamond> Konvertatsiya uchun olmos yetarli emas
 
-exchange-insufficient-dollars = 💵 Konvertatsiya uchun dollar yetarli emas
+exchange-insufficient-dollars = <e:currency-dollar> Konvertatsiya uchun dollar yetarli emas
 
 exchange-below-minimum = ❌ Minimal miqdordan kam
 
@@ -656,13 +657,13 @@ give-amount-too-small = ❌ Miqdor 1 dan kam bo'lmasligi kerak
 
 give-cannot-self = ❌ O'zingizga hadya qilolmaysiz
 
-give-insufficient = ❌ Olmos yetarli emas (sizda 💎 { $have }, kerak 💎 { $need })
+give-insufficient = ❌ Olmos yetarli emas (sizda <e:currency-diamond> { $have }, kerak <e:currency-diamond> { $need })
 
 give-target-not-found = ❌ Foydalanuvchi topilmadi
 
-give-direct-success = { $sender } 💎 { $amount } { $receiver }-ga xayriya qildi!
+give-direct-success = { $sender } <e:currency-diamond> { $amount } { $receiver }-ga xayriya qildi!
 
-give-creating = 💎 Giveaway yaratilmoqda...
+give-creating = <e:currency-diamond> Giveaway yaratilmoqda...
 
 give-group-message =
     🎁 { $sender } — { $amount } olmos giveaway boshladi!
@@ -672,7 +673,7 @@ give-no-clicks = 🎁 Giveaway tugadi — hech kim bosmadi
 
 give-results-header = 🎁 Giveaway natijasi:
 
-btn-claim-diamond = 💎 Olmos olish
+btn-claim-diamond = <e:currency-diamond> Olmos olish
 
 giveaway-clicked-ok = ✅ Bosildi!
 
@@ -683,7 +684,7 @@ giveaway-already-clicked-or-finished = ❌ Allaqachon bosgansiz yoki tugadi
 # OVOZ BERISH UI (inline tugmali)
 # ===========================================================
 
-voting-prompt = 🗳 Ovoz berish vaqti! Tirik o'yinchilar: { $count }. Pastdagi tugma orqali ovoz bering:
+voting-prompt = <e:scene-voting> Ovoz berish vaqti! Tirik o'yinchilar: { $count }. Pastdagi tugma orqali ovoz bering:
 
 vote-skip-button = ❌ Hech kim
 
@@ -703,7 +704,7 @@ vote-broadcast-abstain = 🚫 <b>{ $voter }</b> hech kimni tanlamaslikka qaror q
 # ===========================================================
 
 hanging-confirm-prompt =
-    ⚖️ { $target } ni osishni tasdiqlaymi?
+    <e:scene-hanging> { $target } ni osishni tasdiqlaymi?
     👍 = ha, 👎 = yo'q
 
 hanging-yes = 👍 Ha, osmoq kerak
@@ -750,7 +751,7 @@ mage-attacked =
 
 mage-forgive = 💚 Kechirish
 
-mage-kill = 💀 O'ldirish
+mage-kill = <e:status-death> O'ldirish
 
 mage-forgive-confirm = Kechirildi
 
@@ -758,7 +759,7 @@ mage-forgive-confirm-text = 💚 Siz kechirdingiz. U tirik qoldi.
 
 mage-kill-confirm = O'ldirildi
 
-mage-kill-confirm-text = 💀 { $target } o'ldirildi (sizning lanatingiz)
+mage-kill-confirm-text = <e:status-death> { $target } o'ldirildi (sizning lanatingiz)
 
 
 # ===========================================================
@@ -813,7 +814,7 @@ help-text =
     <b>Asosiy buyruqlar (private chat):</b>
     /start — Bosh menyu
     /profile — Profil + inventar + statistika
-    /exchange — 💎 olmos ↔ 💵 dollar
+    /exchange — <e:currency-diamond> olmos ↔ <e:currency-dollar> dollar
 
     <b>Guruh buyruqlari (admin sifatida qo'shgan guruhda):</b>
     /game — Yangi o'yin boshlash
@@ -841,8 +842,8 @@ rules-text =
 
     <b>🔄 O'yin sikli:</b>
     🌃 <b>Tun</b> (60s) — rollar maxsus harakatlar qiladi
-    ☀️ <b>Kun</b> (45s) — natijalar muhokama qilinadi
-    🗳 <b>Ovoz berish</b> (25s) — kimni osishni tanlash
+    <e:scene-day> <b>Kun</b> (45s) — natijalar muhokama qilinadi
+    <e:scene-voting> <b>Ovoz berish</b> (25s) — kimni osishni tanlash
     👍/👎 (15s) — osishni tasdiqlash
 
     ━━━━━━━━━━━━━━━━━━━━
@@ -874,13 +875,13 @@ rules-text =
     🤹 <b>Aferist</b> — tirik qolsa g'olib (kun ovozini o'g'irlaydi)
     🤓 <b>Sotqin</b> — Komissar bilan bir odamni tanlasa rolni oshkor qiladi
 
-    🛡 <b>Himoyalar (do'kondan sotib olinadi):</b>
-    🛡 Himoya — 1 marta o'ldirishdan saqlaydi
-    ⛑ Qotildan himoya — faqat Qotil zarbasidan
-    ⚖️ Ovoz himoyasi — osilishdan saqlaydi
-    🔫 Miltiq — barcha himoyalarni teshib o'tadi
-    🎭 Maska — Daydi va Sotqin ko'rmaydi
-    📁 Soxta hujjat — Komissarga "Tinch aholi" deb ko'rinadi
+    <e:item-shield> <b>Himoyalar (do'kondan sotib olinadi):</b>
+    <e:item-shield> Himoya — 1 marta o'ldirishdan saqlaydi
+    <e:item-killer-shield> Qotildan himoya — faqat Qotil zarbasidan
+    <e:scene-hanging> Ovoz himoyasi — osilishdan saqlaydi
+    <e:item-rifle> Miltiq — barcha himoyalarni teshib o'tadi
+    <e:item-mask> Maska — Daydi va Sotqin ko'rmaydi
+    <e:item-fake-document> Soxta hujjat — Komissarga "Tinch aholi" deb ko'rinadi
 
 language-picker-prompt = 🌐 Tilni tanlang:
 
@@ -924,11 +925,11 @@ rules-summary =
       4️⃣ <b>Tasdiqlash</b> 👍/👎 — yetarli "ha" ovozi bo'lsa, gumondor osiladi.
       5️⃣ <b>So'nggi so'z</b> — o'lgan o'yinchi guruhga oxirgi xabarini yuborishi mumkin.
 
-    🗳 <b>Ovoz berish</b> shaxsiy chat orqali bo'ladi — guruhda boshqalar kimga ovoz berganingizni ko'rmaydi (agar admin shunday sozlasa).
+    <e:scene-voting> <b>Ovoz berish</b> shaxsiy chat orqali bo'ladi — guruhda boshqalar kimga ovoz berganingizni ko'rmaydi (agar admin shunday sozlasa).
 
-    💎 <b>Itemlar:</b> 🛡 Himoya, ⛑ Qotildan himoya, ⚖️ Ovoz himoyasi, 🔫 Miltiq (himoyani teshib o'tadi), 🎭 Maska (kim ekanligingizni yashiradi), 📁 Soxta hujjat (Komissar "tinch aholi" deb ko'radi).
+    <e:currency-diamond> <b>Itemlar:</b> <e:item-shield> Himoya, <e:item-killer-shield> Qotildan himoya, <e:scene-hanging> Ovoz himoyasi, <e:item-rifle> Miltiq (himoyani teshib o'tadi), <e:item-mask> Maska (kim ekanligingizni yashiradi), <e:item-fake-document> Soxta hujjat (Komissar "tinch aholi" deb ko'radi).
 
-    🏆 <b>G'alaba shartlari:</b>
+    <e:status-trophy> <b>G'alaba shartlari:</b>
       • <b>Tinch aholi</b>: barcha mafiya va singletonlarni yo'q qilsa.
       • <b>Mafiya</b>: mafiya soni tinch aholi soniga teng yoki ko'p bo'lsa.
       • <b>Singleton</b> rollar — har biri o'z shartlari bilan g'olib bo'ladi (pastdagi tugmadan har biri haqida o'qing).
@@ -937,11 +938,11 @@ rules-summary =
 
     Quyidagi tugma orqali har bir rol qanday ishlashini batafsil o'rganishingiz mumkin 👇
 
-btn-rules-roles = 🎭 Rollar haqida batafsil
+btn-rules-roles = <e:item-mask> Rollar haqida batafsil
 btn-rules-back = 🔙 Orqaga
 
 rules-pick-team =
-    🎭 <b>Rollar bo'yicha to'plamlar</b>
+    <e:item-mask> <b>Rollar bo'yicha to'plamlar</b>
 
     Qaysi tomon haqida bilmoqchisiz?
 
@@ -983,7 +984,7 @@ mafia-chat-opened =
     Ayrim a'zolaringiz bilan suhbatlasha olasiz:
     { $members }
 
-    💬 Bu yerga yozgan har qanday matningiz boshqa mafiyalarga yetkaziladi.
+    <e:scene-last-words> Bu yerga yozgan har qanday matningiz boshqa mafiyalarga yetkaziladi.
 
 
 # === Atmosphere media ===
@@ -1021,7 +1022,7 @@ leave-broadcast-with-role =
     { $mention } bu shaharning yovuzliklariga chiday olmadi va o'z joniga qasd qildi.
     U { $role_emoji } { $role_name } edi.
 
-crook-stole-vote-dm = 🎭 Aferist sizni aldab, kunlik ovoz berishda sizning ovoz berish huquqingizni olib qo'ydi.
+crook-stole-vote-dm = <e:item-mask> Aferist sizni aldab, kunlik ovoz berishda sizning ovoz berish huquqingizni olib qo'ydi.
 
 arsonist-self-burn = <b>{ $name }</b> (🧟 G'azabkor) o'zimni o'ldirdim!
 
@@ -1059,11 +1060,11 @@ btn-settings-webapp = 🌐 To'liq sozlamalar
 
 btn-settings-history = 📊 O'yinlar tarixi
 
-btn-settings-roles = 🎭 Rollar
+btn-settings-roles = <e:item-mask> Rollar
 
 btn-settings-timings = ⏱ Vaqt sozlamalari
 
-btn-settings-items = 🛡 Himoyalar
+btn-settings-items = <e:item-shield> Himoyalar
 
 btn-settings-silence = 🔇 Jimlik
 
@@ -1076,7 +1077,7 @@ btn-settings-atmosphere = 📺 Atmosfera media
 # --- Section C: Roles sub-menu ---
 
 settings-roles-prompt =
-    🎭 <b>Rollarni boshqarish</b>
+    <e:item-mask> <b>Rollarni boshqarish</b>
 
     O'yinda ishtirok etadigan rollarni tanlang:
 
@@ -1109,7 +1110,7 @@ timing-afsungar_carry = Afsungar tanlovi
 # --- Section E: Items sub-menu ---
 
 settings-items-prompt =
-    🛡 <b>Himoyalarni ruxsat berish</b>
+    <e:item-shield> <b>Himoyalarni ruxsat berish</b>
 
     Qaysi himoyalar do'konda sotiladi va o'yinda ishlatiladi:
 
@@ -1221,23 +1222,23 @@ settings-atmosphere-info =
 # === Game start announcement + role descriptions ===
 
 game-started-announcement =
-    🎭 <b>O'yin boshlandi!</b>
+    <e:item-mask> <b>O'yin boshlandi!</b>
 
     Quyidagi tugmani bosing va o'z rolingizni ko'ring:
 
-btn-show-my-role = 🎭 Sizning rolingiz
+btn-show-my-role = <e:item-mask> Sizning rolingiz
 
 show-role-not-in-game = 🚫 Siz bu o'yinda emassiz
 
 show-role-no-game = 🚫 Hozir o'yin yo'q
 
 show-role-alert =
-    🎭 Sizning rolingiz: { $role }
+    <e:item-mask> Sizning rolingiz: { $role }
 
     { $description }
 
 dm-your-role =
-    🎭 <b>Siz - { $role } siz!</b>
+    <e:item-mask> <b>Siz - { $role } siz!</b>
 
     { $description }
 
@@ -1344,13 +1345,13 @@ role-desc-snitch =
 # ===========================================================
 
 voting-group-prompt-short =
-    ⚖️ Aybdorlarni aniqlash va jazolash vaqti keldi.
+    <e:scene-hanging> Aybdorlarni aniqlash va jazolash vaqti keldi.
     Ovoz berish uchun { $seconds } sekund.
 
-voting-go-button = 🗳 Ovoz berish
+voting-go-button = <e:scene-voting> Ovoz berish
 
 voting-dm-prompt =
-    ⚖️ <b>Aybdorlarni topish va jazolash vaqti keldi!</b>
+    <e:scene-hanging> <b>Aybdorlarni topish va jazolash vaqti keldi!</b>
 
     Kimni osish kerak deb hisoblaysiz?
 
@@ -1359,7 +1360,7 @@ vote-recorded-dm-confirm = ✅ Sizning ovozingiz: <b>{ $target }</b>
 vote-skipped-confirm = ✅ Siz "Hech kim" tanladingiz.
 
 # Comedic rumor-style alerts for invalid voters in HANGING_CONFIRM
-vote-dead-alert = 💀 Sen o'lgansan, ovoz berolmaysan! Ruhing ham jim turibdi-da.
+vote-dead-alert = <e:status-death> Sen o'lgansan, ovoz berolmaysan! Ruhing ham jim turibdi-da.
 vote-not-in-game-alert = 😴 Siz bu o'yinda emassiz. Keyingi o'yinda sizni ham chaqiramiz!
 vote-already-voted-alert = ✋ Siz allaqachon ovoz bergansiz!
 
@@ -1370,17 +1371,17 @@ afk-last-words =
 
 # Per-player game-end DM
 game-end-dm-win =
-    🏆 <b>Tabriklaymiz, siz g'olibsiz!</b>
+    <e:status-trophy> <b>Tabriklaymiz, siz g'olibsiz!</b>
 
-    🎭 Rolingiz: { $role }
+    <e:item-mask> Rolingiz: { $role }
     ⭐ XP: +{ $xp }
     📊 ELO: { $elo_delta }
-    💵 Mukofot: { $dollars }$
+    <e:currency-dollar> Mukofot: { $dollars }$
 
 game-end-dm-loss =
-    💀 <b>Bu safar omadingiz chopmadi.</b>
+    <e:status-death> <b>Bu safar omadingiz chopmadi.</b>
 
-    🎭 Rolingiz: { $role }
+    <e:item-mask> Rolingiz: { $role }
     ⭐ XP: +{ $xp }
     📊 ELO: { $elo_delta }
-    💵 Pul: { $dollars }$
+    <e:currency-dollar> Pul: { $dollars }$

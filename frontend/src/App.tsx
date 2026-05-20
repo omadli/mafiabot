@@ -1,38 +1,47 @@
-import { Routes, Route, Link, Navigate } from "react-router-dom";
+import { lazy, Suspense } from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
 
-import { AdminApp } from "./modules/admin/AdminApp";
-import { WebAppRoot } from "./modules/webapp/WebAppRoot";
-import { HealthCheck } from "./shared/components/HealthCheck";
+// Each top-level module is its own chunk — visitors who only hit the
+// landing page don't download the admin dashboard, and vice-versa.
+const LandingPage = lazy(() =>
+  import("./modules/landing/LandingPage").then((m) => ({ default: m.LandingPage })),
+);
+const AdminApp = lazy(() =>
+  import("./modules/admin/AdminApp").then((m) => ({ default: m.AdminApp })),
+);
+const WebAppRoot = lazy(() =>
+  import("./modules/webapp/WebAppRoot").then((m) => ({ default: m.WebAppRoot })),
+);
 
-export function App() {
+function PageFallback() {
   return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/admin/*" element={<AdminApp />} />
-      <Route path="/webapp/*" element={<WebAppRoot />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "var(--fg, #f1e8d6)",
+        background: "var(--bg, #07050a)",
+        fontSize: 14,
+        opacity: 0.6,
+      }}
+    >
+      ⏳
+    </div>
   );
 }
 
-function HomePage() {
+export function App() {
   return (
-    <main className="home">
-      <h1>🎲 Mafia Bot</h1>
-      <p>
-        <code>@MafGameUzBot</code> — professional Telegram Mafia bot
-      </p>
-      <nav>
-        <ul>
-          <li>
-            <Link to="/admin">🛠 Super admin paneli</Link>
-          </li>
-          <li>
-            <Link to="/webapp">📱 Telegram WebApp (guruh sozlamalari)</Link>
-          </li>
-        </ul>
-      </nav>
-      <HealthCheck />
-    </main>
+    <Suspense fallback={<PageFallback />}>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/admin/*" element={<AdminApp />} />
+        <Route path="/webapp/*" element={<WebAppRoot />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 }

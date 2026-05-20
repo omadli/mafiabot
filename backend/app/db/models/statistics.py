@@ -10,11 +10,11 @@ class GameResult(Model):
     id = fields.UUIDField(pk=True)
     user = fields.ForeignKeyField(
         "models.User", related_name="game_results", on_delete=fields.CASCADE
-    )
-    game = fields.ForeignKeyField("models.Game", related_name="results", on_delete=fields.CASCADE)
+    )  # type: ignore[var-annotated]
+    game = fields.ForeignKeyField("models.Game", related_name="results", on_delete=fields.CASCADE)  # type: ignore[var-annotated]
     group = fields.ForeignKeyField(
         "models.Group", related_name="game_results", null=True, on_delete=fields.SET_NULL
-    )
+    )  # type: ignore[var-annotated]
 
     role = fields.CharField(max_length=32)  # 'detective', 'don', etc
     team = fields.CharField(max_length=16)  # 'citizens', 'mafia', 'singleton'
@@ -57,7 +57,7 @@ class UserStats(Model):
 
     user = fields.OneToOneField(
         "models.User", related_name="stats", pk=True, on_delete=fields.CASCADE
-    )
+    )  # type: ignore[var-annotated]
 
     games_total = fields.IntField(default=0)
     games_won = fields.IntField(default=0)
@@ -110,10 +110,10 @@ class GroupUserStats(Model):
 
     user = fields.ForeignKeyField(
         "models.User", related_name="group_stats", on_delete=fields.CASCADE
-    )
+    )  # type: ignore[var-annotated]
     group = fields.ForeignKeyField(
         "models.Group", related_name="player_stats", on_delete=fields.CASCADE
-    )
+    )  # type: ignore[var-annotated]
 
     games_total = fields.IntField(default=0)
     games_won = fields.IntField(default=0)
@@ -137,10 +137,10 @@ class StatsPeriodSnapshot(Model):
     id = fields.UUIDField(pk=True)
     user = fields.ForeignKeyField(
         "models.User", related_name="period_stats", on_delete=fields.CASCADE
-    )
+    )  # type: ignore[var-annotated]
     group = fields.ForeignKeyField(
         "models.Group", related_name="period_stats", null=True, on_delete=fields.SET_NULL
-    )
+    )  # type: ignore[var-annotated]
     period = fields.CharField(max_length=8)  # 'daily', 'weekly', 'monthly'
     period_start = fields.DateField()
     period_end = fields.DateField()
@@ -162,7 +162,7 @@ class GroupStats(Model):
 
     group = fields.OneToOneField(
         "models.Group", related_name="aggregate", pk=True, on_delete=fields.CASCADE
-    )
+    )  # type: ignore[var-annotated]
 
     total_games = fields.IntField(default=0)
     total_unique_players = fields.IntField(default=0)
