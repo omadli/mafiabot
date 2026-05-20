@@ -6,32 +6,40 @@ from app.config import settings
 from app.services.i18n_service import Translator
 
 
-def main_menu_keyboard(_: Translator) -> InlineKeyboardMarkup:
+def main_menu_keyboard(_plain: Translator) -> InlineKeyboardMarkup:
     """Bot bilan private chatdagi asosiy menyu.
 
     Layout (rendered with i18n labels):
-      [Profile]  [Inventory]
+      [Profile]  [Premium groups]
       [Shop]     [Buy Diamonds]
       [Add to group]              (URL button)
       [Help]
       [Language] [Game rules]
+
+    Button labels go through `_plain` because Telegram renders inline-button
+    text as plain text — `<tg-emoji>` HTML from `<e:…>` markers would
+    otherwise leak as raw text.
     """
     add_to_group_url = f"https://t.me/{settings.bot_username}?startgroup=true"
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text=_("btn-profile"), callback_data="menu:profile"),
-                InlineKeyboardButton(text=_("btn-inventory"), callback_data="menu:profile"),
+                InlineKeyboardButton(text=_plain("btn-profile"), callback_data="menu:profile"),
+                InlineKeyboardButton(
+                    text=_plain("btn-premium-groups"), callback_data="premiumgroups:open"
+                ),
             ],
             [
-                InlineKeyboardButton(text=_("btn-shop"), callback_data="shop:open"),
-                InlineKeyboardButton(text=_("btn-buy-diamonds"), callback_data="shop:diamonds"),
+                InlineKeyboardButton(text=_plain("btn-shop"), callback_data="shop:open"),
+                InlineKeyboardButton(
+                    text=_plain("btn-buy-diamonds"), callback_data="shop:diamonds"
+                ),
             ],
-            [InlineKeyboardButton(text=_("btn-add-to-group"), url=add_to_group_url)],
-            [InlineKeyboardButton(text=_("btn-help"), callback_data="menu:help")],
+            [InlineKeyboardButton(text=_plain("btn-add-to-group"), url=add_to_group_url)],
+            [InlineKeyboardButton(text=_plain("btn-help"), callback_data="menu:help")],
             [
-                InlineKeyboardButton(text=_("btn-language"), callback_data="menu:lang"),
-                InlineKeyboardButton(text=_("btn-rules"), callback_data="menu:rules"),
+                InlineKeyboardButton(text=_plain("btn-language"), callback_data="menu:lang"),
+                InlineKeyboardButton(text=_plain("btn-rules"), callback_data="menu:rules"),
             ],
         ]
     )

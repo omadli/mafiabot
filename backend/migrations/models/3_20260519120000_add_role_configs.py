@@ -12,7 +12,7 @@ async def upgrade(db: BaseDBAsyncClient) -> str:
             "static_emoji" VARCHAR(32) NOT NULL,
             "custom_emoji_id" VARCHAR(32) NOT NULL DEFAULT '',
             "order_idx" INT NOT NULL DEFAULT 0,
-            "updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
             "updated_by_tg_id" BIGINT
         );"""
 

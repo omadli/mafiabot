@@ -53,19 +53,17 @@ async def start_with_deeplink(
     # Deeplink had unknown payload — show welcome with menu
     await message.answer(
         _("start-welcome", username=user.first_name),
-        reply_markup=main_menu_keyboard(_),
+        reply_markup=main_menu_keyboard(_plain),
         parse_mode="HTML",
     )
 
 
 @router.message(CommandStart())
-async def start_default(
-    message: Message, user: User, _: Translator, _plain: Translator | None = None
-) -> None:
+async def start_default(message: Message, user: User, _: Translator, _plain: Translator) -> None:
     """Plain /start (no payload)."""
     await message.answer(
         _("start-welcome", username=user.first_name),
-        reply_markup=main_menu_keyboard(_),
+        reply_markup=main_menu_keyboard(_plain),
         parse_mode="HTML",
     )
 

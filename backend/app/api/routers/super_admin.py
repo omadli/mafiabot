@@ -225,12 +225,15 @@ async def list_groups(
 ) -> dict:
     """All groups, paginated. Includes onboarding + recent game count.
 
-    Uses two aggregate queries instead of N+1 per-row counts so the
-    response stays under a second even with hundreds of groups.
+    Uses a raw aggregate over `game` instead of N+1 per-row counts so the
+    response stays under a second even with hundreds of groups. Tortoise's
+    `.annotate(...).group_by(...).values(...)` combo over a foreign-key
+    column was raising 500s in production, so the count + last-started
+    are fetched via a single parametrised SQL.
     """
     from collections import defaultdict
 
-    from tortoise.functions import Count, Max
+    from tortoise import connections
 
     total = await Group.all().count()
     rows = await Group.all().order_by("-created_at").offset((page - 1) * page_size).limit(page_size)
@@ -239,16 +242,17 @@ async def list_groups(
     games_count: dict[int, int] = defaultdict(int)
     last_game_at: dict[int, str] = {}
     if page_ids:
-        agg_rows = (
-            await Game.filter(group_id__in=page_ids)
-            .annotate(games_total=Count("id"), last_started=Max("started_at"))
-            .group_by("group_id")
-            .values("group_id", "games_total", "last_started")
+        conn = connections.get("default")
+        placeholders = ",".join(f"${i + 1}" for i in range(len(page_ids)))
+        sql = (
+            "SELECT group_id, COUNT(*) AS games_total, MAX(started_at) AS last_started "
+            f"FROM games WHERE group_id IN ({placeholders}) GROUP BY group_id"
         )
+        agg_rows = await conn.execute_query_dict(sql, page_ids)
         for row in agg_rows:
             gid = int(row["group_id"])
             games_count[gid] = int(row["games_total"])
-            last = row.get("last_started")
+            last = row["last_started"]
             if last is not None:
                 last_game_at[gid] = last.isoformat()
 

@@ -27,7 +27,7 @@ from app.bot.keyboards.private import (
     main_menu_keyboard,
 )
 from app.db.models import User, UserInventory
-from app.services.i18n_service import Translator, get_translator
+from app.services.i18n_service import Translator, get_plain_translator, get_translator
 
 router = Router(name="private_menu")
 
@@ -41,11 +41,11 @@ async def _edit(query: CallbackQuery, text: str, markup, parse_mode: str | None 
 
 
 @router.callback_query(F.data == "menu:home")
-async def cb_home(query: CallbackQuery, user: User, _: Translator) -> None:
+async def cb_home(query: CallbackQuery, user: User, _: Translator, _plain: Translator) -> None:
     """Asosiy menyuga qaytish."""
     await query.answer()
     text = _("start-welcome", username=user.first_name)
-    await _edit(query, text, main_menu_keyboard(_))
+    await _edit(query, text, main_menu_keyboard(_plain))
 
 
 @router.callback_query(F.data == "menu:profile")
@@ -106,9 +106,10 @@ async def cb_lang_switch(query: CallbackQuery, user: User, _: Translator) -> Non
 
     # Re-translate everything in the new locale
     new_translator = get_translator(new_lang)
+    new_plain = get_plain_translator(new_lang)
     await query.answer(new_translator("language-switched"), show_alert=False)
 
     text = new_translator("start-welcome", username=user.first_name)
-    await _edit(query, text, main_menu_keyboard(new_translator))
+    await _edit(query, text, main_menu_keyboard(new_plain))
 
     logger.info(f"User {user.id} switched language to {new_lang}")

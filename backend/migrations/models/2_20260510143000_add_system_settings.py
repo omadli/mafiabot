@@ -5,11 +5,11 @@ async def upgrade(db: BaseDBAsyncClient) -> str:
     return """
         CREATE TABLE IF NOT EXISTS "system_settings" (
             "id" INT NOT NULL PRIMARY KEY,
-            "item_prices" JSON NOT NULL DEFAULT '{}',
-            "rewards" JSON NOT NULL DEFAULT '{}',
-            "exchange" JSON NOT NULL DEFAULT '{}',
-            "premium" JSON NOT NULL DEFAULT '{}',
-            "updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "item_prices" JSONB NOT NULL DEFAULT '{}'::jsonb,
+            "rewards" JSONB NOT NULL DEFAULT '{}'::jsonb,
+            "exchange" JSONB NOT NULL DEFAULT '{}'::jsonb,
+            "premium" JSONB NOT NULL DEFAULT '{}'::jsonb,
+            "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
             "updated_by_tg_id" BIGINT
         );"""
 
