@@ -16,6 +16,7 @@ Public API:
 from __future__ import annotations
 
 import time
+from datetime import UTC
 from typing import Any
 
 from loguru import logger
@@ -123,6 +124,26 @@ async def get_premium_price(days: int) -> int:
     return monthly  # treat <30 days as 30
 
 
+async def get_group_premium_price(days: int) -> int:
+    """Diamonds price for group premium of given days. Mirrors get_premium_price."""
+    s = await get_settings()
+    p = s.premium or DEFAULT_PREMIUM
+    monthly = int(p.get("group_monthly_diamonds", 1000))
+    yearly = int(p.get("group_yearly_diamonds", 10000))
+    if days >= 365:
+        return yearly
+    if days >= 30:
+        return min(yearly, monthly * (days // 30))
+    return monthly
+
+
+async def get_group_reward_multiplier() -> float:
+    """Multiplier applied to dollar/diamond payouts when host group is premium."""
+    s = await get_settings()
+    p = s.premium or DEFAULT_PREMIUM
+    return float(p.get("group_reward_multiplier", 2.0))
+
+
 async def update_setting(section: str, key: str, value: Any, by_tg_id: int | None = None) -> None:
     """Update a single key inside a SystemSettings JSON section.
 
@@ -153,3 +174,47 @@ async def update_setting(section: str, key: str, value: Any, by_tg_id: int | Non
 async def seed_default_settings() -> None:
     """Create the singleton row with defaults if not present."""
     await get_settings(force=True)
+
+
+async def get_premium_groups_top(limit: int = 10) -> list[dict[str, Any]]:
+    """Return top premium groups by total games played (most active first).
+
+    Filters out groups whose premium has expired (expires_at < now). Each
+    dict carries: id, title, invite_link, games_total, premium_expires_at.
+    """
+    from datetime import datetime
+
+    from app.db.models import Group, GroupStats  # local import: avoid cycle
+
+    now = datetime.now(UTC)
+    groups = await Group.filter(is_premium=True).all()
+    # Drop expired
+    active = [g for g in groups if g.premium_expires_at is None or g.premium_expires_at > now]
+    if not active:
+        return []
+
+    # Pull stats for sorting; missing GroupStats → 0 games.
+    stats_map: dict[int, int] = {}
+    stats_rows = await GroupStats.filter(group_id__in=[g.id for g in active]).values(
+        "group_id", "total_games"
+    )
+    for gs in stats_rows:
+        stats_map[int(gs["group_id"])] = int(gs["total_games"])
+
+    enriched = [
+        {
+            "id": g.id,
+            "title": g.title,
+            "invite_link": g.invite_link,
+            "games_total": stats_map.get(g.id, 0),
+            "premium_expires_at": g.premium_expires_at,
+        }
+        for g in active
+    ]
+    enriched.sort(key=_premium_group_sort_key, reverse=True)
+    return enriched[:limit]
+
+
+def _premium_group_sort_key(row: dict[str, Any]) -> int:
+    games = row.get("games_total", 0)
+    return int(games) if isinstance(games, int | float | str) else 0

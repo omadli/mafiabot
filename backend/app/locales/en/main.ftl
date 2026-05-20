@@ -558,8 +558,6 @@ btn-shop = 🛒 Shop
 
 btn-buy-dollars = <e:currency-dollar> Buy
 
-btn-buy-diamonds = <e:currency-diamond> Buy
-
 btn-premium-groups = 👑 Premium groups
 btn-pick-next-role = 🃏 Pick next role
 btn-clear-next-role = 🃏 Clear pick
@@ -611,7 +609,30 @@ btn-buy-items = 🎒 Weapons/shields
 
 btn-buy-premium = 👑 Premium
 
-btn-buy-premium-30d = ⭐ 30-day premium — { $price } <e:currency-diamond>
+btn-buy-premium-30d = ⭐ 1-month premium — { $price } <e:currency-diamond>
+
+btn-buy-premium-365d = ⭐ 1-year premium — { $price } <e:currency-diamond>
+
+shop-special-pick-prompt =
+    🃏 <b>Special role</b>
+
+    Pick a role below — price: <b>{ $price }</b>
+
+    The chosen role will be assigned to you in the next game.
+
+shop-special-purchased = ✅ { $role } purchased! ({ $cost } { $currency }). You'll play this role in the next game.
+
+premium-groups-empty =
+    🚫 No premium groups yet.
+
+    Premium groups give players 2x more rewards.
+
+premium-groups-header =
+    👑 <b>Premium groups — TOP</b>
+
+    Playing in these groups grants { $multiplier }x dollars and diamonds!
+
+premium-groups-row = { $rank }. <b>{ $title }</b> — { $games } games
 
 buy-insufficient = ❌ Not enough diamonds
 

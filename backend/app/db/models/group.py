@@ -20,6 +20,13 @@ class Group(Model):
 
     invite_link = fields.CharField(max_length=256, null=True)
 
+    # Group premium — when active, dollar/diamond rewards in this group
+    # are multiplied by `pricing.group_premium_reward_multiplier`
+    # (defaults to 2.0). Also unlocks listing in the "Premium guruhlar"
+    # top list in the bot inventory.
+    is_premium = fields.BooleanField(default=False)
+    premium_expires_at = fields.DatetimeField(null=True)
+
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
 
@@ -106,12 +113,12 @@ class GroupSettings(Model):
 DEFAULT_TIMINGS = {
     "registration": 120,
     "night": 60,
-    "day": 45,
-    "mafia_vote": 25,
-    "hanging_vote": 25,
-    "hanging_confirm": 15,
+    "day": 30,
+    "mafia_vote": 45,
+    "hanging_vote": 45,
+    "hanging_confirm": 25,
     "last_words": 60,
-    "afsungar_carry": 15,
+    "afsungar_carry": 60,
 }
 
 DEFAULT_SILENCE = {

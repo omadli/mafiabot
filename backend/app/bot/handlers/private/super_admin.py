@@ -77,6 +77,7 @@ async def sa_help(message: Message) -> None:
         "<code>/sa_revoke &lt;user_id&gt; &lt;amount&gt;</code> — olmos olib qo'yish\n"
         "<code>/sa_setdollars &lt;user_id&gt; &lt;amount&gt;</code> — dollar o'rnatish\n"
         "<code>/sa_premium &lt;user_id&gt; &lt;days&gt;</code> — premium berish\n"
+        "<code>/sa_grouppremium &lt;group_id&gt; &lt;days&gt;</code> — guruhga premium berish (days=0 → bekor qilish)\n"
         "<code>/sa_ban &lt;user_id&gt; [sabab]</code> — ban qilish\n"
         "<code>/sa_unban &lt;user_id&gt;</code> — banni olib tashlash\n"
         "<code>/sa_userinfo &lt;user_id&gt;</code> — foydalanuvchi haqida\n\n"
@@ -264,6 +265,54 @@ async def sa_premium(message: Message, command: CommandObject) -> None:
         f"✅ Premium berildi: {days} kun\nMuddat: <b>{target.premium_expires_at:%Y-%m-%d %H:%M}</b>",
         parse_mode="HTML",
     )
+
+
+# === /sa_grouppremium <group_id> <days> ===
+
+
+@router.message(Command("sa_grouppremium"))
+async def sa_grouppremium(message: Message, command: CommandObject) -> None:
+    parts = (command.args or "").split()
+    if len(parts) != 2:
+        await message.answer(
+            "Foydalanish: <code>/sa_grouppremium &lt;group_id&gt; &lt;days&gt;</code>\n"
+            "<code>days=0</code> bo'lsa premium bekor qilinadi.",
+            parse_mode="HTML",
+        )
+        return
+    try:
+        group_id, days = int(parts[0]), int(parts[1])
+    except ValueError:
+        await message.answer("❌ Raqamlar noto'g'ri")
+        return
+
+    from app.services import payment_service
+
+    try:
+        await payment_service.grant_group_premium(group_id, days)
+    except ValueError as e:
+        await message.answer(f"❌ {e}")
+        return
+
+    group = await Group.get(id=group_id)
+    await log_action(
+        action="sa.grant.group_premium",
+        target_type="group",
+        target_id=str(group_id),
+        payload={"days": days, "actor_tg_id": message.from_user.id},
+    )
+    if days <= 0:
+        await message.answer(
+            f"🚫 Premium o'chirildi: <b>{group.title}</b> (id={group_id})", parse_mode="HTML"
+        )
+    else:
+        until = group.premium_expires_at
+        await message.answer(
+            f"✅ Premium berildi: <b>{group.title}</b> (id={group_id})\n"
+            f"Davomiylik: {days} kun\n"
+            f"Muddat: <b>{until:%Y-%m-%d %H:%M}</b>",
+            parse_mode="HTML",
+        )
 
 
 # === /sa_ban <user_id> [reason] ===

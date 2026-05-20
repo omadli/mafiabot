@@ -12,6 +12,7 @@ from app.core.state import DeathReason, GameState, Phase, Team
 from app.db.models import (
     Game,
     GameResult,
+    Group,
     GroupStats,
     GroupUserStats,
     User,
@@ -75,6 +76,20 @@ async def finalize_game_stats(state: GameState) -> None:
         duration_minutes=duration_minutes, winner_team=winner_team_value
     )
 
+    # Premium-group reward multiplier — applied to both winners and losers.
+    # `Group.is_premium=True` but expired → no boost. We treat the
+    # expires_at as the source of truth and only apply when still active.
+    multiplier = 1.0
+    group_obj = await Group.get_or_none(id=state.group_id)
+    if group_obj is not None and group_obj.is_premium:
+        from datetime import datetime
+
+        now = datetime.now(UTC)
+        if group_obj.premium_expires_at is None or group_obj.premium_expires_at > now:
+            multiplier = await pricing_service.get_group_reward_multiplier()
+    winner_dollars = round(winner_dollars * multiplier)
+    loser_dollars = round(DOLLARS_LOSS * multiplier)
+
     async with in_transaction():
         for player in state.players:
             won = player.user_id in state.winner_user_ids
@@ -85,7 +100,7 @@ async def finalize_game_stats(state: GameState) -> None:
 
             base_xp = XP_WIN if won else XP_LOSS
             xp_earned = base_xp + (XP_SURVIVED_BONUS if player.alive else 0)
-            dollars_earned = winner_dollars if won else DOLLARS_LOSS
+            dollars_earned = winner_dollars if won else loser_dollars
 
             # 1. GameResult INSERT
             await GameResult.create(

@@ -44,6 +44,19 @@ ITEM_LABELS = {
 # Toggleable items in profile menu (rifle/special_role are "use once" — not toggled here)
 TOGGLE_ITEMS = ["fake_document", "shield", "mask", "killer_shield", "vote_shield"]
 
+# Item order shown in the shop (matches @MafiaAzBot reference). Distinct
+# from ITEM_LABELS dict order so reorders here don't require touching the
+# inventory display ordering.
+SHOP_ITEM_ORDER = [
+    "shield",
+    "fake_document",
+    "rifle",
+    "vote_shield",
+    "mask",
+    "killer_shield",
+    "special_role",
+]
+
 
 # === Build text + keyboard ===
 
@@ -109,12 +122,16 @@ async def _build_profile_message(
     rows.append(row1)
     rows.append(row2)
 
-    # Row 3: Shop
-    rows.append([InlineKeyboardButton(text=_plain("btn-shop"), callback_data="shop:open")])
+    # Row 3: Do'kon | Premium — shop opens items menu directly,
+    # premium opens duration picker (30/365 days).
+    rows.append(
+        [
+            InlineKeyboardButton(text=_plain("btn-shop"), callback_data="shop:items"),
+            InlineKeyboardButton(text=_plain("btn-buy-premium"), callback_data="shop:premium"),
+        ]
+    )
 
-    # Row 4: 💵 → exchange (diamonds → dollars converter), 💎 → Stars-funded
-    # diamond top-up. Both deliver currency directly; the items shop sits
-    # behind the dedicated 🛒 button below.
+    # Row 4: 💵 Xarid qilish (diamonds → dollars) | 💎 Olmos sotib olish (Stars)
     rows.append(
         [
             InlineKeyboardButton(text=_plain("btn-buy-dollars"), callback_data="exchange:open"),
@@ -122,13 +139,20 @@ async def _build_profile_message(
         ]
     )
 
-    # Row "Pick next role" — visible only if user has a special_role
-    # credit and hasn't picked their role for the next game yet.
-    if getattr(inv, "special_role", 0) > 0 and not next_role_pick:
-        rows.append(
-            [InlineKeyboardButton(text=_plain("btn-pick-next-role"), callback_data="inv:pickrole")]
-        )
-    elif next_role_pick:
+    # Row 5: Premium guruhlar (top ads list)
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text=_plain("btn-premium-groups"), callback_data="premiumgroups:open"
+            )
+        ]
+    )
+
+    # Row 6: official news channel (separate handle, NOT derived from bot_username)
+    rows.append([InlineKeyboardButton(text=_plain("btn-news"), url="https://t.me/Mafiauzbot_news")])
+
+    # Clear-next-role row remains conditional — only when user has queued a role.
+    if next_role_pick:
         rows.append(
             [
                 InlineKeyboardButton(
@@ -136,14 +160,6 @@ async def _build_profile_message(
                 )
             ]
         )
-
-    # Row 5: Premium
-    rows.append(
-        [InlineKeyboardButton(text=_plain("btn-premium-groups"), callback_data="shop:premium")]
-    )
-
-    # Row 6: official news channel (separate handle, NOT derived from bot_username)
-    rows.append([InlineKeyboardButton(text=_plain("btn-news"), url="https://t.me/Mafiauzbot_news")])
 
     return text, InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -369,29 +385,6 @@ async def callback_clear_role(
 # === Shop ===
 
 
-@router.callback_query(F.data == "shop:open")
-async def callback_shop(
-    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
-) -> None:
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text=_plain("btn-buy-diamonds"), callback_data="shop:diamonds")],
-            [InlineKeyboardButton(text=_plain("btn-buy-items"), callback_data="shop:items")],
-            [InlineKeyboardButton(text=_plain("btn-buy-premium"), callback_data="shop:premium")],
-            [InlineKeyboardButton(text=_plain("btn-back"), callback_data="inv:back")],
-        ]
-    )
-    if query.message:
-        text = _(
-            "shop-welcome-balance",
-            diamonds=user.diamonds,
-            dollars=user.dollars,
-        )
-        with contextlib.suppress(TelegramBadRequest):
-            await query.message.edit_text(text, reply_markup=keyboard, parse_mode="HTML")  # type: ignore[union-attr]
-    await query.answer()
-
-
 @router.callback_query(F.data == "shop:diamonds")
 async def callback_shop_diamonds(
     query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
@@ -419,40 +412,30 @@ async def callback_shop_diamonds(
     await query.answer()
 
 
-def _matches_currency_filter(price_d: int, price_dia: int, want: str | None) -> bool:
-    if want == "dollars":
-        return price_d > 0
-    if want == "diamonds":
-        return price_dia > 0
-    return price_d > 0 or price_dia > 0
-
-
-@router.callback_query(F.data.startswith("shop:items"))
+@router.callback_query(F.data == "shop:items")
 async def callback_shop_items(
     query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
 ) -> None:
-    """callback_data: shop:items[:dollars|:diamonds] — filter items list."""
-    parts = (query.data or "").split(":")
-    cur_filter = parts[2] if len(parts) >= 3 else None  # None = both
-
-    rows = []
-    for spec in payment_service.ITEM_CATALOG:
-        emoji, name = ITEM_LABELS.get(spec.code, ("", spec.code))
-        label = f"{emoji} {name}"
-        dollars, diamonds = await pricing_service.get_item_price(spec.code)
-        if not _matches_currency_filter(dollars, diamonds, cur_filter):
+    """Items shop — fixed display order, special_role opens a role picker."""
+    rows: list[list[InlineKeyboardButton]] = []
+    for code in SHOP_ITEM_ORDER:
+        spec = payment_service.get_item(code)
+        if spec is None:
             continue
+        emoji, name = ITEM_LABELS.get(code, ("", code))
+        label = f"{emoji} {name}"
+        dollars, diamonds = await pricing_service.get_item_price(code)
 
-        # Decide which currency to use when both available
-        if cur_filter == "dollars" and dollars > 0:
-            price_label = f"💵 {dollars}"
-            cb = f"buy:item:{spec.code}:dollars"
-        elif (cur_filter == "diamonds" and diamonds > 0) or diamonds > 0:
+        if code == "special_role":
+            # Special role: pick the role first, pay on confirm.
+            price_label = f"💎 {diamonds}" if diamonds > 0 else f"💵 {dollars}"
+            cb = "shop:special:pick"
+        elif diamonds > 0:
             price_label = f"💎 {diamonds}"
-            cb = f"buy:item:{spec.code}:diamonds"
+            cb = f"buy:item:{code}:diamonds"
         elif dollars > 0:
             price_label = f"💵 {dollars}"
-            cb = f"buy:item:{spec.code}:dollars"
+            cb = f"buy:item:{code}:dollars"
         else:
             continue
         rows.append([InlineKeyboardButton(text=f"{label} — {price_label}", callback_data=cb)])
@@ -472,17 +455,112 @@ async def callback_shop_items(
     await query.answer()
 
 
+# === Special-role purchase flow (pick + buy in one step) ===
+
+
+@router.callback_query(F.data == "shop:special:pick")
+async def callback_shop_special_pick(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
+    """Show the 21-role grid; clicking a role triggers purchase + queue."""
+    inv, _new = await UserInventory.get_or_create(user=user)
+    if (inv.settings or {}).get("special_role", {}).get("next_role"):
+        await query.answer(_plain("pick-role-already-chosen"), show_alert=True)
+        return
+
+    dollars, diamonds = await pricing_service.get_item_price("special_role")
+    price_label = f"💎 {diamonds}" if diamonds > 0 else f"💵 {dollars}"
+
+    rows: list[list[InlineKeyboardButton]] = []
+    bucket: list[InlineKeyboardButton] = []
+    for code in _PICKABLE_ROLES:
+        bucket.append(
+            InlineKeyboardButton(
+                text=_plain(f"role-{code}"), callback_data=f"shop:special:buy:{code}"
+            )
+        )
+        if len(bucket) == 3:
+            rows.append(bucket)
+            bucket = []
+    if bucket:
+        rows.append(bucket)
+    rows.append([InlineKeyboardButton(text=_plain("btn-back"), callback_data="shop:items")])
+
+    if query.message:
+        with contextlib.suppress(TelegramBadRequest):
+            await query.message.edit_text(  # type: ignore[union-attr]
+                _("shop-special-pick-prompt", price=price_label),
+                reply_markup=InlineKeyboardMarkup(inline_keyboard=rows),
+                parse_mode="HTML",
+            )
+    await query.answer()
+
+
+@router.callback_query(F.data.startswith("shop:special:buy:"))
+async def callback_shop_special_buy(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
+    """Pay for special_role and immediately queue the chosen role."""
+    if query.data is None:
+        await query.answer()
+        return
+    role_code = query.data.split(":")[3]
+    if role_code not in _PICKABLE_ROLES:
+        await query.answer("Invalid role", show_alert=True)
+        return
+
+    inv, _new = await UserInventory.get_or_create(user=user)
+    if (inv.settings or {}).get("special_role", {}).get("next_role"):
+        await query.answer(_plain("pick-role-already-chosen"), show_alert=True)
+        return
+
+    try:
+        _spec, used_currency, cost = await payment_service.purchase_item(
+            user, "special_role", quantity=1
+        )
+    except payment_service.InsufficientDiamonds:
+        await query.answer(_plain("buy-insufficient-diamonds"), show_alert=True)
+        return
+    except payment_service.InsufficientDollars:
+        await query.answer(_plain("buy-insufficient-dollars"), show_alert=True)
+        return
+
+    # Queue the chosen role now that the credit is in the inventory.
+    refreshed = await UserInventory.get(user_id=user.id)
+    settings = dict(refreshed.settings or {})
+    sr = dict(settings.get("special_role", {}))
+    sr["next_role"] = role_code
+    sr["enabled"] = True
+    settings["special_role"] = sr
+    await UserInventory.filter(user_id=user.id).update(settings=settings)
+
+    cur_emoji = "💎" if used_currency == "diamonds" else "💵"
+    role_label = _plain(f"role-{role_code}")
+    await query.answer(
+        _plain("shop-special-purchased", role=role_label, cost=cost, currency=cur_emoji),
+        show_alert=True,
+    )
+    await _refresh_profile(query, user, _, _plain)
+
+
 @router.callback_query(F.data == "shop:premium")
 async def callback_shop_premium(
     query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
 ) -> None:
     monthly_price = await pricing_service.get_premium_price(30)
+    yearly_price = await pricing_service.get_premium_price(365)
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
                     text=_plain("btn-buy-premium-30d", price=monthly_price),
                     callback_data="buy:premium:30",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text=_plain("btn-buy-premium-365d", price=yearly_price),
+                    callback_data="buy:premium:365",
                 )
             ],
             [InlineKeyboardButton(text=_plain("btn-back"), callback_data="inv:back")],
@@ -656,6 +734,49 @@ async def callback_exchange_r2d(
 
     await query.answer(_plain("exchange-success", got=diamonds, currency="💎"), show_alert=True)
     await _render_exchange_menu(query, user, _, _plain)
+
+
+# === Premium groups (ads / top list) ===
+
+
+@router.callback_query(F.data == "premiumgroups:open")
+async def callback_premium_groups(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
+    """Show top premium groups by total games. Each row links to invite URL if set."""
+    top = await pricing_service.get_premium_groups_top(limit=10)
+
+    if not top:
+        text = _("premium-groups-empty")
+        kb = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(text=_plain("btn-back"), callback_data="inv:back")],
+            ]
+        )
+    else:
+        multiplier = await pricing_service.get_group_reward_multiplier()
+        lines = [_("premium-groups-header", multiplier=multiplier), ""]
+        rows: list[list[InlineKeyboardButton]] = []
+        for idx, g in enumerate(top, start=1):
+            title = g["title"] or f"#{g['id']}"
+            lines.append(
+                _(
+                    "premium-groups-row",
+                    rank=idx,
+                    title=title,
+                    games=g["games_total"],
+                )
+            )
+            if g["invite_link"]:
+                rows.append([InlineKeyboardButton(text=f"{idx}. {title}", url=g["invite_link"])])
+        rows.append([InlineKeyboardButton(text=_plain("btn-back"), callback_data="inv:back")])
+        text = "\n".join(lines)
+        kb = InlineKeyboardMarkup(inline_keyboard=rows)
+
+    if query.message:
+        with contextlib.suppress(TelegramBadRequest):
+            await query.message.edit_text(text, reply_markup=kb, parse_mode="HTML")  # type: ignore[union-attr]
+    await query.answer()
 
 
 logger.info("Inventory + shop + exchange handlers loaded")

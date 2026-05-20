@@ -47,6 +47,12 @@ DEFAULT_EXCHANGE: dict = {
 DEFAULT_PREMIUM: dict = {
     "monthly_diamonds": 200,
     "yearly_diamonds": 2000,
+    # Group premium — separate price (typically higher than user premium)
+    "group_monthly_diamonds": 1000,
+    "group_yearly_diamonds": 10000,
+    # Reward multiplier applied to dollar/diamond payouts at game end
+    # when the host group is premium. 2.0 = double rewards.
+    "group_reward_multiplier": 2.0,
 }
 
 

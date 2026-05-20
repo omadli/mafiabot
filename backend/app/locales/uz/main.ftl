@@ -555,7 +555,6 @@ btn-toggle-empty = { $emoji } - 🚫 0
 
 btn-shop = 🛒 Do'kon
 btn-buy-dollars = <e:currency-dollar> Xarid qilish
-btn-buy-diamonds = <e:currency-diamond> Xarid qilish
 btn-premium-groups = 👑 Premium guruhlar
 btn-news = 📢 Yangiliklar
 btn-pick-next-role = 🃏 Keyingi rolni tanlash
@@ -605,7 +604,30 @@ btn-buy-items = 🎒 Qurol/himoya
 
 btn-buy-premium = 👑 Premium
 
-btn-buy-premium-30d = ⭐ 30 kun premium — { $price } <e:currency-diamond>
+btn-buy-premium-30d = ⭐ 1 oylik premium — { $price } <e:currency-diamond>
+
+btn-buy-premium-365d = ⭐ 1 yillik premium — { $price } <e:currency-diamond>
+
+shop-special-pick-prompt =
+    🃏 <b>Maxsus rol</b>
+
+    Quyidagi rollardan birini tanlang — narx: <b>{ $price }</b>
+
+    Tanlangan rol keyingi o'yinda sizga beriladi.
+
+shop-special-purchased = ✅ { $role } sotib olindi! ({ $cost } { $currency }). Keyingi o'yinda shu rolda o'ynaysiz.
+
+premium-groups-empty =
+    🚫 Hozircha premium guruhlar yo'q.
+
+    Premium guruhlarda o'yinchilar 2x ko'proq mukofot oladi.
+
+premium-groups-header =
+    👑 <b>Premium guruhlar — TOP</b>
+
+    Bu guruhlarda o'ynaganlar { $multiplier }x dollor va olmos oladi!
+
+premium-groups-row = { $rank }. <b>{ $title }</b> — { $games } o'yin
 
 buy-insufficient = ❌ Olmos yetarli emas
 

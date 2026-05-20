@@ -558,8 +558,6 @@ btn-shop = 🛒 Магазин
 
 btn-buy-dollars = <e:currency-dollar> Купить
 
-btn-buy-diamonds = <e:currency-diamond> Купить
-
 btn-premium-groups = 👑 Премиум-группы
 btn-pick-next-role = 🃏 Выбрать следующую роль
 btn-clear-next-role = 🃏 Отменить выбор
@@ -611,7 +609,30 @@ btn-buy-items = 🎒 Оружие/защита
 
 btn-buy-premium = 👑 Премиум
 
-btn-buy-premium-30d = ⭐ 30 дней премиум — { $price } <e:currency-diamond>
+btn-buy-premium-30d = ⭐ 1 месяц премиум — { $price } <e:currency-diamond>
+
+btn-buy-premium-365d = ⭐ 1 год премиум — { $price } <e:currency-diamond>
+
+shop-special-pick-prompt =
+    🃏 <b>Особая роль</b>
+
+    Выберите роль ниже — цена: <b>{ $price }</b>
+
+    Выбранная роль будет назначена вам в следующей игре.
+
+shop-special-purchased = ✅ { $role } куплена! ({ $cost } { $currency }). В следующей игре вы сыграете в этой роли.
+
+premium-groups-empty =
+    🚫 Пока что нет премиум-групп.
+
+    В премиум-группах игроки получают 2x больше наград.
+
+premium-groups-header =
+    👑 <b>Премиум-группы — TOP</b>
+
+    Игроки этих групп получают { $multiplier }x доллары и алмазы!
+
+premium-groups-row = { $rank }. <b>{ $title }</b> — { $games } игр
 
 buy-insufficient = ❌ Недостаточно алмазов
 

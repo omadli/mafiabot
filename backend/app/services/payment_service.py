@@ -10,7 +10,14 @@ from aiogram.types import LabeledPrice
 from loguru import logger
 from tortoise.transactions import in_transaction
 
-from app.db.models import Transaction, TransactionStatus, TransactionType, User, UserInventory
+from app.db.models import (
+    Group,
+    Transaction,
+    TransactionStatus,
+    TransactionType,
+    User,
+    UserInventory,
+)
 
 
 @dataclass
@@ -250,3 +257,75 @@ async def buy_premium(user: User, days: int = 30) -> None:
         )
 
     logger.info(f"User {user.id} purchased premium ({days} days) for {cost} diamonds")
+
+
+async def buy_group_premium(buyer: User, group_id: int, days: int = 30) -> int:
+    """Activate/extend premium for a group. `buyer` pays in diamonds.
+
+    Returns the price paid. Group can be premium even if the buyer isn't a
+    group admin — purchase semantics match Telegram gifts (anyone can fund
+    a group's premium upgrade).
+    """
+    from datetime import datetime, timedelta
+
+    from app.services import pricing_service
+
+    cost = await pricing_service.get_group_premium_price(days)
+
+    async with in_transaction():
+        buyer_locked = await User.select_for_update().get(id=buyer.id)
+        group = await Group.select_for_update().get_or_none(id=group_id)
+        if group is None:
+            raise ValueError(f"Group {group_id} not found")
+        if buyer_locked.diamonds < cost:
+            raise InsufficientDiamonds(f"Need {cost} diamonds")
+
+        buyer_locked.diamonds -= cost
+        now = datetime.now(UTC)
+        if group.premium_expires_at and group.premium_expires_at > now:
+            group.premium_expires_at = group.premium_expires_at + timedelta(days=days)
+        else:
+            group.premium_expires_at = now + timedelta(days=days)
+        group.is_premium = True
+        await buyer_locked.save(update_fields=["diamonds"])
+        await group.save(update_fields=["is_premium", "premium_expires_at"])
+
+        await Transaction.create(
+            user=buyer_locked,
+            type=TransactionType.SPEND_DIAMONDS,
+            diamonds_amount=-cost,
+            item="group_premium",
+            status=TransactionStatus.COMPLETED,
+            note=f"Group: {group_id}, days: {days}",
+        )
+
+    logger.info(
+        f"User {buyer.id} purchased group premium for group {group_id} "
+        f"({days} days) for {cost} diamonds"
+    )
+    return cost
+
+
+async def grant_group_premium(group_id: int, days: int) -> None:
+    """Super-admin grant: no diamond cost. days=0 revokes premium."""
+    from datetime import datetime, timedelta
+
+    async with in_transaction():
+        group = await Group.select_for_update().get_or_none(id=group_id)
+        if group is None:
+            raise ValueError(f"Group {group_id} not found")
+
+        if days <= 0:
+            group.is_premium = False
+            group.premium_expires_at = None
+        else:
+            now = datetime.now(UTC)
+            if group.premium_expires_at and group.premium_expires_at > now:
+                group.premium_expires_at = group.premium_expires_at + timedelta(days=days)
+            else:
+                group.premium_expires_at = now + timedelta(days=days)
+            group.is_premium = True
+
+        await group.save(update_fields=["is_premium", "premium_expires_at"])
+
+    logger.info(f"Group {group_id} premium grant: {days} days")
