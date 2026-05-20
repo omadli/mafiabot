@@ -11,7 +11,7 @@ from loguru import logger
 
 from app.core.roles import get_role
 from app.core.state import GameState, PlayerState
-from app.services.i18n_service import get_translator
+from app.services.i18n_service import get_plain_translator, get_translator
 
 
 async def send_night_prompts(bot: Bot, state: GameState) -> None:
@@ -31,6 +31,7 @@ async def _send_prompt_to_player(
 ) -> None:
     role = get_role(actor.role)
     _ = get_translator(locale)
+    _plain = get_plain_translator(locale)
     prompt_key = role.night_prompt_key()
     if prompt_key is None:
         return
@@ -43,7 +44,7 @@ async def _send_prompt_to_player(
     if actor.role == "arsonist":
         from app.bot.handlers.private.special_actions import build_arsonist_keyboard
 
-        keyboard = build_arsonist_keyboard(state, _)
+        keyboard = build_arsonist_keyboard(state, _, _plain)
         try:
             await bot.send_message(actor.user_id, _("night-prompt-arsonist"), reply_markup=keyboard)
         except TelegramForbiddenError:
@@ -80,7 +81,7 @@ async def _send_prompt_to_player(
     # Skip option (if allowed)
     if state.settings.get("gameplay", {}).get("allow_skip_night_action", True):
         rows.append(
-            [InlineKeyboardButton(text=_("btn-skip"), callback_data=f"night:{actor.role}:0")]
+            [InlineKeyboardButton(text=_plain("btn-skip"), callback_data=f"night:{actor.role}:0")]
         )
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=rows)
@@ -93,7 +94,7 @@ async def _send_prompt_to_player(
         if state.round_num == 1:
             text = _("night-prompt-detective-check-only")
         else:
-            await _send_detective_chooser(bot, actor, _)
+            await _send_detective_chooser(bot, actor, _, _plain)
             return
     else:
         text = _(prompt_key)
@@ -106,7 +107,7 @@ async def _send_prompt_to_player(
         logger.exception(f"Failed to send night prompt to {actor.user_id}: {e}")
 
 
-async def _send_detective_chooser(bot: Bot, actor: PlayerState, _) -> None:
+async def _send_detective_chooser(bot: Bot, actor: PlayerState, _, _plain) -> None:
     """Step 1 of the detective night flow: prior results + action chooser.
 
     The actual target keyboard is built lazily in the chooser callback so
@@ -134,10 +135,10 @@ async def _send_detective_chooser(bot: Bot, actor: PlayerState, _) -> None:
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text=_("btn-detective-check"), callback_data="night:detchoose:check"
+                    text=_plain("btn-detective-check"), callback_data="night:detchoose:check"
                 ),
                 InlineKeyboardButton(
-                    text=_("btn-detective-kill"), callback_data="night:detchoose:kill"
+                    text=_plain("btn-detective-kill"), callback_data="night:detchoose:kill"
                 ),
             ]
         ]

@@ -168,7 +168,7 @@ def _toggle_label(enabled: bool) -> str:
 
 
 async def build_settings_home_message(
-    group: Group, s: GroupSettings, _: Translator
+    group: Group, s: GroupSettings, _: Translator, _plain: Translator
 ) -> tuple[str, InlineKeyboardMarkup]:
     """Top-level settings menu — WebApp deeplink + 6 sub-menus."""
     title = group.title or f"#{group.id}"
@@ -180,7 +180,7 @@ async def build_settings_home_message(
     rows.append(
         [
             InlineKeyboardButton(
-                text=_("btn-settings-webapp"),
+                text=_plain("btn-settings-webapp"),
                 web_app=WebAppInfo(url=_webapp_url(f"settings_{group.id}")),
             )
         ]
@@ -188,7 +188,7 @@ async def build_settings_home_message(
     rows.append(
         [
             InlineKeyboardButton(
-                text=_("btn-settings-history"),
+                text=_plain("btn-settings-history"),
                 web_app=WebAppInfo(url=_webapp_url(f"history_{group.id}")),
             )
         ]
@@ -198,51 +198,52 @@ async def build_settings_home_message(
     rows.append(
         [
             InlineKeyboardButton(
-                text=_("btn-settings-roles"), callback_data=f"settings:roles:{group.id}"
+                text=_plain("btn-settings-roles"), callback_data=f"settings:roles:{group.id}"
             ),
             InlineKeyboardButton(
-                text=_("btn-settings-timings"), callback_data=f"settings:timings:{group.id}"
-            ),
-        ]
-    )
-    rows.append(
-        [
-            InlineKeyboardButton(
-                text=_("btn-settings-items"), callback_data=f"settings:items:{group.id}"
-            ),
-            InlineKeyboardButton(
-                text=_("btn-settings-silence"), callback_data=f"settings:silence:{group.id}"
+                text=_plain("btn-settings-timings"), callback_data=f"settings:timings:{group.id}"
             ),
         ]
     )
     rows.append(
         [
             InlineKeyboardButton(
-                text=_("btn-settings-gameplay"), callback_data=f"settings:gameplay:{group.id}"
+                text=_plain("btn-settings-items"), callback_data=f"settings:items:{group.id}"
             ),
             InlineKeyboardButton(
-                text=_("btn-settings-display"), callback_data=f"settings:display:{group.id}"
+                text=_plain("btn-settings-silence"), callback_data=f"settings:silence:{group.id}"
             ),
         ]
     )
     rows.append(
         [
             InlineKeyboardButton(
-                text=_("btn-settings-permissions"),
+                text=_plain("btn-settings-gameplay"), callback_data=f"settings:gameplay:{group.id}"
+            ),
+            InlineKeyboardButton(
+                text=_plain("btn-settings-display"), callback_data=f"settings:display:{group.id}"
+            ),
+        ]
+    )
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text=_plain("btn-settings-permissions"),
                 callback_data=f"settings:permissions:{group.id}",
             ),
             InlineKeyboardButton(
-                text=_("btn-settings-afk"), callback_data=f"settings:afk:{group.id}"
+                text=_plain("btn-settings-afk"), callback_data=f"settings:afk:{group.id}"
             ),
         ]
     )
     rows.append(
         [
             InlineKeyboardButton(
-                text=_("btn-settings-lang"), callback_data=f"settings:lang:{group.id}"
+                text=_plain("btn-settings-lang"), callback_data=f"settings:lang:{group.id}"
             ),
             InlineKeyboardButton(
-                text=_("btn-settings-atmosphere"), callback_data=f"settings:atmosphere:{group.id}"
+                text=_plain("btn-settings-atmosphere"),
+                callback_data=f"settings:atmosphere:{group.id}",
             ),
         ]
     )
@@ -251,27 +252,35 @@ async def build_settings_home_message(
 
 
 @router.callback_query(F.data.startswith("settings:home:"))
-async def cb_home(query: CallbackQuery, user: User, _: Translator) -> None:
+async def cb_home(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     gid = int(query.data.split(":")[2])
     group, s = await _load_group_or_fail(query, gid)
     if group is None or s is None:
         return
     await query.answer()
-    text, kb = await build_settings_home_message(group, s, _)
+    text, kb = await build_settings_home_message(group, s, _, _plain)
     await _edit(query, text, kb)
 
 
 # === Roles sub-menu ===
 
 
-def _build_roles_kb(s: GroupSettings, gid: int, _: Translator) -> InlineKeyboardMarkup:
+def _build_roles_kb(
+    s: GroupSettings, gid: int, _: Translator, _plain: Translator | None = None
+) -> InlineKeyboardMarkup:
     roles_state = {**DEFAULT_ROLES_ENABLED, **(s.roles or {})}
     rows: list[list[InlineKeyboardButton]] = []
 
     for team, codes in ROLE_GROUPS.items():
         # Team header (non-clickable)
         rows.append(
-            [InlineKeyboardButton(text=_(f"settings-team-{team}"), callback_data="settings:noop")]
+            [
+                InlineKeyboardButton(
+                    text=_plain(f"settings-team-{team}"), callback_data="settings:noop"
+                )
+            ]
         )
         row: list[InlineKeyboardButton] = []
         for code in codes:
@@ -287,22 +296,28 @@ def _build_roles_kb(s: GroupSettings, gid: int, _: Translator) -> InlineKeyboard
         if row:
             rows.append(row)
 
-    rows.append([InlineKeyboardButton(text=_("btn-back"), callback_data=f"settings:home:{gid}")])
+    rows.append(
+        [InlineKeyboardButton(text=_plain("btn-back"), callback_data=f"settings:home:{gid}")]
+    )
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 @router.callback_query(F.data.startswith("settings:roles:"))
-async def cb_roles(query: CallbackQuery, user: User, _: Translator) -> None:
+async def cb_roles(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     gid = int(query.data.split(":")[2])
     group, s = await _load_group_or_fail(query, gid)
     if group is None or s is None:
         return
     await query.answer()
-    await _edit(query, _("settings-roles-prompt"), _build_roles_kb(s, gid, _))
+    await _edit(query, _("settings-roles-prompt"), _build_roles_kb(s, gid, _, _plain))
 
 
 @router.callback_query(F.data.startswith("settings:role:"))
-async def cb_role_toggle(query: CallbackQuery, user: User, _: Translator) -> None:
+async def cb_role_toggle(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     parts = query.data.split(":")
     if len(parts) != 4:
         await query.answer("Invalid", show_alert=True)
@@ -321,13 +336,13 @@ async def cb_role_toggle(query: CallbackQuery, user: User, _: Translator) -> Non
 
     emoji_name = _(f"role-{code}")
     await query.answer(f"{emoji_name}: {_toggle_label(new_state)}")
-    await _edit(query, _("settings-roles-prompt"), _build_roles_kb(s, gid, _))
+    await _edit(query, _("settings-roles-prompt"), _build_roles_kb(s, gid, _, _plain))
 
 
 # === Timings sub-menu ===
 
 
-def _build_timings_text(s: GroupSettings, _: Translator) -> str:
+def _build_timings_text(s: GroupSettings, _: Translator, _plain: Translator | None = None) -> str:
     t = {**DEFAULT_TIMINGS, **(s.timings or {})}
     lines = [_("settings-timings-prompt"), ""]
     for key, _delta in TIMING_KEYS:
@@ -335,7 +350,9 @@ def _build_timings_text(s: GroupSettings, _: Translator) -> str:
     return "\n".join(lines)
 
 
-def _build_timings_kb(s: GroupSettings, gid: int, _: Translator) -> InlineKeyboardMarkup:
+def _build_timings_kb(
+    s: GroupSettings, gid: int, _: Translator, _plain: Translator | None = None
+) -> InlineKeyboardMarkup:
     t = {**DEFAULT_TIMINGS, **(s.timings or {})}
     rows: list[list[InlineKeyboardButton]] = []
     for key, delta in TIMING_KEYS:
@@ -352,22 +369,28 @@ def _build_timings_kb(s: GroupSettings, gid: int, _: Translator) -> InlineKeyboa
                 ),
             ]
         )
-    rows.append([InlineKeyboardButton(text=_("btn-back"), callback_data=f"settings:home:{gid}")])
+    rows.append(
+        [InlineKeyboardButton(text=_plain("btn-back"), callback_data=f"settings:home:{gid}")]
+    )
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 @router.callback_query(F.data.startswith("settings:timings:"))
-async def cb_timings(query: CallbackQuery, user: User, _: Translator) -> None:
+async def cb_timings(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     gid = int(query.data.split(":")[2])
     group, s = await _load_group_or_fail(query, gid)
     if group is None or s is None:
         return
     await query.answer()
-    await _edit(query, _build_timings_text(s, _), _build_timings_kb(s, gid, _))
+    await _edit(query, _build_timings_text(s, _, _plain), _build_timings_kb(s, gid, _))
 
 
 @router.callback_query(F.data.startswith("settings:timing:"))
-async def cb_timing_adjust(query: CallbackQuery, user: User, _: Translator) -> None:
+async def cb_timing_adjust(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     parts = query.data.split(":")
     if len(parts) != 5:
         await query.answer("Invalid", show_alert=True)
@@ -390,13 +413,15 @@ async def cb_timing_adjust(query: CallbackQuery, user: User, _: Translator) -> N
     await save_settings_fields(s, timings=t)
 
     await query.answer(f"{_(f'timing-{key}')}: {new_val}s")
-    await _edit(query, _build_timings_text(s, _), _build_timings_kb(s, gid, _))
+    await _edit(query, _build_timings_text(s, _, _plain), _build_timings_kb(s, gid, _))
 
 
 # === Items sub-menu ===
 
 
-def _build_items_kb(s: GroupSettings, gid: int, _: Translator) -> InlineKeyboardMarkup:
+def _build_items_kb(
+    s: GroupSettings, gid: int, _: Translator, _plain: Translator | None = None
+) -> InlineKeyboardMarkup:
     items = {**DEFAULT_ITEMS_ALLOWED, **(s.items_allowed or {})}
     rows: list[list[InlineKeyboardButton]] = []
     row: list[InlineKeyboardButton] = []
@@ -411,22 +436,28 @@ def _build_items_kb(s: GroupSettings, gid: int, _: Translator) -> InlineKeyboard
             row = []
     if row:
         rows.append(row)
-    rows.append([InlineKeyboardButton(text=_("btn-back"), callback_data=f"settings:home:{gid}")])
+    rows.append(
+        [InlineKeyboardButton(text=_plain("btn-back"), callback_data=f"settings:home:{gid}")]
+    )
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 @router.callback_query(F.data.startswith("settings:items:"))
-async def cb_items(query: CallbackQuery, user: User, _: Translator) -> None:
+async def cb_items(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     gid = int(query.data.split(":")[2])
     group, s = await _load_group_or_fail(query, gid)
     if group is None or s is None:
         return
     await query.answer()
-    await _edit(query, _("settings-items-prompt"), _build_items_kb(s, gid, _))
+    await _edit(query, _("settings-items-prompt"), _build_items_kb(s, gid, _, _plain))
 
 
 @router.callback_query(F.data.startswith("settings:item:"))
-async def cb_item_toggle(query: CallbackQuery, user: User, _: Translator) -> None:
+async def cb_item_toggle(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     parts = query.data.split(":")
     if len(parts) != 4:
         await query.answer("Invalid", show_alert=True)
@@ -443,13 +474,15 @@ async def cb_item_toggle(query: CallbackQuery, user: User, _: Translator) -> Non
     await save_settings_fields(s, items_allowed=items)
 
     await query.answer(f"{ITEM_LABELS.get(code, code)}: {_toggle_label(items[code])}")
-    await _edit(query, _("settings-items-prompt"), _build_items_kb(s, gid, _))
+    await _edit(query, _("settings-items-prompt"), _build_items_kb(s, gid, _, _plain))
 
 
 # === Silence sub-menu ===
 
 
-def _build_silence_kb(s: GroupSettings, gid: int, _: Translator) -> InlineKeyboardMarkup:
+def _build_silence_kb(
+    s: GroupSettings, gid: int, _: Translator, _plain: Translator | None = None
+) -> InlineKeyboardMarkup:
     silence = {**DEFAULT_SILENCE, **(s.silence or {})}
     rows: list[list[InlineKeyboardButton]] = []
     for key in SILENCE_KEYS:
@@ -458,22 +491,28 @@ def _build_silence_kb(s: GroupSettings, gid: int, _: Translator) -> InlineKeyboa
         rows.append(
             [InlineKeyboardButton(text=label, callback_data=f"settings:silence:toggle:{gid}:{key}")]
         )
-    rows.append([InlineKeyboardButton(text=_("btn-back"), callback_data=f"settings:home:{gid}")])
+    rows.append(
+        [InlineKeyboardButton(text=_plain("btn-back"), callback_data=f"settings:home:{gid}")]
+    )
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 @router.callback_query(F.data.regexp(r"^settings:silence:\d+$"))
-async def cb_silence(query: CallbackQuery, user: User, _: Translator) -> None:
+async def cb_silence(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     gid = int(query.data.split(":")[2])
     group, s = await _load_group_or_fail(query, gid)
     if group is None or s is None:
         return
     await query.answer()
-    await _edit(query, _("settings-silence-prompt"), _build_silence_kb(s, gid, _))
+    await _edit(query, _("settings-silence-prompt"), _build_silence_kb(s, gid, _, _plain))
 
 
 @router.callback_query(F.data.startswith("settings:silence:toggle:"))
-async def cb_silence_toggle(query: CallbackQuery, user: User, _: Translator) -> None:
+async def cb_silence_toggle(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     parts = query.data.split(":")
     if len(parts) != 5:
         await query.answer("Invalid", show_alert=True)
@@ -490,13 +529,13 @@ async def cb_silence_toggle(query: CallbackQuery, user: User, _: Translator) -> 
     await save_settings_fields(s, silence=silence)
 
     await query.answer(f"{_(f'silence-{key}')}: {_toggle_label(silence[key])}")
-    await _edit(query, _("settings-silence-prompt"), _build_silence_kb(s, gid, _))
+    await _edit(query, _("settings-silence-prompt"), _build_silence_kb(s, gid, _, _plain))
 
 
 # === Gameplay sub-menu ===
 
 
-def _build_gameplay_text(s: GroupSettings, _: Translator) -> str:
+def _build_gameplay_text(s: GroupSettings, _: Translator, _plain: Translator | None = None) -> str:
     g = {**DEFAULT_GAMEPLAY, **(s.gameplay or {})}
     return _(
         "settings-gameplay-status",
@@ -508,7 +547,9 @@ def _build_gameplay_text(s: GroupSettings, _: Translator) -> str:
     )
 
 
-def _build_gameplay_kb(s: GroupSettings, gid: int, _: Translator) -> InlineKeyboardMarkup:
+def _build_gameplay_kb(
+    s: GroupSettings, gid: int, _: Translator, _plain: Translator | None = None
+) -> InlineKeyboardMarkup:
     g = {**DEFAULT_GAMEPLAY, **(s.gameplay or {})}
     ratio = g.get("mafia_ratio", "low")
 
@@ -535,23 +576,27 @@ def _build_gameplay_kb(s: GroupSettings, gid: int, _: Translator) -> InlineKeybo
                 callback_data=f"settings:gameplay:toggle:{gid}:allow_skip_night_action",
             )
         ],
-        [InlineKeyboardButton(text=_("btn-back"), callback_data=f"settings:home:{gid}")],
+        [InlineKeyboardButton(text=_plain("btn-back"), callback_data=f"settings:home:{gid}")],
     ]
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 @router.callback_query(F.data.regexp(r"^settings:gameplay:\d+$"))
-async def cb_gameplay(query: CallbackQuery, user: User, _: Translator) -> None:
+async def cb_gameplay(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     gid = int(query.data.split(":")[2])
     group, s = await _load_group_or_fail(query, gid)
     if group is None or s is None:
         return
     await query.answer()
-    await _edit(query, _build_gameplay_text(s, _), _build_gameplay_kb(s, gid, _))
+    await _edit(query, _build_gameplay_text(s, _, _plain), _build_gameplay_kb(s, gid, _))
 
 
 @router.callback_query(F.data.startswith("settings:gameplay:ratio:"))
-async def cb_gameplay_ratio(query: CallbackQuery, user: User, _: Translator) -> None:
+async def cb_gameplay_ratio(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     parts = query.data.split(":")
     if len(parts) != 5:
         await query.answer("Invalid", show_alert=True)
@@ -571,11 +616,13 @@ async def cb_gameplay_ratio(query: CallbackQuery, user: User, _: Translator) -> 
     await save_settings_fields(s, gameplay=g)
 
     await query.answer(f"{_('gameplay-ratio-' + ratio)} ✓")
-    await _edit(query, _build_gameplay_text(s, _), _build_gameplay_kb(s, gid, _))
+    await _edit(query, _build_gameplay_text(s, _, _plain), _build_gameplay_kb(s, gid, _))
 
 
 @router.callback_query(F.data.startswith("settings:gameplay:toggle:"))
-async def cb_gameplay_toggle(query: CallbackQuery, user: User, _: Translator) -> None:
+async def cb_gameplay_toggle(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     parts = query.data.split(":")
     if len(parts) != 5:
         await query.answer("Invalid", show_alert=True)
@@ -597,13 +644,15 @@ async def cb_gameplay_toggle(query: CallbackQuery, user: User, _: Translator) ->
     await query.answer(
         f"{_('gameplay-' + key.replace('allow_skip_', 'skip-').replace('_', '-'))}: {_toggle_label(g[key])}"
     )
-    await _edit(query, _build_gameplay_text(s, _), _build_gameplay_kb(s, gid, _))
+    await _edit(query, _build_gameplay_text(s, _, _plain), _build_gameplay_kb(s, gid, _))
 
 
 # === Language sub-menu (group locale) ===
 
 
-def _build_lang_kb(s: GroupSettings, gid: int, _: Translator) -> InlineKeyboardMarkup:
+def _build_lang_kb(
+    s: GroupSettings, gid: int, _: Translator, _plain: Translator | None = None
+) -> InlineKeyboardMarkup:
     current = s.language
     options = [("uz", "🇺🇿 O'zbekcha"), ("ru", "🇷🇺 Русский"), ("en", "🇬🇧 English")]
     rows = [
@@ -615,22 +664,28 @@ def _build_lang_kb(s: GroupSettings, gid: int, _: Translator) -> InlineKeyboardM
         ]
         for code, label in options
     ]
-    rows.append([InlineKeyboardButton(text=_("btn-back"), callback_data=f"settings:home:{gid}")])
+    rows.append(
+        [InlineKeyboardButton(text=_plain("btn-back"), callback_data=f"settings:home:{gid}")]
+    )
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 @router.callback_query(F.data.regexp(r"^settings:lang:\d+$"))
-async def cb_lang(query: CallbackQuery, user: User, _: Translator) -> None:
+async def cb_lang(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     gid = int(query.data.split(":")[2])
     group, s = await _load_group_or_fail(query, gid)
     if group is None or s is None:
         return
     await query.answer()
-    await _edit(query, _("settings-lang-prompt"), _build_lang_kb(s, gid, _))
+    await _edit(query, _("settings-lang-prompt"), _build_lang_kb(s, gid, _, _plain))
 
 
 @router.callback_query(F.data.startswith("settings:lang:set:"))
-async def cb_lang_set(query: CallbackQuery, user: User, _: Translator) -> None:
+async def cb_lang_set(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     parts = query.data.split(":")
     if len(parts) != 5:
         await query.answer("Invalid", show_alert=True)
@@ -655,7 +710,9 @@ async def cb_lang_set(query: CallbackQuery, user: User, _: Translator) -> None:
 
 
 @router.callback_query(F.data.startswith("settings:atmosphere:"))
-async def cb_atmosphere(query: CallbackQuery, user: User, _: Translator) -> None:
+async def cb_atmosphere(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     gid = int(query.data.split(":")[2])
     group, s = await _load_group_or_fail(query, gid)
     if group is None or s is None:
@@ -677,7 +734,7 @@ async def cb_atmosphere(query: CallbackQuery, user: User, _: Translator) -> None
 
     kb = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text=_("btn-back"), callback_data=f"settings:home:{gid}")],
+            [InlineKeyboardButton(text=_plain("btn-back"), callback_data=f"settings:home:{gid}")],
         ]
     )
     await _edit(query, text, kb)
@@ -686,7 +743,9 @@ async def cb_atmosphere(query: CallbackQuery, user: User, _: Translator) -> None
 # === Display sub-menu ===
 
 
-def _build_display_kb(s: GroupSettings, gid: int, _: Translator) -> InlineKeyboardMarkup:
+def _build_display_kb(
+    s: GroupSettings, gid: int, _: Translator, _plain: Translator | None = None
+) -> InlineKeyboardMarkup:
     d = {**DEFAULT_DISPLAY, **(s.display or {})}
     rows: list[list[InlineKeyboardButton]] = []
     for key in DISPLAY_KEYS:
@@ -695,22 +754,28 @@ def _build_display_kb(s: GroupSettings, gid: int, _: Translator) -> InlineKeyboa
         rows.append(
             [InlineKeyboardButton(text=label, callback_data=f"settings:display:toggle:{gid}:{key}")]
         )
-    rows.append([InlineKeyboardButton(text=_("btn-back"), callback_data=f"settings:home:{gid}")])
+    rows.append(
+        [InlineKeyboardButton(text=_plain("btn-back"), callback_data=f"settings:home:{gid}")]
+    )
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 @router.callback_query(F.data.regexp(r"^settings:display:\d+$"))
-async def cb_display(query: CallbackQuery, user: User, _: Translator) -> None:
+async def cb_display(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     gid = int(query.data.split(":")[2])
     group, s = await _load_group_or_fail(query, gid)
     if group is None or s is None:
         return
     await query.answer()
-    await _edit(query, _("settings-display-prompt"), _build_display_kb(s, gid, _))
+    await _edit(query, _("settings-display-prompt"), _build_display_kb(s, gid, _, _plain))
 
 
 @router.callback_query(F.data.startswith("settings:display:toggle:"))
-async def cb_display_toggle(query: CallbackQuery, user: User, _: Translator) -> None:
+async def cb_display_toggle(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     parts = query.data.split(":")
     if len(parts) != 5:
         await query.answer("Invalid", show_alert=True)
@@ -730,13 +795,15 @@ async def cb_display_toggle(query: CallbackQuery, user: User, _: Translator) -> 
     await save_settings_fields(s, display=d)
 
     await query.answer(f"{_(f'display-{key}')}: {_toggle_label(d[key])}")
-    await _edit(query, _("settings-display-prompt"), _build_display_kb(s, gid, _))
+    await _edit(query, _("settings-display-prompt"), _build_display_kb(s, gid, _, _plain))
 
 
 # === Permissions sub-menu ===
 
 
-def _build_permissions_text(s: GroupSettings, _: Translator) -> str:
+def _build_permissions_text(
+    s: GroupSettings, _: Translator, _plain: Translator | None = None
+) -> str:
     p = {**DEFAULT_PERMISSIONS, **(s.permissions or {})}
     lines = [_("settings-permissions-prompt"), ""]
     for key, _vals in PERMISSION_TOGGLES:
@@ -746,7 +813,9 @@ def _build_permissions_text(s: GroupSettings, _: Translator) -> str:
     return "\n".join(lines)
 
 
-def _build_permissions_kb(s: GroupSettings, gid: int, _: Translator) -> InlineKeyboardMarkup:
+def _build_permissions_kb(
+    s: GroupSettings, gid: int, _: Translator, _plain: Translator | None = None
+) -> InlineKeyboardMarkup:
     p = {**DEFAULT_PERMISSIONS, **(s.permissions or {})}
     rows: list[list[InlineKeyboardButton]] = []
     for key, _vals in PERMISSION_TOGGLES:
@@ -764,22 +833,28 @@ def _build_permissions_kb(s: GroupSettings, gid: int, _: Translator) -> InlineKe
             )
         ]
     )
-    rows.append([InlineKeyboardButton(text=_("btn-back"), callback_data=f"settings:home:{gid}")])
+    rows.append(
+        [InlineKeyboardButton(text=_plain("btn-back"), callback_data=f"settings:home:{gid}")]
+    )
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 @router.callback_query(F.data.regexp(r"^settings:permissions:\d+$"))
-async def cb_permissions(query: CallbackQuery, user: User, _: Translator) -> None:
+async def cb_permissions(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     gid = int(query.data.split(":")[2])
     group, s = await _load_group_or_fail(query, gid)
     if group is None or s is None:
         return
     await query.answer()
-    await _edit(query, _build_permissions_text(s, _), _build_permissions_kb(s, gid, _))
+    await _edit(query, _build_permissions_text(s, _, _plain), _build_permissions_kb(s, gid, _))
 
 
 @router.callback_query(F.data.startswith("settings:perm:cycle:"))
-async def cb_perm_cycle(query: CallbackQuery, user: User, _: Translator) -> None:
+async def cb_perm_cycle(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     parts = query.data.split(":")
     if len(parts) != 5:
         await query.answer("Invalid", show_alert=True)
@@ -801,11 +876,13 @@ async def cb_perm_cycle(query: CallbackQuery, user: User, _: Translator) -> None
     await save_settings_fields(s, permissions=p)
 
     await query.answer(f"{_(f'perm-{key}')}: {_(f'perm-target-{p[key]}')}")
-    await _edit(query, _build_permissions_text(s, _), _build_permissions_kb(s, gid, _))
+    await _edit(query, _build_permissions_text(s, _, _plain), _build_permissions_kb(s, gid, _))
 
 
 @router.callback_query(F.data.startswith("settings:perm:toggle:"))
-async def cb_perm_toggle(query: CallbackQuery, user: User, _: Translator) -> None:
+async def cb_perm_toggle(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     parts = query.data.split(":")
     if len(parts) != 5:
         await query.answer("Invalid", show_alert=True)
@@ -825,13 +902,13 @@ async def cb_perm_toggle(query: CallbackQuery, user: User, _: Translator) -> Non
     await save_settings_fields(s, permissions=p)
 
     await query.answer(f"{_(f'perm-{key}')}: {_toggle_label(p[key])}")
-    await _edit(query, _build_permissions_text(s, _), _build_permissions_kb(s, gid, _))
+    await _edit(query, _build_permissions_text(s, _, _plain), _build_permissions_kb(s, gid, _))
 
 
 # === AFK sub-menu ===
 
 
-def _build_afk_text(s: GroupSettings, _: Translator) -> str:
+def _build_afk_text(s: GroupSettings, _: Translator, _plain: Translator | None = None) -> str:
     a = {**DEFAULT_AFK, **(s.afk or {})}
     lines = [_("settings-afk-prompt"), ""]
     for key, _delta, _lo, _hi in AFK_KEYS:
@@ -839,7 +916,9 @@ def _build_afk_text(s: GroupSettings, _: Translator) -> str:
     return "\n".join(lines)
 
 
-def _build_afk_kb(s: GroupSettings, gid: int, _: Translator) -> InlineKeyboardMarkup:
+def _build_afk_kb(
+    s: GroupSettings, gid: int, _: Translator, _plain: Translator | None = None
+) -> InlineKeyboardMarkup:
     a = {**DEFAULT_AFK, **(s.afk or {})}
     rows: list[list[InlineKeyboardButton]] = []
     for key, delta, _lo, _hi in AFK_KEYS:
@@ -856,22 +935,28 @@ def _build_afk_kb(s: GroupSettings, gid: int, _: Translator) -> InlineKeyboardMa
                 ),
             ]
         )
-    rows.append([InlineKeyboardButton(text=_("btn-back"), callback_data=f"settings:home:{gid}")])
+    rows.append(
+        [InlineKeyboardButton(text=_plain("btn-back"), callback_data=f"settings:home:{gid}")]
+    )
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 @router.callback_query(F.data.regexp(r"^settings:afk:\d+$"))
-async def cb_afk(query: CallbackQuery, user: User, _: Translator) -> None:
+async def cb_afk(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     gid = int(query.data.split(":")[2])
     group, s = await _load_group_or_fail(query, gid)
     if group is None or s is None:
         return
     await query.answer()
-    await _edit(query, _build_afk_text(s, _), _build_afk_kb(s, gid, _))
+    await _edit(query, _build_afk_text(s, _, _plain), _build_afk_kb(s, gid, _))
 
 
 @router.callback_query(F.data.startswith("settings:afk:adj:"))
-async def cb_afk_adjust(query: CallbackQuery, user: User, _: Translator) -> None:
+async def cb_afk_adjust(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     parts = query.data.split(":")
     if len(parts) != 6:
         await query.answer("Invalid", show_alert=True)
@@ -899,7 +984,7 @@ async def cb_afk_adjust(query: CallbackQuery, user: User, _: Translator) -> None
     await save_settings_fields(s, afk=a)
 
     await query.answer(f"{_(f'afk-{key}')}: {a[key]}")
-    await _edit(query, _build_afk_text(s, _), _build_afk_kb(s, gid, _))
+    await _edit(query, _build_afk_text(s, _, _plain), _build_afk_kb(s, gid, _))
 
 
 # === No-op (clicked header / spacer) ===

@@ -16,7 +16,7 @@ from loguru import logger
 from app.core.state import DeathReason, GameState, Phase
 from app.db.models import User
 from app.services import game_service
-from app.services.i18n_service import Translator, get_translator
+from app.services.i18n_service import Translator, get_plain_translator, get_translator
 from app.services.messaging import _safe_send, player_mention, role_emoji_name
 
 router = Router(name="private_special_actions")
@@ -30,16 +30,17 @@ async def send_mage_reaction_prompt(
 ) -> None:
     """When Mage attacked at night, send choice prompt to lichka."""
     _ = get_translator(locale)
+    _plain = get_plain_translator(locale)
     role_label = role_emoji_name(attacker_role, locale)
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text=_("mage-forgive"),
+                    text=_plain("mage-forgive"),
                     callback_data=f"mage:forgive:{attacker_id}",
                 ),
                 InlineKeyboardButton(
-                    text=_("mage-kill"),
+                    text=_plain("mage-kill"),
                     callback_data=f"mage:kill:{attacker_id}",
                 ),
             ]
@@ -56,7 +57,9 @@ async def send_mage_reaction_prompt(
 
 
 @router.callback_query(F.data.startswith("mage:"))
-async def callback_mage_reaction(query: CallbackQuery, user: User, _: Translator) -> None:
+async def callback_mage_reaction(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     if query.data is None or query.message is None:
         await query.answer()
         return
@@ -73,7 +76,7 @@ async def callback_mage_reaction(query: CallbackQuery, user: User, _: Translator
         return
 
     if user.active_game_id is None:
-        await query.answer(_("night-not-in-active-game"), show_alert=True)
+        await query.answer(_plain("night-not-in-active-game"), show_alert=True)
         return
 
     state = await _find_state(user.active_game_id)
@@ -83,16 +86,16 @@ async def callback_mage_reaction(query: CallbackQuery, user: User, _: Translator
 
     mage = state.get_player(user.id)
     if mage is None or mage.role != "mage":
-        await query.answer(_("night-cannot-act"), show_alert=True)
+        await query.answer(_plain("night-cannot-act"), show_alert=True)
         return
 
     attacker = state.get_player(attacker_id)
     if attacker is None:
-        await query.answer(_("night-target-invalid"), show_alert=True)
+        await query.answer(_plain("night-target-invalid"), show_alert=True)
         return
 
     if decision == "forgive":
-        await query.answer(_("mage-forgive-confirm"), show_alert=False)
+        await query.answer(_plain("mage-forgive-confirm"), show_alert=False)
         if query.message:
             with contextlib.suppress(Exception):
                 await query.message.edit_text(_("mage-forgive-confirm-text"))  # type: ignore[union-attr]
@@ -103,7 +106,7 @@ async def callback_mage_reaction(query: CallbackQuery, user: User, _: Translator
             attacker.died_at_phase = Phase.NIGHT
             attacker.died_reason = DeathReason.KILLED_AFSUNGAR  # close enough
             await game_service.save_state(state)
-        await query.answer(_("mage-kill-confirm"), show_alert=False)
+        await query.answer(_plain("mage-kill-confirm"), show_alert=False)
         if query.message:
             with contextlib.suppress(Exception):
                 await query.message.edit_text(  # type: ignore[union-attr]
@@ -114,7 +117,9 @@ async def callback_mage_reaction(query: CallbackQuery, user: User, _: Translator
 # === Arsonist "Oxirgi tun" ===
 
 
-def build_arsonist_keyboard(state: GameState, _: Translator) -> InlineKeyboardMarkup:
+def build_arsonist_keyboard(
+    state: GameState, _: Translator, _plain: Translator | None = None
+) -> InlineKeyboardMarkup:
     """Arsonist tunlik tugmalar — har tun + 'Oxirgi tun'."""
     rows = []
     for p in state.alive_players():
@@ -131,7 +136,7 @@ def build_arsonist_keyboard(state: GameState, _: Translator) -> InlineKeyboardMa
     rows.append(
         [
             InlineKeyboardButton(
-                text=_("arsonist-final-night-button"),
+                text=_plain("arsonist-final-night-button"),
                 callback_data="night:arsonist:final:0",
             )
         ]
@@ -140,7 +145,9 @@ def build_arsonist_keyboard(state: GameState, _: Translator) -> InlineKeyboardMa
 
 
 @router.callback_query(F.data.startswith("night:arsonist:"))
-async def callback_arsonist_action(query: CallbackQuery, user: User, _: Translator) -> None:
+async def callback_arsonist_action(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     """G'azabkor: queue (target qo'shish) yoki final_night."""
     if query.data is None:
         await query.answer()
@@ -158,16 +165,16 @@ async def callback_arsonist_action(query: CallbackQuery, user: User, _: Translat
         return
 
     if user.active_game_id is None:
-        await query.answer(_("night-not-in-active-game"), show_alert=True)
+        await query.answer(_plain("night-not-in-active-game"), show_alert=True)
         return
     state = await _find_state(user.active_game_id)
     if state is None or state.phase != Phase.NIGHT:
-        await query.answer(_("night-not-in-night-phase"), show_alert=True)
+        await query.answer(_plain("night-not-in-night-phase"), show_alert=True)
         return
 
     arsonist = state.get_player(user.id)
     if arsonist is None or arsonist.role != "arsonist":
-        await query.answer(_("night-cannot-act"), show_alert=True)
+        await query.answer(_plain("night-cannot-act"), show_alert=True)
         return
 
     from app.core.state import NightAction
@@ -180,21 +187,21 @@ async def callback_arsonist_action(query: CallbackQuery, user: User, _: Translat
         await game_service.save_state(state)
         target = state.get_player(target_id)
         target_name = target.first_name if target else "?"
-        await query.answer(_("arsonist-queued", target=target_name), show_alert=False)
+        await query.answer(_plain("arsonist-queued", target=target_name), show_alert=False)
     elif action_kind == "final":
         action = NightAction(
             actor_id=user.id, role="arsonist", action_type="final_night", target_id=user.id
         )
         state.current_actions[user.id] = action
         await game_service.save_state(state)
-        await query.answer(_("arsonist-final-confirm"), show_alert=True)
+        await query.answer(_plain("arsonist-final-confirm"), show_alert=True)
 
 
 # === Kamikaze hang choice ===
 
 
 def build_kamikaze_choice_keyboard(
-    state: GameState, kamikaze_id: int, _: Translator
+    state: GameState, kamikaze_id: int, _: Translator, _plain: Translator
 ) -> InlineKeyboardMarkup:
     """Kamikaze osilganda — kim bilan ketishni tanlash."""
     rows = []
@@ -216,7 +223,8 @@ async def send_kamikaze_choice(bot: Bot, state: GameState, kamikaze_id: int) -> 
     """Kamikaze osilganda lichkaga prompt yuborish."""
     locale = state.settings.get("language", "uz")
     _ = get_translator(locale)
-    keyboard = build_kamikaze_choice_keyboard(state, kamikaze_id, _)
+    _plain = get_plain_translator(locale)
+    keyboard = build_kamikaze_choice_keyboard(state, kamikaze_id, _, _plain)
     try:
         await bot.send_message(kamikaze_id, _("kamikaze-choose-victim"), reply_markup=keyboard)
     except TelegramForbiddenError:
@@ -224,7 +232,9 @@ async def send_kamikaze_choice(bot: Bot, state: GameState, kamikaze_id: int) -> 
 
 
 @router.callback_query(F.data.startswith("kamikaze:take:"))
-async def callback_kamikaze_take(query: CallbackQuery, user: User, _: Translator, bot: Bot) -> None:
+async def callback_kamikaze_take(
+    query: CallbackQuery, user: User, _: Translator, bot: Bot, _plain: Translator | None = None
+) -> None:
     if query.data is None:
         await query.answer()
         return
@@ -235,7 +245,7 @@ async def callback_kamikaze_take(query: CallbackQuery, user: User, _: Translator
         return
 
     if user.active_game_id is None:
-        await query.answer(_("night-not-in-active-game"), show_alert=True)
+        await query.answer(_plain("night-not-in-active-game"), show_alert=True)
         return
 
     state = await _find_state(user.active_game_id)
@@ -245,12 +255,12 @@ async def callback_kamikaze_take(query: CallbackQuery, user: User, _: Translator
 
     kamikaze = state.get_player(user.id)
     if kamikaze is None or kamikaze.role != "kamikaze":
-        await query.answer(_("night-cannot-act"), show_alert=True)
+        await query.answer(_plain("night-cannot-act"), show_alert=True)
         return
 
     victim = state.get_player(victim_id)
     if victim is None or not victim.alive:
-        await query.answer(_("night-target-invalid"), show_alert=True)
+        await query.answer(_plain("night-target-invalid"), show_alert=True)
         return
 
     # Apply
@@ -283,7 +293,7 @@ async def callback_kamikaze_take(query: CallbackQuery, user: User, _: Translator
     )
     await _safe_send(bot, state.chat_id, text)
 
-    await query.answer(_("kamikaze-took-confirm"), show_alert=True)
+    await query.answer(_plain("kamikaze-took-confirm"), show_alert=True)
     if query.message:
         with contextlib.suppress(Exception):
             await query.message.edit_text(_("kamikaze-took-confirm-text", target=victim.first_name))  # type: ignore[union-attr]

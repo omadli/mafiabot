@@ -59,15 +59,15 @@ ROLE_TEAMS: dict[str, list[str]] = {
 _KNOWN_ROLES: frozenset[str] = frozenset(slug for team in ROLE_TEAMS.values() for slug in team)
 
 
-def _rules_root_keyboard(_: Translator) -> InlineKeyboardMarkup:
+def _rules_root_keyboard(_: Translator, _plain: Translator | None = None) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text=_("btn-rules-roles"), callback_data="rules:teams")],
+            [InlineKeyboardButton(text=_plain("btn-rules-roles"), callback_data="rules:teams")],
         ]
     )
 
 
-def _rules_teams_keyboard(_: Translator) -> InlineKeyboardMarkup:
+def _rules_teams_keyboard(_: Translator, _plain: Translator | None = None) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
@@ -88,31 +88,41 @@ def _rules_teams_keyboard(_: Translator) -> InlineKeyboardMarkup:
                     callback_data="rules:team:singletons",
                 )
             ],
-            [InlineKeyboardButton(text=_("btn-rules-back"), callback_data="rules:root")],
+            [InlineKeyboardButton(text=_plain("btn-rules-back"), callback_data="rules:root")],
         ]
     )
 
 
-def _rules_role_keyboard(team: str, _: Translator) -> InlineKeyboardMarkup:
+def _rules_role_keyboard(
+    team: str, _: Translator, _plain: Translator | None = None
+) -> InlineKeyboardMarkup:
     codes = ROLE_TEAMS.get(team, [])
     rows: list[list[InlineKeyboardButton]] = []
     row: list[InlineKeyboardButton] = []
     for code in codes:
         # `_("role-X")` already returns "emoji + name" (dynamic from RoleConfig).
-        row.append(InlineKeyboardButton(text=_(f"role-{code}"), callback_data=f"rules:role:{code}"))
+        row.append(
+            InlineKeyboardButton(text=_plain(f"role-{code}"), callback_data=f"rules:role:{code}")
+        )
         if len(row) == 2:
             rows.append(row)
             row = []
     if row:
         rows.append(row)
-    rows.append([InlineKeyboardButton(text=_("btn-rules-back"), callback_data="rules:teams")])
+    rows.append([InlineKeyboardButton(text=_plain("btn-rules-back"), callback_data="rules:teams")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def _rules_role_detail_keyboard(team: str, _: Translator) -> InlineKeyboardMarkup:
+def _rules_role_detail_keyboard(
+    team: str, _: Translator, _plain: Translator | None = None
+) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text=_("btn-rules-back"), callback_data=f"rules:team:{team}")]
+            [
+                InlineKeyboardButton(
+                    text=_plain("btn-rules-back"), callback_data=f"rules:team:{team}"
+                )
+            ]
         ]
     )
 
@@ -132,36 +142,46 @@ async def _safe_edit(query: CallbackQuery, text: str, kb: InlineKeyboardMarkup) 
 
 
 @router.message(Command("help", prefix="/!"), F.chat.type == "private")
-async def cmd_help(message: Message, user: User, _: Translator) -> None:
+async def cmd_help(
+    message: Message, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     """Help — private chat only."""
     await message.answer(_("help-private"), parse_mode="HTML")
 
 
 @router.message(Command("rules", prefix="/!"), F.chat.type == "private")
-async def cmd_rules(message: Message, user: User, _: Translator) -> None:
+async def cmd_rules(
+    message: Message, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     """Rules — opens the detailed rules + role drill-down menu."""
     await message.answer(
         _("rules-summary"),
-        reply_markup=_rules_root_keyboard(_),
+        reply_markup=_rules_root_keyboard(_, _plain),
         parse_mode="HTML",
         disable_web_page_preview=True,
     )
 
 
 @router.callback_query(F.data == "rules:root")
-async def cb_rules_root(query: CallbackQuery, _: Translator) -> None:
+async def cb_rules_root(
+    query: CallbackQuery, _: Translator, _plain: Translator | None = None
+) -> None:
     await query.answer()
-    await _safe_edit(query, _("rules-summary"), _rules_root_keyboard(_))
+    await _safe_edit(query, _("rules-summary"), _rules_root_keyboard(_, _plain))
 
 
 @router.callback_query(F.data == "rules:teams")
-async def cb_rules_teams(query: CallbackQuery, _: Translator) -> None:
+async def cb_rules_teams(
+    query: CallbackQuery, _: Translator, _plain: Translator | None = None
+) -> None:
     await query.answer()
-    await _safe_edit(query, _("rules-pick-team"), _rules_teams_keyboard(_))
+    await _safe_edit(query, _("rules-pick-team"), _rules_teams_keyboard(_, _plain))
 
 
 @router.callback_query(F.data.startswith("rules:team:"))
-async def cb_rules_team(query: CallbackQuery, _: Translator) -> None:
+async def cb_rules_team(
+    query: CallbackQuery, _: Translator, _plain: Translator | None = None
+) -> None:
     if query.data is None:
         await query.answer()
         return
@@ -171,11 +191,13 @@ async def cb_rules_team(query: CallbackQuery, _: Translator) -> None:
         return
     await query.answer()
     text = _(f"rules-team-{team}-intro")
-    await _safe_edit(query, text, _rules_role_keyboard(team, _))
+    await _safe_edit(query, text, _rules_role_keyboard(team, _, _plain))
 
 
 @router.callback_query(F.data.startswith("rules:role:"))
-async def cb_rules_role(query: CallbackQuery, _: Translator) -> None:
+async def cb_rules_role(
+    query: CallbackQuery, _: Translator, _plain: Translator | None = None
+) -> None:
     if query.data is None:
         await query.answer()
         return
@@ -195,7 +217,7 @@ async def cb_rules_role(query: CallbackQuery, _: Translator) -> None:
         description=role_desc,
     )
     team = _team_for_role(code)
-    await _safe_edit(query, text, _rules_role_detail_keyboard(team, _))
+    await _safe_edit(query, text, _rules_role_detail_keyboard(team, _, _plain))
 
 
 # === Bot menu setup ===

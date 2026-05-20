@@ -22,7 +22,7 @@ router.message.filter(F.chat.type == "private")
 
 @router.message(CommandStart(deep_link=True))
 async def start_with_deeplink(
-    message: Message, command: CommandObject, user: User, _: Translator
+    message: Message, command: CommandObject, user: User, _: Translator, _plain: Translator
 ) -> None:
     """Handle /start join_<group_id> deeplink."""
     payload = command.args or ""
@@ -33,7 +33,7 @@ async def start_with_deeplink(
         except ValueError:
             await message.answer(_("deeplink-invalid"))
             return
-        await _handle_join(message, user, group_id, _)
+        await _handle_join(message, user, group_id, _, _plain)
         return
 
     if payload.startswith("vote_"):
@@ -42,7 +42,7 @@ async def start_with_deeplink(
         except ValueError:
             await message.answer(_("deeplink-invalid"))
             return
-        await _handle_vote_deeplink(message, user, group_id, _)
+        await _handle_vote_deeplink(message, user, group_id, _, _plain)
         return
 
     if payload.startswith("admin_"):
@@ -59,7 +59,9 @@ async def start_with_deeplink(
 
 
 @router.message(CommandStart())
-async def start_default(message: Message, user: User, _: Translator) -> None:
+async def start_default(
+    message: Message, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     """Plain /start (no payload)."""
     await message.answer(
         _("start-welcome", username=user.first_name),
@@ -68,7 +70,9 @@ async def start_default(message: Message, user: User, _: Translator) -> None:
     )
 
 
-async def _handle_vote_deeplink(message: Message, user: User, group_id: int, _: Translator) -> None:
+async def _handle_vote_deeplink(
+    message: Message, user: User, group_id: int, _: Translator, _plain: Translator | None = None
+) -> None:
     """User clicked 'Ovoz berish' URL button in group during VOTING phase."""
     from app.bot.handlers.group.voting import send_vote_dm_for_deeplink
 
@@ -78,12 +82,14 @@ async def _handle_vote_deeplink(message: Message, user: User, group_id: int, _: 
         return
 
     bot: Bot = message.bot  # type: ignore[assignment]
-    error_key = await send_vote_dm_for_deeplink(bot, user, state, _)
+    error_key = await send_vote_dm_for_deeplink(bot, user, state, _, _plain)
     if error_key:
         await message.answer(_(error_key))
 
 
-async def _handle_join(message: Message, user: User, group_id: int, _: Translator) -> None:
+async def _handle_join(
+    message: Message, user: User, group_id: int, _: Translator, _plain: Translator | None = None
+) -> None:
     """Foydalanuvchi guruhga qo'shilmoqchi (deeplink orqali)."""
     # Banned check
     if user.is_banned:
@@ -152,6 +158,6 @@ async def _handle_join(message: Message, user: User, group_id: int, _: Translato
     # Confirm to user
     group_link = group.invite_link or f"tg://resolve?domain={settings.bot_username}"
     keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(text=_("btn-back-to-group"), url=group_link)]]
+        inline_keyboard=[[InlineKeyboardButton(text=_plain("btn-back-to-group"), url=group_link)]]
     )
     await message.answer(_("join-success"), reply_markup=keyboard)

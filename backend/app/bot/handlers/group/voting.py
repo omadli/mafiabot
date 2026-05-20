@@ -34,7 +34,7 @@ from app.config import settings as app_settings
 from app.core.state import GameState, Phase, PlayerState, Team, Vote
 from app.db.models import User
 from app.services import game_service
-from app.services.i18n_service import Translator, get_translator
+from app.services.i18n_service import Translator, get_plain_translator, get_translator
 from app.services.messaging import player_mention, role_emoji_name
 
 router = Router(name="group_voting")
@@ -57,7 +57,7 @@ def _team_marker(voter: PlayerState, target: PlayerState) -> str:
 
 
 def build_dm_voting_keyboard(
-    state: GameState, voter: PlayerState, _: Translator
+    state: GameState, voter: PlayerState, _: Translator, _plain: Translator
 ) -> InlineKeyboardMarkup:
     """Per-voter keyboard: one row per alive target except self."""
     rows: list[list[InlineKeyboardButton]] = []
@@ -74,7 +74,9 @@ def build_dm_voting_keyboard(
             ]
         )
     if state.settings.get("gameplay", {}).get("allow_skip_day_vote", True):
-        rows.append([InlineKeyboardButton(text=_("vote-skip-button"), callback_data="vote:cast:0")])
+        rows.append(
+            [InlineKeyboardButton(text=_plain("vote-skip-button"), callback_data="vote:cast:0")]
+        )
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
@@ -111,7 +113,9 @@ def _safe_html(text: str) -> str:
 
 
 @router.callback_query(F.data.startswith("vote:cast:"))
-async def callback_vote_cast(query: CallbackQuery, user: User, _: Translator, bot: Bot) -> None:
+async def callback_vote_cast(
+    query: CallbackQuery, user: User, _: Translator, bot: Bot, _plain: Translator | None = None
+) -> None:
     if query.data is None:
         await query.answer()
         return
@@ -125,32 +129,32 @@ async def callback_vote_cast(query: CallbackQuery, user: User, _: Translator, bo
     # now, so we cannot rely on query.message.chat.id).
     state = await _state_for_user(user)
     if state is None or state.phase != Phase.VOTING:
-        await query.answer(_("vote-not-in-voting"), show_alert=True)
+        await query.answer(_plain("vote-not-in-voting"), show_alert=True)
         return
 
     voter = state.get_player(user.id)
     if voter is None:
-        await query.answer(_("vote-not-in-game-alert"), show_alert=True)
+        await query.answer(_plain("vote-not-in-game-alert"), show_alert=True)
         return
     if not voter.alive:
-        await query.answer(_("vote-dead-alert"), show_alert=True)
+        await query.answer(_plain("vote-dead-alert"), show_alert=True)
         return
 
     if target_id == user.id:
-        await query.answer(_("vote-cannot-self"), show_alert=True)
+        await query.answer(_plain("vote-cannot-self"), show_alert=True)
         return
 
     target: PlayerState | None = None
     if target_id != 0:
         target = state.get_player(target_id)
         if target is None or not target.alive:
-            await query.answer(_("vote-target-invalid"), show_alert=True)
+            await query.answer(_plain("vote-target-invalid"), show_alert=True)
             return
 
     # Already voted same target → friendly nudge, no state change
     prior = state.current_votes.get(user.id)
     if prior is not None and prior.target_id == target_id:
-        await query.answer(_("vote-already-voted-alert"), show_alert=True)
+        await query.answer(_plain("vote-already-voted-alert"), show_alert=True)
         return
 
     # Mayor 2x weight; Aferist proxy support (records as the impersonated user)
@@ -192,15 +196,17 @@ async def callback_vote_cast(query: CallbackQuery, user: User, _: Translator, bo
 
     # Confirmation toast + DM edit (these go back to the voter — keep `_`)
     if target_id == 0:
-        await query.answer(_("vote-skipped-toast"), show_alert=False)
+        await query.answer(_plain("vote-skipped-toast"), show_alert=False)
         confirm_text = _("vote-skipped-confirm")
     else:
         assert target is not None  # mypy: validated above
-        await query.answer(_("vote-recorded-toast", target=target.first_name), show_alert=False)
+        await query.answer(
+            _plain("vote-recorded-toast", target=target.first_name), show_alert=False
+        )
         confirm_text = _("vote-recorded-dm-confirm", target=_safe_html(target.first_name))
 
     if query.message is not None:
-        back_kb = await _back_to_group_kb(state, _)
+        back_kb = await _back_to_group_kb(state, _, _plain)
         with contextlib.suppress(Exception):
             await query.message.edit_text(confirm_text, reply_markup=back_kb, parse_mode="HTML")  # type: ignore[union-attr]
 
@@ -233,7 +239,7 @@ async def callback_vote_cast(query: CallbackQuery, user: User, _: Translator, bo
 
 @router.callback_query(F.data.startswith("hangconfirm:"))
 async def callback_hanging_confirm(
-    query: CallbackQuery, user: User, _: Translator, bot: Bot
+    query: CallbackQuery, user: User, _: Translator, bot: Bot, _plain: Translator | None = None
 ) -> None:
     if query.data is None or query.message is None:
         await query.answer()
@@ -252,20 +258,20 @@ async def callback_hanging_confirm(
     chat_id = query.message.chat.id
     state = await game_service.load_state(chat_id)
     if state is None or state.phase != Phase.HANGING_CONFIRM:
-        await query.answer(_("hanging-confirm-expired"), show_alert=True)
+        await query.answer(_plain("hanging-confirm-expired"), show_alert=True)
         return
 
     voter = state.get_player(user.id)
     if voter is None:
-        await query.answer(_("vote-not-in-game-alert"), show_alert=True)
+        await query.answer(_plain("vote-not-in-game-alert"), show_alert=True)
         return
     if not voter.alive:
-        await query.answer(_("vote-dead-alert"), show_alert=True)
+        await query.answer(_plain("vote-dead-alert"), show_alert=True)
         return
 
     # The person being hanged cannot vote in their own hanging confirm.
     if voter.user_id == target_id:
-        await query.answer(_("hanging-confirm-cannot-self"), show_alert=True)
+        await query.answer(_plain("hanging-confirm-cannot-self"), show_alert=True)
         return
 
     weight = 2 if voter.role == "mayor" else 1
@@ -278,14 +284,14 @@ async def callback_hanging_confirm(
     voter_key = str(user.id)
     if decision == "yes":
         if voter_key in confirm_data["yes"]:
-            await query.answer(_("vote-already-voted-alert"), show_alert=True)
+            await query.answer(_plain("vote-already-voted-alert"), show_alert=True)
             return
         confirm_data["yes"][voter_key] = weight
         confirm_data["no"].pop(voter_key, None)
         toast = "👍"
     else:
         if voter_key in confirm_data["no"]:
-            await query.answer(_("vote-already-voted-alert"), show_alert=True)
+            await query.answer(_plain("vote-already-voted-alert"), show_alert=True)
             return
         confirm_data["no"][voter_key] = weight
         confirm_data["yes"].pop(voter_key, None)
@@ -319,13 +325,14 @@ async def announce_voting(bot: Bot, state: GameState) -> None:
     """
     locale = state.settings.get("language", "uz")
     _ = get_translator(locale)
+    _plain = get_plain_translator(locale)
 
     timings = state.settings.get("timings", {})
     seconds = timings.get("hanging_vote", 45)
 
     bot_url = f"https://t.me/{app_settings.bot_username}"
     group_kb = InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(text=_("voting-go-button"), url=bot_url)]]
+        inline_keyboard=[[InlineKeyboardButton(text=_plain("voting-go-button"), url=bot_url)]]
     )
     try:
         await bot.send_message(
@@ -339,7 +346,7 @@ async def announce_voting(bot: Bot, state: GameState) -> None:
     # Proactive per-player DMs
     async def _dm(player: PlayerState) -> None:
         try:
-            kb = build_dm_voting_keyboard(state, player, _)
+            kb = build_dm_voting_keyboard(state, player, _, _plain)
             await bot.send_message(
                 player.user_id,
                 _("voting-dm-prompt"),
@@ -382,7 +389,9 @@ async def announce_hanging_confirm(bot: Bot, state: GameState, target_id: int) -
 # === Deeplink entry from group "Ovoz berish" button ===
 
 
-async def send_vote_dm_for_deeplink(bot: Bot, user: User, state: GameState, _: Translator) -> str:
+async def send_vote_dm_for_deeplink(
+    bot: Bot, user: User, state: GameState, _: Translator, _plain: Translator | None = None
+) -> str:
     """Called by /start vote_<group_id> deeplink handler. Returns an i18n
     key the caller can use to send an appropriate reply (or empty string
     when the DM keyboard was already pushed)."""
@@ -395,7 +404,7 @@ async def send_vote_dm_for_deeplink(bot: Bot, user: User, state: GameState, _: T
     if not voter.alive:
         return "vote-dead-alert"
 
-    kb = build_dm_voting_keyboard(state, voter, _)
+    kb = build_dm_voting_keyboard(state, voter, _, _plain)
     with contextlib.suppress(Exception):
         await bot.send_message(user.id, _("voting-dm-prompt"), reply_markup=kb, parse_mode="HTML")
     return ""
@@ -415,7 +424,9 @@ async def _state_for_user(user: User) -> GameState | None:
     return await game_service.load_state(game.group_id)  # type: ignore[attr-defined,var-annotated,arg-type]
 
 
-async def _back_to_group_kb(state: GameState, _: Translator) -> InlineKeyboardMarkup:
+async def _back_to_group_kb(
+    state: GameState, _: Translator, _plain: Translator | None = None
+) -> InlineKeyboardMarkup:
     from app.db.models import Group
 
     group = await Group.get_or_none(id=state.group_id)
@@ -425,5 +436,5 @@ async def _back_to_group_kb(state: GameState, _: Translator) -> InlineKeyboardMa
         else f"https://t.me/{app_settings.bot_username}"
     )
     return InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(text=_("btn-back-to-group"), url=url)]]
+        inline_keyboard=[[InlineKeyboardButton(text=_plain("btn-back-to-group"), url=url)]]
     )

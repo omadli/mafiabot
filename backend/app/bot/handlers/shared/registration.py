@@ -11,7 +11,9 @@ from app.services.i18n_service import Translator
 from app.services.messaging import player_mention
 
 
-def format_registration_text(state: GameState, _: Translator) -> str:
+def format_registration_text(
+    state: GameState, _: Translator, _plain: Translator | None = None
+) -> str:
     """Build the group registration message text."""
     remaining = max(0, (state.phase_ends_at or 0) - int(time.time()))
     minutes, seconds = divmod(remaining, 60)
@@ -44,12 +46,15 @@ def format_registration_text(state: GameState, _: Translator) -> str:
 
 
 def build_registration_keyboard(
-    state: GameState, bot_username: str, _: Translator
+    state: GameState,
+    bot_username: str,
+    _: Translator,
+    _plain: Translator | None = None,
 ) -> InlineKeyboardMarkup:
     """Inline keyboard for registration — deeplink to bot."""
     deeplink = f"https://t.me/{bot_username}?start=join_{state.group_id}"
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text=_("btn-join-game"), url=deeplink)],
+            [InlineKeyboardButton(text=_plain("btn-join-game"), url=deeplink)],
         ]
     )

@@ -21,7 +21,9 @@ router = Router(name="private_role_actions")
 router.callback_query.filter(F.data.startswith("night:"))
 
 
-async def _back_to_group_kb(state: GameState, _: Translator) -> InlineKeyboardMarkup:
+async def _back_to_group_kb(
+    state: GameState, _: Translator, _plain: Translator | None = None
+) -> InlineKeyboardMarkup:
     """Build a single-button keyboard pointing the user back at the group."""
     group = await Group.get_or_none(id=state.group_id)
     url = (
@@ -30,13 +32,13 @@ async def _back_to_group_kb(state: GameState, _: Translator) -> InlineKeyboardMa
         else f"https://t.me/{app_settings.bot_username}"
     )
     return InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(text=_("btn-back-to-group"), url=url)]]
+        inline_keyboard=[[InlineKeyboardButton(text=_plain("btn-back-to-group"), url=url)]]
     )
 
 
 @router.callback_query(F.data.startswith("night:detchoose:"))
 async def handle_detective_chooser(
-    query: CallbackQuery, user: User, _: Translator, bot: Bot
+    query: CallbackQuery, user: User, _: Translator, bot: Bot, _plain: Translator | None = None
 ) -> None:
     """Detective picked 'check' or 'kill' — edit the chooser DM to show
     the target keyboard. The actual target selection is then handled by
@@ -51,16 +53,16 @@ async def handle_detective_chooser(
     action_kind = parts[2]
 
     if user.active_game_id is None:
-        await query.answer(_("night-not-in-active-game"), show_alert=True)
+        await query.answer(_plain("night-not-in-active-game"), show_alert=True)
         return
     state = await _find_state_by_game_id(user.active_game_id)
     if state is None or state.phase != Phase.NIGHT:  # type: ignore[attr-defined,var-annotated,arg-type]
-        await query.answer(_("night-not-in-night-phase"), show_alert=True)
+        await query.answer(_plain("night-not-in-night-phase"), show_alert=True)
         return
 
     actor = state.get_player(user.id)  # type: ignore[attr-defined,var-annotated,arg-type]
     if actor is None or not actor.alive or actor.role != "detective":
-        await query.answer(_("night-cannot-act"), show_alert=True)
+        await query.answer(_plain("night-cannot-act"), show_alert=True)
         return
 
     from app.services.role_actions import send_detective_target_keyboard
@@ -68,7 +70,7 @@ async def handle_detective_chooser(
     locale = state.settings.get("language", "uz")  # type: ignore[attr-defined,var-annotated,arg-type]
     kb = await send_detective_target_keyboard(bot, state, actor, action_kind, locale)  # type: ignore[attr-defined,var-annotated,arg-type]
     if kb is None:
-        await query.answer(_("night-no-targets"), show_alert=True)
+        await query.answer(_plain("night-no-targets"), show_alert=True)
         return
 
     prompt = _(
@@ -82,7 +84,9 @@ async def handle_detective_chooser(
 
 
 @router.callback_query(F.data.startswith("night:"))
-async def handle_night_pick(query: CallbackQuery, user: User, _: Translator, bot: Bot) -> None:
+async def handle_night_pick(
+    query: CallbackQuery, user: User, _: Translator, bot: Bot, _plain: Translator | None = None
+) -> None:
     if query.data is None:
         await query.answer()
         return
@@ -110,26 +114,26 @@ async def handle_night_pick(query: CallbackQuery, user: User, _: Translator, bot
 
     # Find which group this user is in
     if user.active_game_id is None:
-        await query.answer(_("night-not-in-active-game"), show_alert=True)
+        await query.answer(_plain("night-not-in-active-game"), show_alert=True)
         return
 
     state = await _find_state_by_game_id(user.active_game_id)
     if state is None or state.phase != Phase.NIGHT:  # type: ignore[attr-defined,var-annotated,arg-type]
-        await query.answer(_("night-not-in-night-phase"), show_alert=True)
+        await query.answer(_plain("night-not-in-night-phase"), show_alert=True)
         return
 
     actor = state.get_player(user.id)  # type: ignore[attr-defined,var-annotated,arg-type]
     if actor is None or not actor.alive or actor.role != role_code:
-        await query.answer(_("night-cannot-act"), show_alert=True)
+        await query.answer(_plain("night-cannot-act"), show_alert=True)
         return
 
     # Skip
     if target_id == 0:
         state.current_actions.pop(user.id, None)  # type: ignore[attr-defined,var-annotated,arg-type]
         await game_service.save_state(state)  # type: ignore[attr-defined,var-annotated,arg-type]
-        await query.answer(_("night-skipped"), show_alert=False)
+        await query.answer(_plain("night-skipped"), show_alert=False)
         if query.message:
-            back_kb = await _back_to_group_kb(state, _)  # type: ignore[attr-defined,var-annotated,arg-type]
+            back_kb = await _back_to_group_kb(state, _, _plain)  # type: ignore[attr-defined,var-annotated,arg-type]
             with contextlib.suppress(Exception):
                 await query.message.edit_text(_("night-skipped-confirm"), reply_markup=back_kb)  # type: ignore[union-attr]
         return
@@ -137,7 +141,7 @@ async def handle_night_pick(query: CallbackQuery, user: User, _: Translator, bot
     # Validate target
     target = state.get_player(target_id)  # type: ignore[attr-defined,var-annotated,arg-type]
     if target is None or not target.alive:
-        await query.answer(_("night-target-invalid"), show_alert=True)
+        await query.answer(_plain("night-target-invalid"), show_alert=True)
         return
 
     # If rifle was requested but the player no longer owns one (race vs
@@ -147,7 +151,7 @@ async def handle_night_pick(query: CallbackQuery, user: User, _: Translator, bot
 
         inv = await UserInventory.get_or_none(user_id=user.id)
         if inv is None or inv.rifle < 1:
-            await query.answer(_("night-no-rifle"), show_alert=True)
+            await query.answer(_plain("night-no-rifle"), show_alert=True)
             return
 
     # Record action
@@ -169,11 +173,11 @@ async def handle_night_pick(query: CallbackQuery, user: User, _: Translator, bot
         await inv.save(update_fields=["rifle"])
 
     await query.answer(
-        _("night-action-recorded", target=target.first_name),
+        _plain("night-action-recorded", target=target.first_name),
         show_alert=False,
     )
     if query.message:
-        back_kb = await _back_to_group_kb(state, _)  # type: ignore[attr-defined,var-annotated,arg-type]
+        back_kb = await _back_to_group_kb(state, _, _plain)  # type: ignore[attr-defined,var-annotated,arg-type]
         with contextlib.suppress(Exception):
             await query.message.edit_text(  # type: ignore[union-attr]
                 _("night-action-confirmed", target=target.first_name),

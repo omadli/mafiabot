@@ -23,7 +23,6 @@ from aiogram.types import (
 )
 from loguru import logger
 
-from app.config import settings as app_settings
 from app.db.models import User, UserInventory, UserStats
 from app.services import exchange_service, payment_service, pricing_service
 from app.services.i18n_service import Translator
@@ -50,7 +49,7 @@ TOGGLE_ITEMS = ["fake_document", "shield", "mask", "killer_shield", "vote_shield
 
 
 async def _build_profile_message(
-    user: User, inv: UserInventory, _: Translator
+    user: User, inv: UserInventory, _: Translator, _plain: Translator
 ) -> tuple[str, InlineKeyboardMarkup]:
     """Single-screen profile (mirrors @MafiaAzBot)."""
     # Fetch stats
@@ -111,13 +110,15 @@ async def _build_profile_message(
     rows.append(row2)
 
     # Row 3: Shop
-    rows.append([InlineKeyboardButton(text=_("btn-shop"), callback_data="shop:open")])
+    rows.append([InlineKeyboardButton(text=_plain("btn-shop"), callback_data="shop:open")])
 
-    # Row 4: Buy with dollars / Buy with diamonds (quick-shop shortcuts)
+    # Row 4: 💵 → exchange (diamonds → dollars converter), 💎 → Stars-funded
+    # diamond top-up. Both deliver currency directly; the items shop sits
+    # behind the dedicated 🛒 button below.
     rows.append(
         [
-            InlineKeyboardButton(text=_("btn-buy-dollars"), callback_data="shop:items:dollars"),
-            InlineKeyboardButton(text=_("btn-buy-diamonds"), callback_data="shop:items:diamonds"),
+            InlineKeyboardButton(text=_plain("btn-buy-dollars"), callback_data="exchange:open"),
+            InlineKeyboardButton(text=_plain("btn-buy-diamonds"), callback_data="shop:diamonds"),
         ]
     )
 
@@ -125,19 +126,24 @@ async def _build_profile_message(
     # credit and hasn't picked their role for the next game yet.
     if getattr(inv, "special_role", 0) > 0 and not next_role_pick:
         rows.append(
-            [InlineKeyboardButton(text=_("btn-pick-next-role"), callback_data="inv:pickrole")]
+            [InlineKeyboardButton(text=_plain("btn-pick-next-role"), callback_data="inv:pickrole")]
         )
     elif next_role_pick:
         rows.append(
-            [InlineKeyboardButton(text=_("btn-clear-next-role"), callback_data="inv:clearrole")]
+            [
+                InlineKeyboardButton(
+                    text=_plain("btn-clear-next-role"), callback_data="inv:clearrole"
+                )
+            ]
         )
 
     # Row 5: Premium
-    rows.append([InlineKeyboardButton(text=_("btn-premium-groups"), callback_data="shop:premium")])
+    rows.append(
+        [InlineKeyboardButton(text=_plain("btn-premium-groups"), callback_data="shop:premium")]
+    )
 
-    # Row 6: News channel URL (external link)
-    news_url = f"https://t.me/{app_settings.bot_username}_news"
-    rows.append([InlineKeyboardButton(text=_("btn-news"), url=news_url)])
+    # Row 6: official news channel (separate handle, NOT derived from bot_username)
+    rows.append([InlineKeyboardButton(text=_plain("btn-news"), url="https://t.me/Mafiauzbot_news")])
 
     return text, InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -146,23 +152,27 @@ async def _build_profile_message(
 
 
 @router.message(Command("profile", "inventory", "items"))
-async def cmd_profile(message: Message, user: User, _: Translator) -> None:
+async def cmd_profile(
+    message: Message, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     """Single-screen profile: balance, inventory, stats, shortcuts.
 
     Mirrors @MafiaAzBot reference — all info in one message.
     """
     inv, _new = await UserInventory.get_or_create(user=user)
-    text, kb = await _build_profile_message(user, inv, _)
+    text, kb = await _build_profile_message(user, inv, _, _plain)
     await message.answer(text, reply_markup=kb, parse_mode="HTML")
 
 
-async def _refresh_profile(query: CallbackQuery, user: User, _: Translator) -> None:
+async def _refresh_profile(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     """Re-render profile in-place (edit message)."""
     refreshed = await User.get(id=user.id)
     user.diamonds = refreshed.diamonds
     user.dollars = refreshed.dollars
     inv, _new = await UserInventory.get_or_create(user=refreshed)
-    text, kb = await _build_profile_message(refreshed, inv, _)
+    text, kb = await _build_profile_message(refreshed, inv, _, _plain)
     if query.message:
         with contextlib.suppress(TelegramBadRequest):
             await query.message.edit_text(text, reply_markup=kb, parse_mode="HTML")  # type: ignore[union-attr]
@@ -172,13 +182,17 @@ async def _refresh_profile(query: CallbackQuery, user: User, _: Translator) -> N
 
 
 @router.callback_query(F.data == "inv:noop")
-async def callback_inv_noop(query: CallbackQuery, _: Translator) -> None:
+async def callback_inv_noop(
+    query: CallbackQuery, _: Translator, _plain: Translator | None = None
+) -> None:
     """Clicked toggle on item with qty=0."""
-    await query.answer(_("inv-no-items"), show_alert=False)
+    await query.answer(_plain("inv-no-items"), show_alert=False)
 
 
 @router.callback_query(F.data.startswith("inv:toggle:"))
-async def callback_toggle_item(query: CallbackQuery, user: User, _: Translator) -> None:
+async def callback_toggle_item(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     if query.data is None:
         await query.answer()
         return
@@ -190,7 +204,7 @@ async def callback_toggle_item(query: CallbackQuery, user: User, _: Translator) 
     inv, _new = await UserInventory.get_or_create(user=user)
     qty = getattr(inv, code, 0)
     if qty <= 0:
-        await query.answer(_("inv-no-items"), show_alert=False)
+        await query.answer(_plain("inv-no-items"), show_alert=False)
         return
 
     settings = dict(inv.settings or {})
@@ -206,11 +220,13 @@ async def callback_toggle_item(query: CallbackQuery, user: User, _: Translator) 
     _emoji, name = ITEM_LABELS[code]
     state_text = _("inv-toggle-on") if new_state else _("inv-toggle-off")
     await query.answer(f"{name}: {state_text}", show_alert=False)
-    await _refresh_profile(query, user, _)
+    await _refresh_profile(query, user, _, _plain)
 
 
 @router.callback_query(F.data == "inv:close")
-async def callback_inv_close(query: CallbackQuery, _: Translator) -> None:
+async def callback_inv_close(
+    query: CallbackQuery, _: Translator, _plain: Translator | None = None
+) -> None:
     if query.message:
         with contextlib.suppress(TelegramBadRequest):
             await query.message.delete()  # type: ignore[union-attr]
@@ -218,8 +234,10 @@ async def callback_inv_close(query: CallbackQuery, _: Translator) -> None:
 
 
 @router.callback_query(F.data == "inv:back")
-async def callback_inv_back(query: CallbackQuery, user: User, _: Translator) -> None:
-    await _refresh_profile(query, user, _)
+async def callback_inv_back(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
+    await _refresh_profile(query, user, _, _plain)
     await query.answer()
 
 
@@ -252,45 +270,49 @@ _PICKABLE_ROLES: list[str] = [
 ]
 
 
-def _build_role_picker_kb(_: Translator) -> InlineKeyboardMarkup:
+def _build_role_picker_kb(_: Translator, _plain: Translator | None = None) -> InlineKeyboardMarkup:
     """3-wide grid of all 21 roles + cancel row."""
     rows: list[list[InlineKeyboardButton]] = []
     bucket: list[InlineKeyboardButton] = []
     for code in _PICKABLE_ROLES:
         bucket.append(
-            InlineKeyboardButton(text=_(f"role-{code}"), callback_data=f"inv:setrole:{code}")
+            InlineKeyboardButton(text=_plain(f"role-{code}"), callback_data=f"inv:setrole:{code}")
         )
         if len(bucket) == 3:
             rows.append(bucket)
             bucket = []
     if bucket:
         rows.append(bucket)
-    rows.append([InlineKeyboardButton(text=_("btn-back"), callback_data="inv:back")])
+    rows.append([InlineKeyboardButton(text=_plain("btn-back"), callback_data="inv:back")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 @router.callback_query(F.data == "inv:pickrole")
-async def callback_pick_role(query: CallbackQuery, user: User, _: Translator) -> None:
+async def callback_pick_role(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     """Show role grid for the special_role inventory item."""
     inv, _new = await UserInventory.get_or_create(user=user)
     if getattr(inv, "special_role", 0) <= 0:
-        await query.answer(_("inv-no-items"), show_alert=True)
+        await query.answer(_plain("inv-no-items"), show_alert=True)
         return
     if (inv.settings or {}).get("special_role", {}).get("next_role"):
-        await query.answer(_("pick-role-already-chosen"), show_alert=True)
+        await query.answer(_plain("pick-role-already-chosen"), show_alert=True)
         return
     if query.message:
         with contextlib.suppress(TelegramBadRequest):
             await query.message.edit_text(  # type: ignore[union-attr]
                 _("pick-role-prompt"),
-                reply_markup=_build_role_picker_kb(_),
+                reply_markup=_build_role_picker_kb(_, _plain),
                 parse_mode="HTML",
             )
     await query.answer()
 
 
 @router.callback_query(F.data.startswith("inv:setrole:"))
-async def callback_set_role(query: CallbackQuery, user: User, _: Translator) -> None:
+async def callback_set_role(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     """Consume one special_role credit + save the picked role in settings."""
     if query.data is None:
         await query.answer()
@@ -302,13 +324,13 @@ async def callback_set_role(query: CallbackQuery, user: User, _: Translator) -> 
 
     inv, _new = await UserInventory.get_or_create(user=user)
     if getattr(inv, "special_role", 0) <= 0:
-        await query.answer(_("inv-no-items"), show_alert=True)
+        await query.answer(_plain("inv-no-items"), show_alert=True)
         return
 
     settings = dict(inv.settings or {})
     sr = dict(settings.get("special_role", {}))
     if sr.get("next_role"):
-        await query.answer(_("pick-role-already-chosen"), show_alert=True)
+        await query.answer(_plain("pick-role-already-chosen"), show_alert=True)
         return
     sr["next_role"] = role_code
     sr["enabled"] = True
@@ -319,12 +341,14 @@ async def callback_set_role(query: CallbackQuery, user: User, _: Translator) -> 
     await UserInventory.filter(user_id=user.id).update(special_role=new_count, settings=settings)
 
     role_label = _(f"role-{role_code}")
-    await query.answer(_("pick-role-confirmed", role=role_label), show_alert=True)
-    await _refresh_profile(query, user, _)
+    await query.answer(_plain("pick-role-confirmed", role=role_label), show_alert=True)
+    await _refresh_profile(query, user, _, _plain)
 
 
 @router.callback_query(F.data == "inv:clearrole")
-async def callback_clear_role(query: CallbackQuery, user: User, _: Translator) -> None:
+async def callback_clear_role(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     """Drop the previously-chosen next role. (special_role credit is NOT
     refunded — picking is final once acted on.)"""
     inv, _new = await UserInventory.get_or_create(user=user)
@@ -337,21 +361,23 @@ async def callback_clear_role(query: CallbackQuery, user: User, _: Translator) -
     sr["enabled"] = False
     settings["special_role"] = sr
     await UserInventory.filter(user_id=user.id).update(settings=settings)
-    await query.answer(_("pick-role-cleared"), show_alert=False)
-    await _refresh_profile(query, user, _)
+    await query.answer(_plain("pick-role-cleared"), show_alert=False)
+    await _refresh_profile(query, user, _, _plain)
 
 
 # === Shop ===
 
 
 @router.callback_query(F.data == "shop:open")
-async def callback_shop(query: CallbackQuery, user: User, _: Translator) -> None:
+async def callback_shop(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text=_("btn-buy-diamonds"), callback_data="shop:diamonds")],
-            [InlineKeyboardButton(text=_("btn-buy-items"), callback_data="shop:items")],
-            [InlineKeyboardButton(text=_("btn-buy-premium"), callback_data="shop:premium")],
-            [InlineKeyboardButton(text=_("btn-back"), callback_data="inv:back")],
+            [InlineKeyboardButton(text=_plain("btn-buy-diamonds"), callback_data="shop:diamonds")],
+            [InlineKeyboardButton(text=_plain("btn-buy-items"), callback_data="shop:items")],
+            [InlineKeyboardButton(text=_plain("btn-buy-premium"), callback_data="shop:premium")],
+            [InlineKeyboardButton(text=_plain("btn-back"), callback_data="inv:back")],
         ]
     )
     if query.message:
@@ -366,7 +392,9 @@ async def callback_shop(query: CallbackQuery, user: User, _: Translator) -> None
 
 
 @router.callback_query(F.data == "shop:diamonds")
-async def callback_shop_diamonds(query: CallbackQuery, user: User, _: Translator) -> None:
+async def callback_shop_diamonds(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     rows = []
     for pkg in payment_service.DIAMOND_PACKAGES:
         total = pkg.diamonds + pkg.bonus_diamonds
@@ -379,7 +407,7 @@ async def callback_shop_diamonds(query: CallbackQuery, user: User, _: Translator
                 )
             ]
         )
-    rows.append([InlineKeyboardButton(text=_("btn-back"), callback_data="shop:open")])
+    rows.append([InlineKeyboardButton(text=_plain("btn-back"), callback_data="shop:open")])
     if query.message:
         with contextlib.suppress(TelegramBadRequest):
             await query.message.edit_text(  # type: ignore[union-attr]
@@ -399,7 +427,9 @@ def _matches_currency_filter(price_d: int, price_dia: int, want: str | None) -> 
 
 
 @router.callback_query(F.data.startswith("shop:items"))
-async def callback_shop_items(query: CallbackQuery, user: User, _: Translator) -> None:
+async def callback_shop_items(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     """callback_data: shop:items[:dollars|:diamonds] — filter items list."""
     parts = (query.data or "").split(":")
     cur_filter = parts[2] if len(parts) >= 3 else None  # None = both
@@ -427,9 +457,9 @@ async def callback_shop_items(query: CallbackQuery, user: User, _: Translator) -
         rows.append([InlineKeyboardButton(text=f"{label} — {price_label}", callback_data=cb)])
 
     if not rows:
-        rows.append([InlineKeyboardButton(text=_("shop-no-items"), callback_data="inv:back")])
+        rows.append([InlineKeyboardButton(text=_plain("shop-no-items"), callback_data="inv:back")])
 
-    rows.append([InlineKeyboardButton(text=_("btn-back"), callback_data="inv:back")])
+    rows.append([InlineKeyboardButton(text=_plain("btn-back"), callback_data="inv:back")])
     if query.message:
         text = _("shop-items-header", diamonds=user.diamonds, dollars=user.dollars)
         with contextlib.suppress(TelegramBadRequest):
@@ -442,17 +472,19 @@ async def callback_shop_items(query: CallbackQuery, user: User, _: Translator) -
 
 
 @router.callback_query(F.data == "shop:premium")
-async def callback_shop_premium(query: CallbackQuery, user: User, _: Translator) -> None:
+async def callback_shop_premium(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     monthly_price = await pricing_service.get_premium_price(30)
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text=_("btn-buy-premium-30d", price=monthly_price),
+                    text=_plain("btn-buy-premium-30d", price=monthly_price),
                     callback_data="buy:premium:30",
                 )
             ],
-            [InlineKeyboardButton(text=_("btn-back"), callback_data="inv:back")],
+            [InlineKeyboardButton(text=_plain("btn-back"), callback_data="inv:back")],
         ]
     )
     if query.message:
@@ -464,7 +496,9 @@ async def callback_shop_premium(query: CallbackQuery, user: User, _: Translator)
 
 
 @router.callback_query(F.data.startswith("buy:item:"))
-async def callback_buy_item(query: CallbackQuery, user: User, _: Translator) -> None:
+async def callback_buy_item(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     """callback_data: buy:item:<code>:<currency>"""
     parts = (query.data or "").split(":")
     if len(parts) < 3:
@@ -477,10 +511,10 @@ async def callback_buy_item(query: CallbackQuery, user: User, _: Translator) -> 
             user, code, quantity=1, currency=currency
         )
     except payment_service.InsufficientDiamonds:
-        await query.answer(_("buy-insufficient-diamonds"), show_alert=True)
+        await query.answer(_plain("buy-insufficient-diamonds"), show_alert=True)
         return
     except payment_service.InsufficientDollars:
-        await query.answer(_("buy-insufficient-dollars"), show_alert=True)
+        await query.answer(_plain("buy-insufficient-dollars"), show_alert=True)
         return
     except ValueError:
         await query.answer("Invalid item", show_alert=True)
@@ -490,14 +524,16 @@ async def callback_buy_item(query: CallbackQuery, user: User, _: Translator) -> 
     label = f"{emoji} {name}"
     cur_emoji = "💎" if used_currency == "diamonds" else "💵"
     await query.answer(
-        _("buy-success-detailed", item=label, cost=cost, currency=cur_emoji),
+        _plain("buy-success-detailed", item=label, cost=cost, currency=cur_emoji),
         show_alert=True,
     )
-    await _refresh_profile(query, user, _)
+    await _refresh_profile(query, user, _, _plain)
 
 
 @router.callback_query(F.data.startswith("buy:premium:"))
-async def callback_buy_premium(query: CallbackQuery, user: User, _: Translator) -> None:
+async def callback_buy_premium(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     days_str = query.data.split(":")[2] if query.data else "30"
     try:
         days = int(days_str)
@@ -506,16 +542,18 @@ async def callback_buy_premium(query: CallbackQuery, user: User, _: Translator) 
     try:
         await payment_service.buy_premium(user, days=days)
     except payment_service.InsufficientDiamonds:
-        await query.answer(_("buy-insufficient-diamonds"), show_alert=True)
+        await query.answer(_plain("buy-insufficient-diamonds"), show_alert=True)
         return
-    await query.answer(_("premium-activated", days=days), show_alert=True)
-    await _refresh_profile(query, user, _)
+    await query.answer(_plain("premium-activated", days=days), show_alert=True)
+    await _refresh_profile(query, user, _, _plain)
 
 
 # === Exchange ===
 
 
-def _build_exchange_kb(rate: int, _: Translator) -> InlineKeyboardMarkup:
+def _build_exchange_kb(
+    rate: int, _: Translator, _plain: Translator | None = None
+) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
@@ -529,32 +567,38 @@ def _build_exchange_kb(rate: int, _: Translator) -> InlineKeyboardMarkup:
                     text=f"💵{rate * 5} → 💎×5", callback_data=f"exchange:r2d:{rate * 5}"
                 ),
             ],
-            [InlineKeyboardButton(text=_("btn-back"), callback_data="inv:back")],
+            [InlineKeyboardButton(text=_plain("btn-back"), callback_data="inv:back")],
         ]
     )
 
 
 @router.message(Command("exchange"))
-async def cmd_exchange(message: Message, user: User, _: Translator) -> None:
+async def cmd_exchange(
+    message: Message, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     rate = await pricing_service.get_diamond_to_dollar_rate()
     text = _("exchange-menu", diamonds=user.diamonds, dollars=user.dollars, rate=rate)
-    await message.answer(text, reply_markup=_build_exchange_kb(rate, _), parse_mode="HTML")
+    await message.answer(text, reply_markup=_build_exchange_kb(rate, _, _plain), parse_mode="HTML")
 
 
 @router.callback_query(F.data == "exchange:open")
-async def callback_exchange_open(query: CallbackQuery, user: User, _: Translator) -> None:
+async def callback_exchange_open(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     rate = await pricing_service.get_diamond_to_dollar_rate()
     text = _("exchange-menu", diamonds=user.diamonds, dollars=user.dollars, rate=rate)
     if query.message:
         with contextlib.suppress(TelegramBadRequest):
             await query.message.edit_text(  # type: ignore[union-attr]
-                text, reply_markup=_build_exchange_kb(rate, _), parse_mode="HTML"
+                text, reply_markup=_build_exchange_kb(rate, _, _plain), parse_mode="HTML"
             )
     await query.answer()
 
 
 @router.callback_query(F.data.startswith("exchange:d2d:"))
-async def callback_exchange_d2d(query: CallbackQuery, user: User, _: Translator) -> None:
+async def callback_exchange_d2d(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     """Diamonds → Dollars."""
     try:
         amount = int((query.data or "").split(":")[2])
@@ -564,21 +608,23 @@ async def callback_exchange_d2d(query: CallbackQuery, user: User, _: Translator)
     try:
         dollars = await exchange_service.diamonds_to_dollars(user, amount)
     except exchange_service.ExchangeDisabled:
-        await query.answer(_("exchange-disabled"), show_alert=True)
+        await query.answer(_plain("exchange-disabled"), show_alert=True)
         return
     except exchange_service.InsufficientBalance:
-        await query.answer(_("exchange-insufficient-diamonds"), show_alert=True)
+        await query.answer(_plain("exchange-insufficient-diamonds"), show_alert=True)
         return
     except exchange_service.BelowMinimum:
-        await query.answer(_("exchange-below-minimum"), show_alert=True)
+        await query.answer(_plain("exchange-below-minimum"), show_alert=True)
         return
 
-    await query.answer(_("exchange-success", got=dollars, currency="💵"), show_alert=True)
+    await query.answer(_plain("exchange-success", got=dollars, currency="💵"), show_alert=True)
     await callback_exchange_open(query, user, _)
 
 
 @router.callback_query(F.data.startswith("exchange:r2d:"))
-async def callback_exchange_r2d(query: CallbackQuery, user: User, _: Translator) -> None:
+async def callback_exchange_r2d(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     """Dollars → Diamonds."""
     try:
         amount = int((query.data or "").split(":")[2])
@@ -588,16 +634,16 @@ async def callback_exchange_r2d(query: CallbackQuery, user: User, _: Translator)
     try:
         diamonds = await exchange_service.dollars_to_diamonds(user, amount)
     except exchange_service.ExchangeDisabled:
-        await query.answer(_("exchange-disabled"), show_alert=True)
+        await query.answer(_plain("exchange-disabled"), show_alert=True)
         return
     except exchange_service.InsufficientBalance:
-        await query.answer(_("exchange-insufficient-dollars"), show_alert=True)
+        await query.answer(_plain("exchange-insufficient-dollars"), show_alert=True)
         return
     except exchange_service.BelowMinimum:
-        await query.answer(_("exchange-below-minimum"), show_alert=True)
+        await query.answer(_plain("exchange-below-minimum"), show_alert=True)
         return
 
-    await query.answer(_("exchange-success", got=diamonds, currency="💎"), show_alert=True)
+    await query.answer(_plain("exchange-success", got=diamonds, currency="💎"), show_alert=True)
     await callback_exchange_open(query, user, _)
 
 

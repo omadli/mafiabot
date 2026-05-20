@@ -37,7 +37,12 @@ router.message.filter(F.chat.type.in_({"group", "supergroup"}))
 
 @router.message(Command("game", "newgame", prefix="/!"))
 async def cmd_game(
-    message: Message, user: User, _: Translator, command: CommandObject, bot: Bot
+    message: Message,
+    user: User,
+    _: Translator,
+    command: CommandObject,
+    bot: Bot,
+    _plain: Translator | None = None,
 ) -> None:
     """Boshlash: ro'yxatdan o'tish fazasi.
 
@@ -54,7 +59,7 @@ async def cmd_game(
     # erroring out with "game already running".
     existing = await game_service.load_state(chat_id)
     if existing is not None and existing.phase == Phase.WAITING:
-        await _re_announce_registration(bot, existing, _)
+        await _re_announce_registration(bot, existing, _, _plain)
         return
 
     # Permission check
@@ -99,8 +104,8 @@ async def cmd_game(
         return
 
     # Send registration message
-    text = format_registration_text(state, _)
-    keyboard = build_registration_keyboard(state, settings.bot_username, _)
+    text = format_registration_text(state, _, _plain)
+    keyboard = build_registration_keyboard(state, settings.bot_username, _, _plain)
     sent = await message.answer(text, reply_markup=keyboard, disable_web_page_preview=True)
 
     # Save message_id for later edits
@@ -121,7 +126,9 @@ async def cmd_game(
 
 
 @router.message(Command("leave", prefix="/!"))
-async def cmd_leave(message: Message, user: User, _: Translator, bot: Bot) -> None:
+async def cmd_leave(
+    message: Message, user: User, _: Translator, bot: Bot, _plain: Translator | None = None
+) -> None:
     """O'yindan chiqib ketish."""
     state = await game_service.load_state(message.chat.id)
     if state is None or state.get_player(user.id) is None:
@@ -142,7 +149,7 @@ async def cmd_leave(message: Message, user: User, _: Translator, bot: Bot) -> No
     if state.phase == Phase.WAITING:
         await game_service.unregister_player(state, user.id)
         await message.answer(_("unjoin-success", name=user.first_name))
-        await _refresh_registration_message(bot, state, _)
+        await _refresh_registration_message(bot, state, _, _plain)
         return
 
     # In-game leave: mark dead with LEFT reason
@@ -186,7 +193,9 @@ async def cmd_leave(message: Message, user: User, _: Translator, bot: Bot) -> No
 
 
 @router.message(Command("stop", prefix="/!"))
-async def cmd_stop(message: Message, user: User, _: Translator, bot: Bot) -> None:
+async def cmd_stop(
+    message: Message, user: User, _: Translator, bot: Bot, _plain: Translator | None = None
+) -> None:
     """O'yinni bekor qilish."""
     state = await game_service.load_state(message.chat.id)
     if state is None:
@@ -210,7 +219,9 @@ async def cmd_stop(message: Message, user: User, _: Translator, bot: Bot) -> Non
 
 
 @router.message(Command("extend", prefix="/!"))
-async def cmd_extend(message: Message, user: User, _: Translator) -> None:
+async def cmd_extend(
+    message: Message, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     """Ro'yxatdan o'tish vaqtini cheksiz uzaytirish (timeout o'chiriladi).
 
     `/start` bosilguncha o'yin avtomatik boshlanmaydi.
@@ -229,7 +240,9 @@ async def cmd_extend(message: Message, user: User, _: Translator) -> None:
 
 
 @router.callback_query(F.data.startswith("game:show-role:"))
-async def callback_show_my_role(query: CallbackQuery, user: User, _: Translator) -> None:
+async def callback_show_my_role(
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+) -> None:
     """Show the caller their assigned role as an alert.
 
     Triggered by the "🎭 Sizning rolingiz" button on the game-started message.
@@ -241,12 +254,12 @@ async def callback_show_my_role(query: CallbackQuery, user: User, _: Translator)
 
     state = await game_service.load_state(query.message.chat.id)
     if state is None:
-        await query.answer(_("show-role-no-game"), show_alert=True)
+        await query.answer(_plain("show-role-no-game"), show_alert=True)
         return
 
     player = state.get_player(user.id)
     if player is None:
-        await query.answer(_("show-role-not-in-game"), show_alert=True)
+        await query.answer(_plain("show-role-not-in-game"), show_alert=True)
         return
 
     role_label = _(f"role-{player.role}")
@@ -259,7 +272,9 @@ async def callback_show_my_role(query: CallbackQuery, user: User, _: Translator)
 
 
 @router.callback_query(F.data.startswith("game:join:"))
-async def callback_join(query: CallbackQuery, user: User, _: Translator, bot: Bot) -> None:
+async def callback_join(
+    query: CallbackQuery, user: User, _: Translator, bot: Bot, _plain: Translator | None = None
+) -> None:
     """Inline tugma orqali registratsiya — alternativ deeplink uchun."""
     if query.data is None or query.message is None:
         await query.answer()
@@ -272,7 +287,7 @@ async def callback_join(query: CallbackQuery, user: User, _: Translator, bot: Bo
 
     # Just redirect user to bot via deeplink (same flow as deeplink)
     deeplink = f"https://t.me/{settings.bot_username}?start=join_{group_id}"
-    await query.answer(_("click-to-join-private"), url=deeplink)
+    await query.answer(_plain("click-to-join-private"), url=deeplink)
 
 
 # === /start group command (registration starter / launcher) ===
@@ -280,7 +295,12 @@ async def callback_join(query: CallbackQuery, user: User, _: Translator, bot: Bo
 
 @router.message(Command("start", "go", "begin", prefix="/!"))
 async def cmd_start(
-    message: Message, user: User, _: Translator, command: CommandObject, bot: Bot
+    message: Message,
+    user: User,
+    _: Translator,
+    command: CommandObject,
+    bot: Bot,
+    _plain: Translator | None = None,
 ) -> None:
     """Group `/start` command — context-aware:
 
@@ -336,7 +356,7 @@ async def cmd_start(
             return
 
         # Non-admin, non-creator → just re-announce
-        await _re_announce_registration(bot, state, _)
+        await _re_announce_registration(bot, state, _, _plain)
         return
 
     # === Case B: No active registration ===
@@ -376,7 +396,9 @@ async def _delete_registration_message(bot: Bot, state) -> None:
     await game_service.save_state(state)
 
 
-async def _re_announce_registration(bot: Bot, state, _: Translator) -> None:
+async def _re_announce_registration(
+    bot: Bot, state, _: Translator, _plain: Translator | None = None
+) -> None:
     """Re-send the registration message — delete the old one, unpin, post fresh, pin again.
 
     Keeps the existing player list visible at the bottom of the chat (handy
@@ -393,8 +415,8 @@ async def _re_announce_registration(bot: Bot, state, _: Translator) -> None:
             await bot.delete_message(chat_id=chat_id, message_id=old_msg_id)
 
     # Send fresh registration message
-    text = format_registration_text(state, _)
-    keyboard = build_registration_keyboard(state, settings.bot_username, _)
+    text = format_registration_text(state, _, _plain)
+    keyboard = build_registration_keyboard(state, settings.bot_username, _, _plain)
     sent = await bot.send_message(
         chat_id=chat_id,
         text=text,
@@ -414,12 +436,14 @@ async def _re_announce_registration(bot: Bot, state, _: Translator) -> None:
 # === Helpers ===
 
 
-async def _refresh_registration_message(bot: Bot, state, _: Translator) -> None:
+async def _refresh_registration_message(
+    bot: Bot, state, _: Translator, _plain: Translator | None = None
+) -> None:
     """Update the registration message with new player list."""
     if state.registration_message_id is None:
         return
-    text = format_registration_text(state, _)
-    keyboard = build_registration_keyboard(state, settings.bot_username, _)
+    text = format_registration_text(state, _, _plain)
+    keyboard = build_registration_keyboard(state, settings.bot_username, _, _plain)
     try:
         await bot.edit_message_text(
             text,

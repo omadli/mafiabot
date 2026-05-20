@@ -22,7 +22,13 @@ router.message.filter(F.chat.type.in_({"group", "supergroup"}))
 
 
 @router.message(Command("settings", prefix="/!"), IsGroupAdmin())
-async def cmd_settings_admin(message: Message, user: User, bot: Bot, _: Translator) -> None:
+async def cmd_settings_admin(
+    message: Message,
+    user: User,
+    bot: Bot,
+    _: Translator,
+    _plain: Translator | None = None,
+) -> None:
     """Admin chaqirgan /settings — DM orqali sozlamalar menyusini ochish."""
     group = await Group.get_or_none(id=message.chat.id)
     if group is None:
@@ -33,7 +39,7 @@ async def cmd_settings_admin(message: Message, user: User, bot: Bot, _: Translat
         await message.reply(_("settings-group-not-configured"))
         return
 
-    text, kb = await build_settings_home_message(group, s, _)
+    text, kb = await build_settings_home_message(group, s, _, _plain)
     try:
         await bot.send_message(user.id, text, reply_markup=kb, parse_mode="HTML")
         await message.reply(_("settings-sent-to-dm"))

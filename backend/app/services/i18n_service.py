@@ -15,6 +15,30 @@ from loguru import logger
 # eat surrounding markup.
 _EMOJI_TAG_RE = re.compile(r"<e:([a-z0-9_-]+)>")
 
+# Telegram renders HTML in message bodies but NOT in
+#   * InlineKeyboardButton.text (always plain text)
+#   * answerCallbackQuery.text (always plain, even with show_alert=True)
+# These regexes let us strip our HTML-only constructs back to plain Unicode
+# so the same translator output can be reused in any of those surfaces.
+_TG_EMOJI_TAG_RE = re.compile(r'<tg-emoji emoji-id="[^"]*">([^<]*)</tg-emoji>')
+# Common HTML tags used in .ftl values that buttons/alerts must drop too.
+_HTML_TAG_RE = re.compile(r"</?(?:b|i|u|s|code|pre|tg-spoiler|blockquote)>")
+
+
+def strip_telegram_html(text: str) -> str:
+    """Return the plain-text version of a translator string.
+
+    Unwraps `<tg-emoji emoji-id="…">FALLBACK</tg-emoji>` to just `FALLBACK`
+    and drops Telegram's other inline tags. Use anywhere a string flows
+    into an InlineKeyboardButton label or an answerCallbackQuery text —
+    both of which Telegram renders as plain text.
+    """
+    if "<" not in text:
+        return text
+    text = _TG_EMOJI_TAG_RE.sub(r"\1", text)
+    text = _HTML_TAG_RE.sub("", text)
+    return text
+
 
 @lru_cache(maxsize=128)
 def _emoji_safe_fallback(code: str) -> str:
@@ -115,5 +139,24 @@ def get_translator(
         if result == key:
             logger.warning(f"Missing i18n key: '{key}' for locale '{locale}'")
         return _substitute_emoji_tags(result)
+
+    return _
+
+
+def get_plain_translator(
+    locale: str,
+    role_overrides: dict | None = None,
+    emoji_overrides: dict | None = None,
+) -> Translator:
+    """Translator that strips Telegram HTML — for buttons and callback
+    answers, which Telegram always renders as plain text.
+
+    Returns the same string the regular `get_translator` would, but with
+    `<tg-emoji>` unwrapped to its Unicode fallback and other tags removed.
+    """
+    base = get_translator(locale, role_overrides, emoji_overrides)
+
+    def _(key: str, **kwargs: Any) -> str:
+        return strip_telegram_html(base(key, **kwargs))
 
     return _

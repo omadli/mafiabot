@@ -7,7 +7,7 @@ from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject, Update
 
 from app.db.models import Group, User
-from app.services.i18n_service import get_translator
+from app.services.i18n_service import get_plain_translator, get_translator
 
 
 class I18nMiddleware(BaseMiddleware):
@@ -49,7 +49,18 @@ class I18nMiddleware(BaseMiddleware):
         data["locale"] = locale
         data["role_overrides"] = role_overrides
         data["emoji_overrides"] = emoji_overrides
+        # `_` returns Telegram-HTML — for `message.answer`, `message.edit_text`,
+        # and anywhere parse_mode="HTML" is honoured.
         data["_"] = get_translator(
+            locale,
+            role_overrides=role_overrides,
+            emoji_overrides=emoji_overrides,
+        )
+        # `_plain` returns the same value with `<tg-emoji>` unwrapped to its
+        # Unicode fallback. USE FOR InlineKeyboardButton.text AND
+        # callback.answer(text=...) — Telegram renders both as plain text,
+        # so raw HTML leaks visibly.
+        data["_plain"] = get_plain_translator(
             locale,
             role_overrides=role_overrides,
             emoji_overrides=emoji_overrides,

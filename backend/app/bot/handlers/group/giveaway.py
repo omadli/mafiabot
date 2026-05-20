@@ -26,7 +26,12 @@ router.message.filter(F.chat.type.in_({"group", "supergroup"}))
 
 @router.message(Command("give", prefix="/!"))
 async def cmd_give(
-    message: Message, user: User, _: Translator, command: CommandObject, bot: Bot
+    message: Message,
+    user: User,
+    _: Translator,
+    command: CommandObject,
+    bot: Bot,
+    _plain: Translator | None = None,
 ) -> None:
     """`/give 50` — group giveaway. `/give 50` (reply) — direct gift."""
     if not command.args:
@@ -88,7 +93,7 @@ async def cmd_give(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text=_("btn-claim-diamond"),
+                    text=_plain("btn-claim-diamond"),
                     callback_data=f"giveaway:click:{gw.id}",
                 )
             ]
@@ -141,7 +146,7 @@ async def _finish_after_delay(bot: Bot, giveaway_id, chat_id: int, message_id: i
 
 @router.callback_query(F.data.startswith("giveaway:click:"))
 async def callback_giveaway_click(
-    query: CallbackQuery, user: User, _: Translator, bot: Bot
+    query: CallbackQuery, user: User, _: Translator, bot: Bot, _plain: Translator | None = None
 ) -> None:
     if query.data is None:
         await query.answer()
@@ -154,11 +159,11 @@ async def callback_giveaway_click(
 
     result = await giveaway_service.click_giveaway(giveaway_id, user)  # type: ignore[attr-defined,var-annotated,arg-type]
     if result is None:
-        await query.answer(_("giveaway-already-clicked-or-finished"), show_alert=False)
+        await query.answer(_plain("giveaway-already-clicked-or-finished"), show_alert=False)
         return
 
     gw, _click = result
-    await query.answer(_("giveaway-clicked-ok"), show_alert=False)
+    await query.answer(_plain("giveaway-clicked-ok"), show_alert=False)
 
     # If max reached, finalize immediately
     if gw.status == GiveawayStatus.FINISHED:

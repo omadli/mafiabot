@@ -49,14 +49,19 @@ async def cb_home(query: CallbackQuery, user: User, _: Translator) -> None:
 
 
 @router.callback_query(F.data == "menu:profile")
-async def cb_profile(query: CallbackQuery, user: User, _: Translator) -> None:
+async def cb_profile(
+    query: CallbackQuery,
+    user: User,
+    _: Translator,
+    _plain: Translator | None = None,
+) -> None:
     """Profil + inventar single-screen ko'rinishini ochish."""
     # Lazy import to avoid circular (inventory.py imports menu indirectly)
     from app.bot.handlers.private.inventory import _build_profile_message
 
     await query.answer()
     inv, _new = await UserInventory.get_or_create(user=user)
-    text, kb = await _build_profile_message(user, inv, _)
+    text, kb = await _build_profile_message(user, inv, _, _plain)
     await _edit(query, text, kb)
 
 
