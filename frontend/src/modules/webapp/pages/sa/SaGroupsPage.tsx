@@ -6,13 +6,24 @@ import { useI18n } from "@shared/i18n/useI18n";
 
 export function SaGroupsPage() {
   const { t } = useI18n();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["sa-groups"],
     queryFn: () => saApi.groups(1, 100),
+    retry: 1,
   });
 
-  if (isLoading || !data) {
+  if (isLoading) {
     return <div className="webapp-section">⏳ {t("loading")}</div>;
+  }
+
+  if (error || !data) {
+    const msg =
+      error instanceof Error ? error.message : t("error-loading", "Yuklab bo'lmadi");
+    return (
+      <div className="webapp-section" style={{ color: "#e74c3c" }}>
+        ⚠️ {msg}
+      </div>
+    );
   }
 
   return (

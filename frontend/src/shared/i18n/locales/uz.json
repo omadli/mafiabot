@@ -474,7 +474,19 @@
       "winrates_citizen": "Tinch aholilar",
       "winrates_mafia": "Mafiya",
       "winrates_singleton": "Singletonlar",
-      "total_player_games": "Jami o'yinchi-o'yinlari"
+      "total_player_games": "Jami o'yinchi-o'yinlari",
+      "new_users_chart": "Yangi foydalanuvchilar (kunlik)",
+      "new_groups_chart": "Yangi guruhlar (kunlik)",
+      "hour_chart": "O'yinlar — kun soati bo'yicha",
+      "weekday_chart": "O'yinlar — hafta kuni bo'yicha",
+      "over_days": "Oxirgi {{count}} kunlik ma'lumotlar",
+      "weekday_0": "Dush",
+      "weekday_1": "Sesh",
+      "weekday_2": "Chor",
+      "weekday_3": "Pay",
+      "weekday_4": "Juma",
+      "weekday_5": "Shan",
+      "weekday_6": "Yak"
     },
     "roles": {
       "title": "Rollar statistikasi",

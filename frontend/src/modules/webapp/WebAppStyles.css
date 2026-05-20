@@ -314,3 +314,79 @@
   font-size: 0.85rem;
   font-family: inherit;
 }
+
+/* Row used by SaRoleConfigsPage / SaEmojiConfigsPage. Three columns:
+   leading icon, multi-field editor, save button. On narrow screens the
+   editor block (uz/ru/en inputs + emoji-id) reflows to a single column. */
+.sa-config-row {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #2a2a45;
+}
+
+.sa-config-row-editor {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sa-config-row-langs {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 4px;
+}
+
+.sa-config-row-extras {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 4px;
+}
+
+.sa-lang-select,
+select.lang-select,
+.admin-lang-select {
+  /* Force a font stack that ships colour-emoji glyphs so the country-flag
+     regional-indicator sequences render as actual flags rather than as
+     pairs of grey letters (Segoe UI on Windows lacks the glyph). */
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji",
+    "Twemoji Mozilla", "Segoe UI Symbol", system-ui, sans-serif;
+}
+
+@media (max-width: 600px) {
+  .webapp-shell {
+    padding: 0.5rem;
+  }
+  .webapp-section {
+    padding: 0.9rem;
+  }
+  .sa-config-row {
+    grid-template-columns: 36px 1fr;
+  }
+  .sa-config-row > button,
+  .sa-config-row > .sa-chip {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+  .sa-config-row-langs {
+    grid-template-columns: 1fr;
+  }
+  .sa-config-row-extras {
+    grid-template-columns: 40px 1fr;
+  }
+  .sa-nav {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+  .sa-nav-btn {
+    flex: 1 1 calc(50% - 0.25rem);
+    min-width: 0;
+  }
+  .sa-table th,
+  .sa-table td {
+    padding: 0.35rem 0.4rem;
+    font-size: 0.78rem;
+  }
+}

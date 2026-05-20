@@ -474,7 +474,19 @@
       "winrates_citizen": "Civilians",
       "winrates_mafia": "Mafia",
       "winrates_singleton": "Singletons",
-      "total_player_games": "Total player-games"
+      "total_player_games": "Total player-games",
+      "new_users_chart": "New users (per day)",
+      "new_groups_chart": "New groups (per day)",
+      "hour_chart": "Games — by hour of day",
+      "weekday_chart": "Games — by weekday",
+      "over_days": "Last {{count}} days",
+      "weekday_0": "Mon",
+      "weekday_1": "Tue",
+      "weekday_2": "Wed",
+      "weekday_3": "Thu",
+      "weekday_4": "Fri",
+      "weekday_5": "Sat",
+      "weekday_6": "Sun"
     },
     "roles": {
       "title": "Role stats",

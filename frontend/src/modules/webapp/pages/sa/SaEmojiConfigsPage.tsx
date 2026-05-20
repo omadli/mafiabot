@@ -95,50 +95,62 @@ function Row({ cfg }: { cfg: EmojiConfig }) {
   const customSet = draft.custom_emoji_id.trim().length > 0;
 
   return (
-    <div
-      className={flash ? "flash" : ""}
-      style={{
-        padding: "0.6rem 0",
-        borderBottom: "1px solid #2a2a45",
-        display: "grid",
-        gridTemplateColumns: "40px 1fr auto",
-        gap: 8,
-        alignItems: "center",
-      }}
-    >
+    <div className={`sa-config-row ${flash ? "flash" : ""}`}>
       <div style={{ fontSize: 24, textAlign: "center" }}>
         {draft.static_emoji}
         {customSet && <div style={{ fontSize: 10, color: "var(--accent)" }}>★</div>}
       </div>
-      <div style={{ minWidth: 0, display: "grid", gap: 4 }}>
+      <div className="sa-config-row-editor">
         <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
           <strong style={{ fontSize: 13 }}>{draft.name_uz || cfg.code}</strong>
           <code style={{ color: "var(--muted)", fontSize: 10 }}>{cfg.code}</code>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 }}>
-          <input className="sa-input" style={{ fontSize: 12, padding: "3px 5px" }}
-            placeholder="🇺🇿" value={draft.name_uz}
-            onChange={(e) => setDraft({ ...draft, name_uz: e.target.value })} />
-          <input className="sa-input" style={{ fontSize: 12, padding: "3px 5px" }}
-            placeholder="🇷🇺" value={draft.name_ru}
-            onChange={(e) => setDraft({ ...draft, name_ru: e.target.value })} />
-          <input className="sa-input" style={{ fontSize: 12, padding: "3px 5px" }}
-            placeholder="🇬🇧" value={draft.name_en}
-            onChange={(e) => setDraft({ ...draft, name_en: e.target.value })} />
+        <div className="sa-config-row-langs">
+          <input
+            className="sa-input"
+            style={{ fontSize: 12, padding: "3px 5px" }}
+            placeholder="🇺🇿"
+            value={draft.name_uz}
+            onChange={(e) => setDraft({ ...draft, name_uz: e.target.value })}
+          />
+          <input
+            className="sa-input"
+            style={{ fontSize: 12, padding: "3px 5px" }}
+            placeholder="🇷🇺"
+            value={draft.name_ru}
+            onChange={(e) => setDraft({ ...draft, name_ru: e.target.value })}
+          />
+          <input
+            className="sa-input"
+            style={{ fontSize: 12, padding: "3px 5px" }}
+            placeholder="🇬🇧"
+            value={draft.name_en}
+            onChange={(e) => setDraft({ ...draft, name_en: e.target.value })}
+          />
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "44px 1fr", gap: 4 }}>
-          <input className="sa-input" style={{ width: 44, textAlign: "center", fontSize: 16, padding: "3px 4px" }}
+        <div className="sa-config-row-extras">
+          <input
+            className="sa-input"
+            style={{ width: 44, textAlign: "center", fontSize: 16, padding: "3px 4px" }}
             value={draft.static_emoji}
-            onChange={(e) => setDraft({ ...draft, static_emoji: e.target.value })} />
-          <input className="sa-input" style={{ fontFamily: "monospace", fontSize: 11, padding: "3px 6px" }}
+            onChange={(e) => setDraft({ ...draft, static_emoji: e.target.value })}
+          />
+          <input
+            className="sa-input"
+            style={{ fontFamily: "monospace", fontSize: 11, padding: "3px 6px" }}
             placeholder={t("admin.role_configs.custom_id_placeholder")}
             value={draft.custom_emoji_id}
-            onChange={(e) => setDraft({ ...draft, custom_emoji_id: e.target.value })} />
+            onChange={(e) => setDraft({ ...draft, custom_emoji_id: e.target.value })}
+          />
         </div>
       </div>
-      <button className={`sa-chip ${dirty ? "active" : ""}`}
-        disabled={!dirty || mut.isPending} onClick={onSave}
-        style={{ padding: "0.4rem 0.7rem" }} title={t("save")}>
+      <button
+        className={`sa-chip ${dirty ? "active" : ""}`}
+        disabled={!dirty || mut.isPending}
+        onClick={onSave}
+        style={{ padding: "0.4rem 0.7rem" }}
+        title={t("save")}
+      >
         {mut.isPending ? "⏳" : flash ? "✅" : "💾"}
       </button>
     </div>

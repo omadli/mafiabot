@@ -223,27 +223,52 @@ async def list_groups(
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
 ) -> dict:
-    """All groups, paginated. Includes onboarding + recent game count."""
+    """All groups, paginated. Includes onboarding + recent game count.
+
+    Uses two aggregate queries instead of N+1 per-row counts so the
+    response stays under a second even with hundreds of groups.
+    """
+    from collections import defaultdict
+
+    from tortoise.functions import Count, Max
+
     total = await Group.all().count()
     rows = await Group.all().order_by("-created_at").offset((page - 1) * page_size).limit(page_size)
-    items = []
-    for g in rows:
-        games_total = await Game.filter(group_id=g.id).count()
-        last_game = await Game.filter(group_id=g.id).order_by("-started_at").first()
-        items.append(
-            {
-                "id": g.id,
-                "title": g.title,
-                "is_active": g.is_active,
-                "is_blocked": g.is_blocked,
-                "onboarding_completed": g.onboarding_completed,
-                "games_total": games_total,
-                "last_game_at": (
-                    last_game.started_at.isoformat() if last_game and last_game.started_at else None
-                ),
-                "created_at": g.created_at.isoformat() if g.created_at else None,
-            }
+    page_ids = [g.id for g in rows]
+
+    games_count: dict[int, int] = defaultdict(int)
+    last_game_at: dict[int, str] = {}
+    if page_ids:
+        agg_rows = (
+            await Game.filter(group_id__in=page_ids)
+            .annotate(games_total=Count("id"), last_started=Max("started_at"))
+            .group_by("group_id")
+            .values("group_id", "games_total", "last_started")
         )
+        for row in agg_rows:
+            gid = int(row["group_id"])
+            games_count[gid] = int(row["games_total"])
+            last = row.get("last_started")
+            if last is not None:
+                last_game_at[gid] = last.isoformat()
+
+    items = [
+        {
+            "id": g.id,
+            "title": g.title,
+            "is_active": g.is_active,
+            "is_blocked": g.is_blocked,
+            "onboarding_completed": g.onboarding_completed,
+            "is_premium": g.is_premium,
+            "premium_expires_at": (
+                g.premium_expires_at.isoformat() if g.premium_expires_at else None
+            ),
+            "games_total": games_count.get(g.id, 0),
+            "last_game_at": last_game_at.get(g.id),
+            "created_at": g.created_at.isoformat() if g.created_at else None,
+        }
+        for g in rows
+    ]
     return {"total": total, "page": page, "items": items}
 
 
@@ -638,6 +663,109 @@ async def chart_role_winrates(
         )
     items.sort(key=lambda x: x["games"], reverse=True)
     return {"items": items[:12]}
+
+
+@router.get("/charts/new-users-per-day")
+async def chart_new_users_per_day(
+    sa: SuperAdminContext = Depends(get_current_super_admin),
+    days: int = Query(30, ge=1, le=90),
+) -> dict:
+    """New user registrations per day for the last N days (backfilled)."""
+    now = datetime.now(UTC)
+    since = now - timedelta(days=days)
+    rows = await User.filter(created_at__gte=since).values("created_at")
+
+    by_day: dict[str, int] = {}
+    for r in rows:
+        ts = r["created_at"]
+        if ts is None:
+            continue
+        key = ts.date().isoformat()
+        by_day[key] = by_day.get(key, 0) + 1
+
+    series = []
+    for i in range(days):
+        d = (now - timedelta(days=days - 1 - i)).date()
+        key = d.isoformat()
+        series.append({"date": key, "count": by_day.get(key, 0)})
+    return {"series": series}
+
+
+@router.get("/charts/new-groups-per-day")
+async def chart_new_groups_per_day(
+    sa: SuperAdminContext = Depends(get_current_super_admin),
+    days: int = Query(30, ge=1, le=90),
+) -> dict:
+    """New groups added per day for the last N days (backfilled)."""
+    now = datetime.now(UTC)
+    since = now - timedelta(days=days)
+    rows = await Group.filter(created_at__gte=since).values("created_at")
+
+    by_day: dict[str, int] = {}
+    for r in rows:
+        ts = r["created_at"]
+        if ts is None:
+            continue
+        key = ts.date().isoformat()
+        by_day[key] = by_day.get(key, 0) + 1
+
+    series = []
+    for i in range(days):
+        d = (now - timedelta(days=days - 1 - i)).date()
+        key = d.isoformat()
+        series.append({"date": key, "count": by_day.get(key, 0)})
+    return {"series": series}
+
+
+@router.get("/charts/games-by-hour")
+async def chart_games_by_hour(
+    sa: SuperAdminContext = Depends(get_current_super_admin),
+    days: int = Query(30, ge=1, le=180),
+) -> dict:
+    """Game distribution across the 24 hours of the day.
+
+    Looks at started_at over the last N days and buckets every game by
+    its local hour (UTC). Returns 24 entries indexed 0..23 so the frontend
+    can render a fixed-axis bar chart.
+    """
+    now = datetime.now(UTC)
+    since = now - timedelta(days=days)
+    rows = await Game.filter(started_at__gte=since).values("started_at")
+
+    by_hour: list[int] = [0] * 24
+    for r in rows:
+        ts = r["started_at"]
+        if ts is None:
+            continue
+        by_hour[ts.hour] += 1
+    return {
+        "bins": [{"hour": h, "count": by_hour[h]} for h in range(24)],
+        "days": days,
+        "total": sum(by_hour),
+    }
+
+
+@router.get("/charts/games-by-weekday")
+async def chart_games_by_weekday(
+    sa: SuperAdminContext = Depends(get_current_super_admin),
+    days: int = Query(30, ge=1, le=180),
+) -> dict:
+    """Game distribution by day of week (0 = Mon, 6 = Sun)."""
+    now = datetime.now(UTC)
+    since = now - timedelta(days=days)
+    rows = await Game.filter(started_at__gte=since).values("started_at")
+
+    by_dow: list[int] = [0] * 7
+    for r in rows:
+        ts = r["started_at"]
+        if ts is None:
+            continue
+        by_dow[ts.weekday()] += 1
+    return {
+        "bins": [{"weekday": i, "count": by_dow[i]} for i in range(7)],
+        "days": days,
+        "total": sum(by_dow),
+    }
 
 
 # =====================================================================

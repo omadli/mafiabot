@@ -126,6 +126,26 @@ export const saApi = {
   chartRoleWinrates: async (): Promise<{ items: RoleWinrate[] }> =>
     (await api.get("/sa/charts/role-winrates")).data,
 
+  chartNewUsersPerDay: async (
+    days = 30,
+  ): Promise<{ series: { date: string; count: number }[] }> =>
+    (await api.get("/sa/charts/new-users-per-day", { params: { days } })).data,
+
+  chartNewGroupsPerDay: async (
+    days = 30,
+  ): Promise<{ series: { date: string; count: number }[] }> =>
+    (await api.get("/sa/charts/new-groups-per-day", { params: { days } })).data,
+
+  chartGamesByHour: async (
+    days = 30,
+  ): Promise<{ bins: { hour: number; count: number }[]; days: number; total: number }> =>
+    (await api.get("/sa/charts/games-by-hour", { params: { days } })).data,
+
+  chartGamesByWeekday: async (
+    days = 30,
+  ): Promise<{ bins: { weekday: number; count: number }[]; days: number; total: number }> =>
+    (await api.get("/sa/charts/games-by-weekday", { params: { days } })).data,
+
   // === Users browser + moderation ===
   users: async (params: {
     search?: string; is_banned?: boolean; is_premium?: boolean;

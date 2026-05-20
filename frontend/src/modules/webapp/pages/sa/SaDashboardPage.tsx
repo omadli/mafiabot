@@ -1,13 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
-import { useTranslation } from "react-i18next";
 
 import { saApi } from "@shared/api/sa";
 import { useI18n } from "@shared/i18n/useI18n";
 import { BarChart, HBarChart, LineChart } from "@shared/components/Charts";
 
 export function SaDashboardPage() {
-  const { t: tFlat } = useI18n();
-  const { t } = useTranslation();
+  // `t` from useI18n maps both flat keys (e.g. "dashboard-title") and
+  // nested dotted keys (e.g. "sa.dashboard.elo_chart") onto the same JSON
+  // resource bundle. Using a single hook keeps every label going through
+  // the flat→nested mapping table in useI18n.ts.
+  const { t } = useI18n();
   const { data, isLoading } = useQuery({
     queryKey: ["sa-global-stats"],
     queryFn: saApi.globalStats,
@@ -38,8 +40,32 @@ export function SaDashboardPage() {
     refetchInterval: 60_000,
   });
 
+  const { data: newUsersChart } = useQuery({
+    queryKey: ["sa-chart-new-users"],
+    queryFn: () => saApi.chartNewUsersPerDay(30),
+    refetchInterval: 60_000,
+  });
+
+  const { data: newGroupsChart } = useQuery({
+    queryKey: ["sa-chart-new-groups"],
+    queryFn: () => saApi.chartNewGroupsPerDay(30),
+    refetchInterval: 60_000,
+  });
+
+  const { data: hourChart } = useQuery({
+    queryKey: ["sa-chart-games-by-hour"],
+    queryFn: () => saApi.chartGamesByHour(30),
+    refetchInterval: 60_000,
+  });
+
+  const { data: weekdayChart } = useQuery({
+    queryKey: ["sa-chart-games-by-weekday"],
+    queryFn: () => saApi.chartGamesByWeekday(30),
+    refetchInterval: 60_000,
+  });
+
   if (isLoading || !data) {
-    return <div className="webapp-section">⏳ {tFlat("loading")}</div>;
+    return <div className="webapp-section">⏳ {t("loading")}</div>;
   }
 
   return (
@@ -74,24 +100,24 @@ export function SaDashboardPage() {
         <KPI label={t("games-last-7d")} value={data.games.last_7d} />
       </Section>
 
-      <Section title={tFlat("winrates-block")}>
+      <Section title={t("winrates-block")}>
         <p style={{ color: "var(--muted)", fontSize: "0.85rem", marginTop: 0 }}>
-          {tFlat("total-player-games")}: <strong>{data.winrates.total_player_games}</strong>
+          {t("total-player-games")}: <strong>{data.winrates.total_player_games}</strong>
         </p>
         <WinrateBar
-          label={tFlat("winrates-citizen")}
+          label={t("winrates-citizen")}
           pct={data.winrates.citizen_pct}
           wins={data.winrates.citizen_wins}
           color="#4ade80"
         />
         <WinrateBar
-          label={tFlat("winrates-mafia")}
+          label={t("winrates-mafia")}
           pct={data.winrates.mafia_pct}
           wins={data.winrates.mafia_wins}
           color="#e74c3c"
         />
         <WinrateBar
-          label={tFlat("winrates-singleton")}
+          label={t("winrates-singleton")}
           pct={data.winrates.singleton_pct}
           wins={data.winrates.singleton_wins}
           color="#f0a020"
@@ -151,6 +177,50 @@ export function SaDashboardPage() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {newUsersChart && newUsersChart.series.some((s) => s.count > 0) && (
+        <div className="webapp-section">
+          <h3>👤 {t("sa.dashboard.new_users_chart")}</h3>
+          <LineChart series={newUsersChart.series} color="#4ade80" />
+        </div>
+      )}
+
+      {newGroupsChart && newGroupsChart.series.some((s) => s.count > 0) && (
+        <div className="webapp-section">
+          <h3>🏘 {t("sa.dashboard.new_groups_chart")}</h3>
+          <LineChart series={newGroupsChart.series} color="#f0a020" />
+        </div>
+      )}
+
+      {hourChart && hourChart.total > 0 && (
+        <div className="webapp-section">
+          <h3>🕒 {t("sa.dashboard.hour_chart")}</h3>
+          <p style={{ color: "var(--muted)", fontSize: "0.8rem", marginTop: 0 }}>
+            {t("sa.dashboard.over_days").replace("{{count}}", String(hourChart.days))}
+          </p>
+          <BarChart
+            bins={hourChart.bins.map((b) => ({
+              label: `${b.hour.toString().padStart(2, "0")}`,
+              count: b.count,
+            }))}
+          />
+        </div>
+      )}
+
+      {weekdayChart && weekdayChart.total > 0 && (
+        <div className="webapp-section">
+          <h3>📅 {t("sa.dashboard.weekday_chart")}</h3>
+          <p style={{ color: "var(--muted)", fontSize: "0.8rem", marginTop: 0 }}>
+            {t("sa.dashboard.over_days").replace("{{count}}", String(weekdayChart.days))}
+          </p>
+          <BarChart
+            bins={weekdayChart.bins.map((b) => ({
+              label: t(`sa.dashboard.weekday_${b.weekday}`),
+              count: b.count,
+            }))}
+          />
         </div>
       )}
     </>

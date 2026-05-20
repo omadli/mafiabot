@@ -474,7 +474,19 @@
       "winrates_citizen": "Мирные",
       "winrates_mafia": "Мафия",
       "winrates_singleton": "Одиночки",
-      "total_player_games": "Игр-игроков всего"
+      "total_player_games": "Игр-игроков всего",
+      "new_users_chart": "Новые пользователи (по дням)",
+      "new_groups_chart": "Новые группы (по дням)",
+      "hour_chart": "Игры — по часам суток",
+      "weekday_chart": "Игры — по дням недели",
+      "over_days": "За последние {{count}} дней",
+      "weekday_0": "Пн",
+      "weekday_1": "Вт",
+      "weekday_2": "Ср",
+      "weekday_3": "Чт",
+      "weekday_4": "Пт",
+      "weekday_5": "Сб",
+      "weekday_6": "Вс"
     },
     "roles": {
       "title": "Статистика по ролям",

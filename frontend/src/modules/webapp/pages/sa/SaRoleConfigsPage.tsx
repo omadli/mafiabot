@@ -103,23 +103,9 @@ function RoleCard({ cfg }: { cfg: RoleConfig }) {
   const customSet = draft.custom_emoji_id.trim().length > 0;
 
   return (
-    <div
-      className={`role-card ${savedFlash ? "flash" : ""}`}
-      style={{
-        padding: "0.75rem 0",
-        borderBottom: "1px solid #2a2a45",
-        display: "grid",
-        gridTemplateColumns: "44px 1fr auto",
-        gap: "0.75rem",
-        alignItems: "center",
-      }}
-    >
+    <div className={`sa-config-row role-card ${savedFlash ? "flash" : ""}`}>
       <div
-        style={{
-          fontSize: 28,
-          textAlign: "center",
-          lineHeight: 1,
-        }}
+        style={{ fontSize: 28, textAlign: "center", lineHeight: 1 }}
         title={cfg.role}
       >
         {draft.static_emoji}
@@ -133,7 +119,7 @@ function RoleCard({ cfg }: { cfg: RoleConfig }) {
         )}
       </div>
 
-      <div style={{ minWidth: 0 }}>
+      <div className="sa-config-row-editor">
         <div
           style={{
             display: "flex",
@@ -148,14 +134,7 @@ function RoleCard({ cfg }: { cfg: RoleConfig }) {
           </code>
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr 1fr",
-            gap: 4,
-            marginBottom: 4,
-          }}
-        >
+        <div className="sa-config-row-langs" style={{ marginBottom: 4 }}>
           <LabelInput
             placeholder="🇺🇿"
             value={draft.name_uz}
@@ -173,7 +152,7 @@ function RoleCard({ cfg }: { cfg: RoleConfig }) {
           />
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: 4 }}>
+        <div className="sa-config-row-extras">
           <input
             className="sa-input"
             style={{ width: 48, fontSize: 18, textAlign: "center" }}
