@@ -30,12 +30,14 @@ const ROLE_GROUPS: { team: string; codes: string[] }[] = [
       "hooker",
       "hobo",
       "lucky",
-      "suicide",
       "kamikaze",
     ],
   },
   { team: "mafia", codes: ["don", "mafia", "lawyer", "journalist", "killer"] },
-  { team: "singletons", codes: ["maniac", "werewolf", "mage", "arsonist", "crook", "snitch"] },
+  {
+    team: "singletons",
+    codes: ["suicide", "maniac", "werewolf", "mage", "arsonist", "crook", "snitch"],
+  },
 ];
 
 const ROLE_EMOJI: Record<string, string> = {

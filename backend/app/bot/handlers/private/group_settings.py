@@ -70,11 +70,18 @@ ROLE_GROUPS: dict[str, list[str]] = {
         "hooker",
         "hobo",
         "lucky",
-        "suicide",
         "kamikaze",
     ],
     "mafia": ["don", "mafia", "lawyer", "journalist", "killer"],
-    "singletons": ["maniac", "werewolf", "mage", "arsonist", "crook", "snitch"],
+    "singletons": [
+        "suicide",
+        "maniac",
+        "werewolf",
+        "mage",
+        "arsonist",
+        "crook",
+        "snitch",
+    ],
 }
 
 ITEM_LABELS = {

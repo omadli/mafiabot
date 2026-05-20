@@ -244,7 +244,8 @@ async def callback_inv_back(
 # === Next-game role picker (special_role item) ===
 
 
-# Order mirrors the role catalog: 10 civilians, 5 mafia, 6 singletons.
+# Order mirrors the role catalog: 9 civilians, 5 mafia, 7 singletons.
+# Suidsid is a singleton (solo win: voted out wins, killed at night loses).
 _PICKABLE_ROLES: list[str] = [
     "citizen",
     "detective",
@@ -254,13 +255,13 @@ _PICKABLE_ROLES: list[str] = [
     "hooker",
     "hobo",
     "lucky",
-    "suicide",
     "kamikaze",
     "don",
     "mafia",
     "lawyer",
     "journalist",
     "killer",
+    "suicide",
     "maniac",
     "werewolf",
     "mage",

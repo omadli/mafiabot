@@ -97,7 +97,7 @@ def test_n30_high_ratio_matches_reference():
     roles = [r.role for r in result]
 
     mafia_codes = {"don", "mafia", "lawyer", "journalist", "killer"}
-    singleton_codes = {"maniac", "werewolf", "mage", "arsonist", "crook", "snitch"}
+    singleton_codes = {"suicide", "maniac", "werewolf", "mage", "arsonist", "crook", "snitch"}
 
     mafia_count = sum(1 for r in roles if r in mafia_codes)
     singleton_count = sum(1 for r in roles if r in singleton_codes)

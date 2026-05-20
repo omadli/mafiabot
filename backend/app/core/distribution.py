@@ -36,9 +36,11 @@ SINGLETON_MULTI_THRESHOLDS: dict[str, int] = {
     "maniac": 28,  # +1 extra maniac at N>=28
 }
 
-SINGLETON_ROLES = ["maniac", "werewolf", "mage", "arsonist", "crook", "snitch"]
+SINGLETON_ROLES = ["suicide", "maniac", "werewolf", "mage", "arsonist", "crook", "snitch"]
 
-# Civilian roles in priority order (excluding citizen which is filler)
+# Civilian roles in priority order (excluding citizen which is filler).
+# Suidsid moved to SINGLETON_ROLES — it has a solo win condition
+# (voted out = wins; killed at night or surviving without being voted = loses).
 CIVILIAN_PRIORITY: list[tuple[str, int]] = [
     ("detective", 4),
     ("doctor", 5),
@@ -47,7 +49,6 @@ CIVILIAN_PRIORITY: list[tuple[str, int]] = [
     ("mayor", 10),
     ("hobo", 12),
     ("lucky", 14),
-    ("suicide", 16),
     # kamikaze handled separately (multi-instance)
 ]
 
