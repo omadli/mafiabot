@@ -10,6 +10,7 @@ from aiogram.exceptions import TelegramForbiddenError
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from loguru import logger
 
+from app.bot.handlers.shared.stale_dm import is_stale_for_phase, notify_and_drop
 from app.config import settings as app_settings
 from app.core.state import GameState, NightAction, Phase, Team
 from app.db.models import Group, User
@@ -53,11 +54,11 @@ async def handle_detective_chooser(
     action_kind = parts[2]
 
     if user.active_game_id is None:
-        await query.answer(_plain("night-not-in-active-game"), show_alert=True)
+        await notify_and_drop(query, _plain)
         return
     state = await _find_state_by_game_id(user.active_game_id)
-    if state is None or state.phase != Phase.NIGHT:  # type: ignore[attr-defined,var-annotated,arg-type]
-        await query.answer(_plain("night-not-in-night-phase"), show_alert=True)
+    if is_stale_for_phase(state, Phase.NIGHT):  # type: ignore[arg-type]
+        await notify_and_drop(query, _plain)
         return
 
     actor = state.get_player(user.id)  # type: ignore[attr-defined,var-annotated,arg-type]
@@ -114,12 +115,12 @@ async def handle_night_pick(
 
     # Find which group this user is in
     if user.active_game_id is None:
-        await query.answer(_plain("night-not-in-active-game"), show_alert=True)
+        await notify_and_drop(query, _plain)
         return
 
     state = await _find_state_by_game_id(user.active_game_id)
-    if state is None or state.phase != Phase.NIGHT:  # type: ignore[attr-defined,var-annotated,arg-type]
-        await query.answer(_plain("night-not-in-night-phase"), show_alert=True)
+    if is_stale_for_phase(state, Phase.NIGHT):  # type: ignore[arg-type]
+        await notify_and_drop(query, _plain)
         return
 
     actor = state.get_player(user.id)  # type: ignore[attr-defined,var-annotated,arg-type]

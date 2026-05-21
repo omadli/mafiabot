@@ -22,20 +22,40 @@ from loguru import logger
 from app.config import settings
 from app.core.state import GameState
 from app.db.models import Group
-from app.services.i18n_service import get_translator
+from app.services import game_service
+from app.services.i18n_service import get_plain_translator, get_translator
 
 
 async def announce_game_started(bot: Bot, state: GameState) -> None:
     """Group post + per-player DM."""
     locale = state.settings.get("language", "uz")
     _ = get_translator(locale)
+    _plain = get_plain_translator(locale)
+
+    # --- 0. Drop the now-stale registration message (with Join button) ---
+    # Once roles are assigned, the join card is just clutter — and worse,
+    # someone could still try to tap "Join" on it. Delete instead of edit:
+    # the game-started post directly below makes the prior context obsolete.
+    if state.registration_message_id is not None:
+        try:
+            await bot.delete_message(
+                chat_id=state.chat_id,
+                message_id=state.registration_message_id,
+            )
+        except Exception as e:
+            logger.debug(f"announce_game_started: registration message delete failed: {e}")
+        state.registration_message_id = None
+        await game_service.save_state(state)
 
     # --- 1. Group message with "Sizning rolingiz" button ---
+    # Button text must go through `_plain` — Telegram renders inline-button
+    # labels as plain text, so `<tg-emoji>` HTML from `<e:…>` markers
+    # would otherwise leak as raw `<tg-emoji …>` text in the button.
     kb = InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text=_("btn-show-my-role"),
+                    text=_plain("btn-show-my-role"),
                     callback_data=f"game:show-role:{state.id}",
                 )
             ]

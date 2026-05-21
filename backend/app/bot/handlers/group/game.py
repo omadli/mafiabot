@@ -241,12 +241,17 @@ async def cmd_extend(
 
 @router.callback_query(F.data.startswith("game:show-role:"))
 async def callback_show_my_role(
-    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+    query: CallbackQuery, user: User, _: Translator, _plain: Translator
 ) -> None:
     """Show the caller their assigned role as an alert.
 
     Triggered by the "🎭 Sizning rolingiz" button on the game-started message.
     Non-players get an explicit "you are not in this game" alert.
+
+    `query.answer(show_alert=True)` renders the body as plain text, so the
+    role label, description, and template must all go through `_plain` —
+    otherwise `<b>` / `<tg-emoji>` markup from the .ftl strings leaks as
+    literal `<b>…` text in the popup.
     """
     if query.data is None or query.message is None:
         await query.answer()
@@ -262,9 +267,9 @@ async def callback_show_my_role(
         await query.answer(_plain("show-role-not-in-game"), show_alert=True)
         return
 
-    role_label = _(f"role-{player.role}")
-    role_desc = _(f"role-desc-{player.role}")
-    text = _("show-role-alert", role=role_label, description=role_desc)
+    role_label = _plain(f"role-{player.role}")
+    role_desc = _plain(f"role-desc-{player.role}")
+    text = _plain("show-role-alert", role=role_label, description=role_desc)
     # Telegram caps callback answer text at ~200 chars
     if len(text) > 195:
         text = text[:192] + "..."

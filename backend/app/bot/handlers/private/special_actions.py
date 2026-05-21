@@ -13,6 +13,7 @@ from aiogram.types import (
 )
 from loguru import logger
 
+from app.bot.handlers.shared.stale_dm import notify_and_drop
 from app.core.state import DeathReason, GameState, Phase
 from app.db.models import User
 from app.services import game_service
@@ -76,12 +77,12 @@ async def callback_mage_reaction(
         return
 
     if user.active_game_id is None:
-        await query.answer(_plain("night-not-in-active-game"), show_alert=True)
+        await notify_and_drop(query, _plain)
         return
 
     state = await _find_state(user.active_game_id)
     if state is None:
-        await query.answer("Game not found", show_alert=True)
+        await notify_and_drop(query, _plain)
         return
 
     mage = state.get_player(user.id)
@@ -165,11 +166,11 @@ async def callback_arsonist_action(
         return
 
     if user.active_game_id is None:
-        await query.answer(_plain("night-not-in-active-game"), show_alert=True)
+        await notify_and_drop(query, _plain)
         return
     state = await _find_state(user.active_game_id)
     if state is None or state.phase != Phase.NIGHT:
-        await query.answer(_plain("night-not-in-night-phase"), show_alert=True)
+        await notify_and_drop(query, _plain)
         return
 
     arsonist = state.get_player(user.id)
@@ -245,12 +246,12 @@ async def callback_kamikaze_take(
         return
 
     if user.active_game_id is None:
-        await query.answer(_plain("night-not-in-active-game"), show_alert=True)
+        await notify_and_drop(query, _plain)
         return
 
     state = await _find_state(user.active_game_id)
     if state is None:
-        await query.answer("Game not found", show_alert=True)
+        await notify_and_drop(query, _plain)
         return
 
     kamikaze = state.get_player(user.id)

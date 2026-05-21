@@ -30,6 +30,7 @@ from aiogram.types import (
 )
 from loguru import logger
 
+from app.bot.handlers.shared.stale_dm import notify_and_drop
 from app.config import settings as app_settings
 from app.core.state import GameState, Phase, PlayerState, Team, Vote
 from app.db.models import User
@@ -129,12 +130,14 @@ async def callback_vote_cast(
     # now, so we cannot rely on query.message.chat.id).
     state = await _state_for_user(user)
     if state is None or state.phase != Phase.VOTING:
-        await query.answer(_plain("vote-not-in-voting"), show_alert=True)
+        # Game already wrapped up (or moved past voting) — drop the stale DM
+        # so the player doesn't keep poking the buttons.
+        await notify_and_drop(query, _plain)
         return
 
     voter = state.get_player(user.id)
     if voter is None:
-        await query.answer(_plain("vote-not-in-game-alert"), show_alert=True)
+        await notify_and_drop(query, _plain)
         return
     if not voter.alive:
         await query.answer(_plain("vote-dead-alert"), show_alert=True)
