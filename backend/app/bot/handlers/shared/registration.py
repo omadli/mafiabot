@@ -14,17 +14,35 @@ from app.services.messaging import player_mention
 def format_registration_text(
     state: GameState, _: Translator, _plain: Translator | None = None
 ) -> str:
-    """Build the group registration message text."""
-    remaining = max(0, (state.phase_ends_at or 0) - int(time.time()))
-    minutes, seconds = divmod(remaining, 60)
-    timer = f"{minutes:02d}:{seconds:02d}"
+    """Build the group registration message text.
 
+    When `phase_ends_at` is None (`/extend` flipped the registration to
+    indefinite), the timer line is omitted — printing `00:00` there is
+    misleading because the deadline has been removed, not reached.
+    """
     if state.players:
         player_list = "\n".join(
             f"{p.join_order}. {player_mention(p.user_id, p.first_name)}" for p in state.players
         )
     else:
         player_list = _("registration-no-players-yet")
+
+    if state.phase_ends_at is None:
+        body = _(
+            "registration-message-indefinite",
+            count=len(state.players),
+            players=player_list,
+        )
+    else:
+        remaining = max(0, state.phase_ends_at - int(time.time()))
+        minutes, seconds = divmod(remaining, 60)
+        timer = f"{minutes:02d}:{seconds:02d}"
+        body = _(
+            "registration-message",
+            timer=timer,
+            count=len(state.players),
+            players=player_list,
+        )
 
     bounty_line = ""
     if state.bounty_per_winner:
@@ -34,15 +52,7 @@ def format_registration_text(
             pool=state.bounty_pool,
         )
 
-    return (
-        _(
-            "registration-message",
-            timer=timer,
-            count=len(state.players),
-            players=player_list,
-        )
-        + bounty_line
-    )
+    return body + bounty_line
 
 
 def build_registration_keyboard(

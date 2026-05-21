@@ -448,7 +448,12 @@ async def _resolve_active_items(user_id: int, items_allowed: dict) -> list[str]:
 
 
 async def cancel_game(state: GameState, reason: str = "cancelled") -> None:
-    """Cancel game (admin /stop or auto). Refund bounty if applicable."""
+    """Cancel game (admin /stop or auto). Refund bounty if applicable.
+
+    Also unpins+deletes the registration message if one is still pinned —
+    otherwise a stale "Join Game" card lingers in the chat forever after a
+    failed-to-fill registration auto-cancel.
+    """
     from datetime import datetime
 
     state.phase = Phase.CANCELLED
@@ -478,6 +483,28 @@ async def cancel_game(state: GameState, reason: str = "cancelled") -> None:
 
     for p in state.players:
         await set_user_active_game(p.user_id, None)
+
+    # Wipe the registration message so the chat returns to a clean slate.
+    # Best-effort: aiogram/Telegram failures here MUST NOT block the rest
+    # of cleanup. Bot may also be unavailable during early-shutdown paths.
+    if state.registration_message_id is not None:
+        try:
+            from app.main import bot
+
+            if bot is not None:
+                import contextlib
+
+                with contextlib.suppress(Exception):
+                    await bot.unpin_chat_message(
+                        chat_id=state.chat_id, message_id=state.registration_message_id
+                    )
+                with contextlib.suppress(Exception):
+                    await bot.delete_message(
+                        chat_id=state.chat_id, message_id=state.registration_message_id
+                    )
+        except Exception as e:
+            logger.debug(f"Registration message cleanup failed: {e}")
+        state.registration_message_id = None
 
     await delete_state(state.group_id)
     logger.info(f"Game {state.id} cancelled: {reason}")

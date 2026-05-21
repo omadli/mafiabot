@@ -14,7 +14,7 @@ from app.config import settings
 from app.core.state import Phase
 from app.db.models import Game, Group, User
 from app.services import game_service
-from app.services.i18n_service import Translator, get_translator
+from app.services.i18n_service import Translator, get_plain_translator, get_translator
 
 router = Router(name="private_start")
 router.message.filter(F.chat.type == "private")
@@ -139,10 +139,14 @@ async def _handle_join(
     # between languages every time someone with a different setting joins.
     bot: Bot = message.bot  # type: ignore[assignment]
     if state.registration_message_id:
-        group_t = get_translator(state.settings.get("language", "uz"))
+        locale = state.settings.get("language", "uz")
+        group_t = get_translator(locale)
+        group_t_plain = get_plain_translator(locale)
         try:
-            text = format_registration_text(state, group_t)
-            keyboard = build_registration_keyboard(state, settings.bot_username, group_t)
+            text = format_registration_text(state, group_t, group_t_plain)
+            keyboard = build_registration_keyboard(
+                state, settings.bot_username, group_t, group_t_plain
+            )
             await bot.edit_message_text(
                 text,
                 chat_id=state.chat_id,

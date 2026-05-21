@@ -94,7 +94,12 @@ class PhaseManager:
 
                 # Transition
                 await cls._advance_phase(bot, state)
-                await save_state(state)
+                # _advance_phase may have ended the game (cancel_game /
+                # finish_game already wiped the Redis state). Re-saving
+                # here would resurrect a CANCELLED/FINISHED state in Redis
+                # and block the next /game with "game already running".
+                if state.phase not in (Phase.CANCELLED, Phase.FINISHED):
+                    await save_state(state)
 
                 # === Winner check BEFORE the next-phase intro ===
                 # If the phase that just completed produced a game-ending event

@@ -55,12 +55,45 @@ async def cmd_game(
         await message.answer(_("game-onboarding-required"))
         return
 
-    # If a registration is already open, just refresh it instead of
-    # erroring out with "game already running".
+    # Handle pre-existing Redis state. Three cases worth distinguishing:
+    #   1. WAITING + manager alive → refresh registration card.
+    #   2. WAITING + manager dead (bot restarted) → restart manager so
+    #      auto-timeout/auto-start works, then refresh.
+    #   3. Anything else (NIGHT/DAY/VOTING/HANGING_CONFIRM/CANCELLED) →
+    #      if no manager is running, the game is orphaned. Clean it up
+    #      so the new /game can proceed instead of throwing
+    #      "game-already-running" forever.
     existing = await game_service.load_state(chat_id)
-    if existing is not None and existing.phase == Phase.WAITING:
-        await _re_announce_registration(bot, existing, _, _plain)
-        return
+    if existing is not None:
+        existing_task = PhaseManager._tasks.get(chat_id)
+        manager_alive = existing_task is not None and not existing_task.done()
+
+        if existing.phase == Phase.WAITING:
+            if not manager_alive:
+                logger.warning(
+                    f"WAITING state in group {chat_id} has no live phase manager — restarting"
+                )
+                PhaseManager.start_for(
+                    bot, group_id=chat_id, on_phase_change=lambda s: _on_phase_change(bot, s)
+                )
+            await _re_announce_registration(bot, existing, _, _plain)
+            return
+
+        if not manager_alive:
+            logger.warning(
+                f"Stale {existing.phase} state detected in group {chat_id} — cleaning up"
+            )
+            try:
+                await game_service.cancel_game(existing, reason="stale-state-recovery")
+            except Exception as e:
+                logger.exception(f"Stale-state cleanup failed: {e}")
+                # Last-resort: drop the Redis entry directly so we don't
+                # loop forever on a half-broken record.
+                await game_service.delete_state(chat_id)
+            # Fall through to create a brand-new game below.
+        else:
+            await message.answer(_("game-already-running"))
+            return
 
     # Permission check
     perms = group.settings.permissions if group.settings else {}  # type: ignore[attr-defined,var-annotated,arg-type]
@@ -323,6 +356,15 @@ async def cmd_start(
 
     # === Case A: Active registration ===
     if state is not None and state.phase == Phase.WAITING:
+        # If the phase manager died (bot restart), bring it back so the
+        # NIGHT loop runs after the launch path below transitions out
+        # of WAITING.
+        existing_task = PhaseManager._tasks.get(chat_id)
+        if existing_task is None or existing_task.done():
+            PhaseManager.start_for(
+                bot, group_id=chat_id, on_phase_change=lambda s: _on_phase_change(bot, s)
+            )
+
         # Is the caller authorized to launch the game?
         is_admin = False
         try:
