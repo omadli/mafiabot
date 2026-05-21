@@ -1,73 +1,77 @@
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
-import { api } from "@shared/api/client";
-
-interface LeaderItem {
-  user_id: number;
-  first_name: string;
-  username: string | null;
-  elo: number;
-  games_total: number;
-  games_won: number;
-  winrate: number;
-}
+import { ErrorBanner, Pagination, Skeleton } from "../components/Ui";
+import { groupApi } from "@shared/api/group";
 
 export function LeaderboardPage() {
   const { t } = useTranslation();
   const { groupId } = useParams();
-  const { data, isLoading } = useQuery({
-    queryKey: ["leaderboard", groupId],
-    queryFn: async () =>
-      (
-        await api.get<{ items: LeaderItem[] }>(`/group/${groupId}/leaderboard`, {
-          params: { limit: 30 },
-        })
-      ).data,
-    enabled: !!groupId,
+  const gid = parseInt(groupId || "0");
+  const [page, setPage] = useState(1);
+  const pageSize = 30;
+
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["leaderboard", gid, page],
+    queryFn: () => groupApi.leaderboard(gid, page, pageSize),
+    enabled: !!gid,
   });
 
   return (
     <main>
       <h2>🏆 {t("webapp.leaderboard.title")}</h2>
-      {isLoading ? (
-        <div className="webapp-loading">⏳</div>
-      ) : (
-        <div className="webapp-section" style={{ padding: 0 }}>
-          {data?.items.length === 0 ? (
-            <div style={{ padding: "1.5rem", textAlign: "center", color: "var(--muted)" }}>
-              {t("webapp.leaderboard.empty")}
-            </div>
-          ) : (
-            data?.items.map((p, idx) => (
-              <div
-                key={p.user_id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.75rem",
-                  padding: "0.75rem 1rem",
-                  borderBottom: "1px solid #2a2a45",
-                }}
-              >
-                <div style={{ minWidth: 32, fontWeight: 600 }}>
-                  {idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `${idx + 1}.`}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div>{p.first_name}</div>
-                  <small style={{ color: "var(--muted)" }}>
-                    {t("webapp.leaderboard.games_winrate", {
-                      games: p.games_total,
-                      pct: (p.winrate * 100).toFixed(0),
-                    })}
-                  </small>
-                </div>
-                <div style={{ color: "var(--accent)", fontWeight: 600 }}>{p.elo}</div>
-              </div>
-            ))
-          )}
+
+      {isLoading && <Skeleton rows={6} height={56} />}
+
+      {isError && <ErrorBanner onRetry={() => refetch()} />}
+
+      {!isLoading && !isError && data?.items.length === 0 && (
+        <div className="webapp-section" style={{ textAlign: "center", color: "var(--muted)" }}>
+          {t("webapp.leaderboard.empty")}
         </div>
+      )}
+
+      {!isLoading && !isError && data && data.items.length > 0 && (
+        <>
+          <div className="webapp-section" style={{ padding: 0 }}>
+            {data.items.map((p) => {
+              // Medal podium only when on page 1
+              let badge: string | number = p.rank;
+              if (page === 1) {
+                if (p.rank === 1) badge = "🥇";
+                else if (p.rank === 2) badge = "🥈";
+                else if (p.rank === 3) badge = "🥉";
+                else badge = `${p.rank}.`;
+              } else {
+                badge = `${p.rank}.`;
+              }
+              return (
+                <div key={p.user_id} className="webapp-leaderboard-row">
+                  <div className="webapp-leaderboard-rank">{badge}</div>
+                  <div className="webapp-leaderboard-name">
+                    <div>{p.first_name}</div>
+                    <small style={{ color: "var(--muted)" }}>
+                      {t("webapp.leaderboard.games_winrate", {
+                        games: p.games_total,
+                        pct: (p.winrate * 100).toFixed(0),
+                      })}
+                    </small>
+                  </div>
+                  <div className="webapp-leaderboard-elo">{p.elo}</div>
+                </div>
+              );
+            })}
+          </div>
+
+          <Pagination
+            page={data.page}
+            pageSize={data.page_size}
+            total={data.total}
+            onChange={setPage}
+          />
+        </>
       )}
     </main>
   );

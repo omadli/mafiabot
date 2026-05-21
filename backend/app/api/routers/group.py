@@ -138,18 +138,39 @@ async def update_group_settings(
 
 
 @router.get("/group/{group_id}/leaderboard")
-async def group_leaderboard(group_id: int, limit: int = 10) -> dict:
+async def group_leaderboard(
+    group_id: int,
+    page: int = 1,
+    page_size: int = 30,
+) -> dict:
+    """Top players in this group, paginated.
+
+    `total` is returned so the WebApp can render page controls without a
+    second round-trip. `page_size` is clamped to [1, 100] to keep payloads
+    bounded.
+    """
     from app.db.models import GroupUserStats
 
+    page = max(page, 1)
+    page_size = max(1, min(page_size, 100))
+
+    total = await GroupUserStats.filter(group_id=group_id).count()
+
     rows = (
-        await GroupUserStats.filter(group_id=group_id).order_by("-elo").limit(min(limit, 100)).all()
+        await GroupUserStats.filter(group_id=group_id)
+        .order_by("-elo")
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .prefetch_related("user")
+        .all()
     )
 
+    base_rank = (page - 1) * page_size
     items = []
-    for r in rows:
-        await r.fetch_related("user")
+    for idx, r in enumerate(rows, start=1):
         items.append(
             {
+                "rank": base_rank + idx,
                 "user_id": r.user.id,
                 "first_name": r.user.first_name,
                 "username": r.user.username,
@@ -159,4 +180,154 @@ async def group_leaderboard(group_id: int, limit: int = 10) -> dict:
                 "winrate": (round(r.games_won / r.games_total, 3) if r.games_total else 0),
             }
         )
-    return {"items": items}
+    return {"items": items, "page": page, "page_size": page_size, "total": total}
+
+
+@router.get("/group/{group_id}/messages")
+async def list_group_messages(
+    group_id: int,
+    auth: WebAppAuthData = Depends(require_group_admin),
+) -> dict:
+    """Curated overridable message templates for the WebApp editor.
+
+    Returns each key with its default (from .ftl in the group's locale)
+    and the current override (from `GroupSettings.messages`). Read uses
+    the group's own language so admins see the same text the players do.
+    """
+    if auth.chat_id != group_id:
+        raise HTTPException(status_code=403, detail="Chat ID mismatch")
+
+    from app.services.message_templates import list_templates
+
+    group = await Group.get_or_none(id=group_id).prefetch_related("settings")
+    if group is None or group.settings is None:
+        raise HTTPException(status_code=404, detail="Group not found")
+    locale: str = group.settings.language  # type: ignore[attr-defined]
+    overrides: dict = group.settings.messages or {}  # type: ignore[attr-defined]
+    return {"locale": locale, "items": list_templates(locale, overrides)}
+
+
+class MessageOverridesRequest(BaseModel):
+    overrides: dict = Field(default_factory=dict)
+
+
+@router.post("/group/{group_id}/messages")
+async def save_group_messages(
+    group_id: int,
+    payload: MessageOverridesRequest,
+    auth: WebAppAuthData = Depends(require_group_admin),
+) -> dict:
+    """Replace the whole `messages` JSON. Empty string overrides are
+    pruned so the default falls through, keeping the JSON minimal."""
+    if auth.chat_id != group_id:
+        raise HTTPException(status_code=403, detail="Chat ID mismatch")
+
+    from app.db.models import GroupSettings
+    from app.services.group_settings_helper import save_settings_fields
+    from app.services.message_templates import OVERRIDABLE_MESSAGES
+
+    allowed_keys = {spec["key"] for spec in OVERRIDABLE_MESSAGES}
+    cleaned: dict[str, str] = {}
+    for k, v in payload.overrides.items():
+        if k not in allowed_keys:
+            continue
+        if not isinstance(v, str):
+            raise HTTPException(status_code=400, detail=f"Override for '{k}' must be a string")
+        v = v.strip()
+        if v:
+            cleaned[k] = v
+
+    s = await GroupSettings.get_or_none(group_id=group_id)
+    if s is None:
+        raise HTTPException(status_code=404, detail="Settings not found")
+    await save_settings_fields(s, messages=cleaned)
+
+    await log_action(
+        action="group.messages.update",
+        target_type="group",
+        target_id=str(group_id),
+        payload={"keys": list(cleaned.keys()), "user_id": auth.user_id},
+    )
+    return {"ok": True, "overrides": cleaned}
+
+
+@router.post("/group/{group_id}/atmosphere_media/clear")
+async def clear_atmosphere_media(
+    group_id: int,
+    event: str,
+    auth: WebAppAuthData = Depends(require_group_admin),
+) -> dict:
+    """Clear a single atmosphere-media slot. New uploads still go through
+    the bot's `/setatmosphere` command — the WebApp only exposes view +
+    clear because Telegram WebApps can't directly attach files to the
+    bot's `file_id` namespace."""
+    if auth.chat_id != group_id:
+        raise HTTPException(status_code=403, detail="Chat ID mismatch")
+
+    from app.db.models import GroupSettings
+    from app.services.group_settings_helper import save_settings_fields
+
+    s = await GroupSettings.get_or_none(group_id=group_id)
+    if s is None:
+        raise HTTPException(status_code=404, detail="Settings not found")
+    media: dict = dict(s.atmosphere_media or {})  # type: ignore[attr-defined]
+    if event not in media:
+        return {"ok": True, "cleared": False}
+    media.pop(event, None)
+    await save_settings_fields(s, atmosphere_media=media)
+    await log_action(
+        action="group.atmosphere.clear",
+        target_type="group",
+        target_id=str(group_id),
+        payload={"event": event, "user_id": auth.user_id},
+    )
+    return {"ok": True, "cleared": True}
+
+
+@router.get("/group/{group_id}/history")
+async def group_history(
+    group_id: int,
+    page: int = 1,
+    page_size: int = 20,
+    auth: WebAppAuthData = Depends(require_group_admin),
+) -> dict:
+    """Recent FINISHED games in this group. Admin-only — exposes
+    finished-game metadata (winner team, durations, player counts) that
+    isn't otherwise visible from the bot.
+    """
+    if auth.chat_id != group_id:
+        raise HTTPException(status_code=403, detail="Chat ID mismatch")
+
+    from app.db.models import Game, GameStatus
+
+    page = max(page, 1)
+    page_size = max(1, min(page_size, 50))
+
+    base_qs = Game.filter(group_id=group_id, status=GameStatus.FINISHED)
+    total = await base_qs.count()
+
+    rows = (
+        await base_qs.order_by("-started_at").offset((page - 1) * page_size).limit(page_size).all()
+    )
+
+    items = []
+    for g in rows:
+        duration_sec: int | None = None
+        if g.started_at and g.finished_at:
+            duration_sec = int((g.finished_at - g.started_at).total_seconds())
+        history = g.history or {}
+        players_list = history.get("players") or []
+        final_alive = history.get("final_alive") or []
+        items.append(
+            {
+                "id": str(g.id),
+                "winner_team": g.winner_team.value if g.winner_team else None,
+                "started_at": g.started_at.isoformat() if g.started_at else None,
+                "finished_at": g.finished_at.isoformat() if g.finished_at else None,
+                "duration_seconds": duration_sec,
+                "player_count": len(players_list),
+                "alive_at_end": len(final_alive),
+                "bounty_per_winner": g.bounty_per_winner,
+            }
+        )
+    return {"items": items, "page": page, "page_size": page_size, "total": total}

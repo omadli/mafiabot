@@ -3,6 +3,7 @@ import { Route, Routes } from "react-router-dom";
 import WebApp from "@twa-dev/sdk";
 
 import { GroupSettingsPage } from "./pages/GroupSettingsPage";
+import { HistoryPage } from "./pages/HistoryPage";
 import { LeaderboardPage } from "./pages/LeaderboardPage";
 import { WebAppHome } from "./pages/WebAppHome";
 import { SaLayout } from "./pages/sa/SaLayout";
@@ -48,6 +49,7 @@ export function WebAppRoot() {
         <Route index element={<WebAppHome />} />
         <Route path="settings/:groupId" element={<GroupSettingsPage />} />
         <Route path="leaderboard/:groupId" element={<LeaderboardPage />} />
+        <Route path="history/:groupId" element={<HistoryPage />} />
 
         {/* SuperAdmin section — requires Telegram-ID auth (initData) */}
         <Route path="sa" element={<SaLayout />}>

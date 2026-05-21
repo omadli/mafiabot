@@ -693,9 +693,10 @@
   "role-snitch": "Sotqin",
   "webapp_home": {
     "title": "📱 Mafia WebApp",
-    "subtitle": "Guruh sozlamalari va leaderboard.",
+    "subtitle": "Guruh sozlamalari, leaderboard va o'yinlar tarixi.",
     "settings_btn": "⚙️ Sozlamalar",
     "leaderboard_btn": "🏆 Leaderboard",
+    "history_btn": "📜 O'yinlar tarixi",
     "open_via_telegram": "Bu sahifa Telegram WebApp orqali ochilishi kerak. Bot guruhda \"Sozlamalar\" tugmasini bosing."
   },
   "group_settings": {
@@ -769,7 +770,26 @@
     "afk_consecutive_leaves_to_ban": "Ban uchun ketma-ket tashlash soni",
     "afk_ban_duration_hours": "Ban davomiyligi (soat)",
     "language_hint": "Bot va o'yin xabarlari shu tilda yuboriladi.",
-    "language_label": "Til"
+    "language_label": "Til",
+    "tab_atmosphere": "🎬 Atmosfera",
+    "tab_messages": "💬 Xabarlar",
+    "section_atmosphere": "Atmosfera media",
+    "atmosphere_hint": "Har bir o'yin lahzasi uchun GIF/video qo'shing. Yangi media yuklash uchun guruhda /setatmosphere buyrug'idan foydalaning.",
+    "atmosphere_event_night_start": "🌃 Tun boshlandi",
+    "atmosphere_event_day_start": "☀️ Kun boshlandi",
+    "atmosphere_event_voting_start": "🗳 Ovoz berish",
+    "atmosphere_event_game_end_civilian_win": "🏆 Tinch aholilar g'olib",
+    "atmosphere_event_game_end_mafia_win": "🤵🏻 Mafiya g'olib",
+    "atmosphere_event_game_end_singleton_win": "🎯 Singleton g'olib",
+    "atmosphere_no_media": "— belgilanmagan —",
+    "atmosphere_clear": "🗑 Tozalash",
+    "atmosphere_cleared": "✅ Tozalandi",
+    "section_messages": "Xabar shablonlari",
+    "messages_hint": "Bot xabarlarining matnini moslang. {placeholder}'lar avtomatik almashtiriladi.",
+    "messages_default_label": "Standart matn",
+    "messages_override_label": "Sizning matningiz (bo'sh = standart)",
+    "messages_placeholders_label": "Mavjud o'zgaruvchilar",
+    "messages_key_leave_message": "Foydalanuvchi /leave bosganda yuboriladigan xabar"
   },
   "live": {
     "phase_waiting": "Kutilmoqda",
@@ -793,7 +813,35 @@
     "leaderboard": {
       "title": "Guruh leaderboard",
       "empty": "Hali o'yinlar bo'lmagan",
-      "games_winrate": "{{games}} o'yin · {{pct}}% WR"
+      "games_winrate": "{{games}} o'yin · {{pct}}% WR",
+      "rank_column": "#",
+      "player_column": "O'yinchi",
+      "elo_column": "ELO",
+      "games_column": "O'yin",
+      "winrate_column": "WR%",
+      "page_label": "{{current}} / {{total}}",
+      "prev": "← Oldingi",
+      "next": "Keyingi →"
+    },
+    "history": {
+      "title": "📜 O'yinlar tarixi",
+      "empty": "Hali yakunlangan o'yin yo'q",
+      "winner_civilians": "Tinch aholilar",
+      "winner_mafia": "Mafiya",
+      "winner_singleton": "Singleton",
+      "winner_unknown": "Noma'lum",
+      "duration_minutes": "{{m}} daq",
+      "players_count": "{{n}} o'yinchi",
+      "alive_count": "{{n}} tirik",
+      "started_at_label": "Boshlangan"
+    },
+    "ux": {
+      "retry": "🔄 Qayta urinish",
+      "error_load_failed": "Yuklab bo'lmadi. Internetga ulanishni tekshiring.",
+      "error_save_failed": "Saqlab bo'lmadi. Qayta urinib ko'ring.",
+      "draft_restored": "💾 Saqlanmagan o'zgarishlar tiklandi.",
+      "draft_discard": "Tashlab yuborish",
+      "loading": "Yuklanmoqda…"
     }
   }
 }

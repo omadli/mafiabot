@@ -693,9 +693,10 @@
   "role-snitch": "Стукач",
   "webapp_home": {
     "title": "📱 Mafia WebApp",
-    "subtitle": "Настройки группы и таблица лидеров.",
+    "subtitle": "Настройки группы, рейтинг и история игр.",
     "settings_btn": "⚙️ Настройки",
     "leaderboard_btn": "🏆 Рейтинг",
+    "history_btn": "📜 История игр",
     "open_via_telegram": "Эта страница должна открываться через Telegram WebApp. В группе нажмите кнопку \"Настройки\"."
   },
   "group_settings": {
@@ -769,7 +770,26 @@
     "afk_consecutive_leaves_to_ban": "Выходов подряд для бана",
     "afk_ban_duration_hours": "Длительность бана (часов)",
     "language_hint": "Сообщения бота и игры будут на этом языке.",
-    "language_label": "Язык"
+    "language_label": "Язык",
+    "tab_atmosphere": "🎬 Атмосфера",
+    "tab_messages": "💬 Сообщения",
+    "section_atmosphere": "Атмосферное медиа",
+    "atmosphere_hint": "Добавьте GIF/видео для каждого ключевого момента игры. Для загрузки нового медиа используйте команду /setatmosphere в группе.",
+    "atmosphere_event_night_start": "🌃 Наступила ночь",
+    "atmosphere_event_day_start": "☀️ Наступил день",
+    "atmosphere_event_voting_start": "🗳 Голосование",
+    "atmosphere_event_game_end_civilian_win": "🏆 Победа мирных",
+    "atmosphere_event_game_end_mafia_win": "🤵🏻 Победа мафии",
+    "atmosphere_event_game_end_singleton_win": "🎯 Победа одиночки",
+    "atmosphere_no_media": "— не задано —",
+    "atmosphere_clear": "🗑 Очистить",
+    "atmosphere_cleared": "✅ Очищено",
+    "section_messages": "Шаблоны сообщений",
+    "messages_hint": "Настройте текст сообщений бота. {placeholder}'ы подставятся автоматически.",
+    "messages_default_label": "Текст по умолчанию",
+    "messages_override_label": "Ваш текст (пусто = по умолчанию)",
+    "messages_placeholders_label": "Доступные переменные",
+    "messages_key_leave_message": "Сообщение при /leave"
   },
   "live": {
     "phase_waiting": "Ожидание",
@@ -793,7 +813,35 @@
     "leaderboard": {
       "title": "Лидерборд группы",
       "empty": "Игр пока не было",
-      "games_winrate": "{{games}} игр · {{pct}}% WR"
+      "games_winrate": "{{games}} игр · {{pct}}% WR",
+      "rank_column": "#",
+      "player_column": "Игрок",
+      "elo_column": "ELO",
+      "games_column": "Игр",
+      "winrate_column": "WR%",
+      "page_label": "{{current}} / {{total}}",
+      "prev": "← Назад",
+      "next": "Вперёд →"
+    },
+    "history": {
+      "title": "📜 История игр",
+      "empty": "Завершённых игр пока нет",
+      "winner_civilians": "Мирные",
+      "winner_mafia": "Мафия",
+      "winner_singleton": "Одиночка",
+      "winner_unknown": "Неизвестно",
+      "duration_minutes": "{{m}} мин",
+      "players_count": "{{n}} игроков",
+      "alive_count": "{{n}} в живых",
+      "started_at_label": "Начало"
+    },
+    "ux": {
+      "retry": "🔄 Повторить",
+      "error_load_failed": "Не удалось загрузить. Проверьте интернет.",
+      "error_save_failed": "Не удалось сохранить. Повторите попытку.",
+      "draft_restored": "💾 Восстановлены несохранённые изменения.",
+      "draft_discard": "Сбросить",
+      "loading": "Загрузка…"
     }
   }
 }

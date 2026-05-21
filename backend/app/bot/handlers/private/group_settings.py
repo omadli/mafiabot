@@ -125,13 +125,15 @@ AFK_KEYS: list[tuple[str, int, int, int]] = [
     ("ban_duration_hours", 6, 1, 168),
 ]
 
-# Permission fields: each cycles between two values (kept narrow so the bot
-# DM stays tappable; the WebApp surfaces full enum choices).
-PERMISSION_TOGGLES: list[tuple[str, tuple[str, str]]] = [
-    ("who_can_register", ("all", "admins")),
-    ("who_can_start", ("registrar", "admins")),
-    ("who_can_extend", ("all", "admins")),
-    ("who_can_stop", ("admins", "creator")),
+# Permission fields: each cycles through the SAME 4 options the WebApp
+# exposes (kept in sync so admins editing via either surface see the same
+# choices). Tap → next option, wraps around.
+PERMISSION_OPTIONS: tuple[str, ...] = ("all", "admins", "registrar", "none")
+PERMISSION_TOGGLES: list[tuple[str, tuple[str, ...]]] = [
+    ("who_can_register", PERMISSION_OPTIONS),
+    ("who_can_start", PERMISSION_OPTIONS),
+    ("who_can_extend", PERMISSION_OPTIONS),
+    ("who_can_stop", PERMISSION_OPTIONS),
 ]
 
 
@@ -882,7 +884,13 @@ async def cb_perm_cycle(
 
     p = {**DEFAULT_PERMISSIONS, **(s.permissions or {})}
     cur = p.get(key, vals[0])
-    p[key] = vals[1] if cur == vals[0] else vals[0]
+    # Cycle to the next option; wrap around. If the saved value isn't in
+    # our list (legacy "creator" etc.), reset to the first option.
+    try:
+        next_idx = (vals.index(cur) + 1) % len(vals)
+    except ValueError:
+        next_idx = 0
+    p[key] = vals[next_idx]
     await save_settings_fields(s, permissions=p)
 
     await query.answer(f"{_(f'perm-{key}')}: {_(f'perm-target-{p[key]}')}")

@@ -1,9 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import WebApp from "@twa-dev/sdk";
 import { useTranslation } from "react-i18next";
 import { api } from "@shared/api/client";
+
+import { ErrorBanner, Skeleton } from "../components/Ui";
+import { groupApi, type MessageTemplate } from "@shared/api/group";
 
 // Static role emojis + i18n key suffix — name resolves at render time
 // against the backend `role-*` keys (shared with the bot) so this list
@@ -47,6 +50,11 @@ const LANG_CODES = [
   { code: "ru", label: "🇷🇺 Русский" },
   { code: "en", label: "🇬🇧 English" },
 ] as const;
+// Atmosphere events — same key set the bot's /setatmosphere command writes.
+const ATMOSPHERE_EVENTS = [
+  "night_start", "day_start", "voting_start",
+  "game_end_civilian_win", "game_end_mafia_win", "game_end_singleton_win",
+] as const;
 
 interface GroupSettings {
   group_id: number;
@@ -61,6 +69,7 @@ interface GroupSettings {
   gameplay: Record<string, string | number | boolean>;
   display: Record<string, boolean>;
   afk: Record<string, number>;
+  atmosphere_media: Record<string, string>;
 }
 
 type Tab =
@@ -73,9 +82,34 @@ type Tab =
   | "gameplay"
   | "display"
   | "afk"
-  | "language";
+  | "language"
+  | "atmosphere"
+  | "messages";
 
 const PLAYER_COUNTS = Array.from({ length: 27 }, (_, i) => i + 4); // 4..30
+
+// localStorage helper — keeps unsaved settings around across refresh /
+// accidental nav-aways. Keyed by group so different chats don't collide.
+const draftKey = (gid: number) => `mafia.webapp.draft.${gid}`;
+
+function readDraft(gid: number): GroupSettings | null {
+  try {
+    const raw = localStorage.getItem(draftKey(gid));
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeDraft(gid: number, draft: GroupSettings | null): void {
+  try {
+    if (draft === null) localStorage.removeItem(draftKey(gid));
+    else localStorage.setItem(draftKey(gid), JSON.stringify(draft));
+  } catch {
+    // Quota or private-mode — failing silently is fine, draft is a
+    // convenience not a correctness feature.
+  }
+}
 
 export function GroupSettingsPage() {
   const { t } = useTranslation();
@@ -85,7 +119,9 @@ export function GroupSettingsPage() {
   const [tab, setTab] = useState<Tab>("roles");
   const [draft, setDraft] = useState<GroupSettings | null>(null);
   const [dirty, setDirty] = useState(false);
-  const [distN, setDistN] = useState<number>(8); // selected player-count in distribution tab
+  const [distN, setDistN] = useState<number>(8);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [draftRestoredNotice, setDraftRestoredNotice] = useState(false);
 
   const roleLabel = (code: string) => `${ROLE_EMOJI[code] ?? ""} ${t(`role-${code}`)}`.trim();
   const timingLabel = (code: string) => t(`group_settings.timing_${code}`);
@@ -94,17 +130,27 @@ export function GroupSettingsPage() {
   const itemLabel = (code: string) => t(`sa.system.item_${code}`);
   const afkLabel = (code: string) => t(`group_settings.afk_${code}`);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["settings", gid],
     queryFn: async () =>
       (await api.get<GroupSettings>(`/group/${gid}/settings`)).data,
     enabled: !!gid,
   });
 
-  // Initialize draft when data loads
-  if (data && !draft) {
-    setDraft(data);
-  }
+  // Seed draft once data lands. Prefer localStorage if user had unsaved
+  // edits — that's the whole point of persisting them.
+  useEffect(() => {
+    if (data && !draft) {
+      const persisted = readDraft(gid);
+      if (persisted && persisted.group_id === data.group_id) {
+        setDraft(persisted);
+        setDirty(true);
+        setDraftRestoredNotice(true);
+      } else {
+        setDraft(data);
+      }
+    }
+  }, [data, draft, gid]);
 
   const saveMutation = useMutation({
     mutationFn: async ({
@@ -118,22 +164,61 @@ export function GroupSettingsPage() {
       queryClient.invalidateQueries({ queryKey: ["settings", gid] });
       try {
         WebApp.HapticFeedback?.notificationOccurred?.("success");
-      } catch {}
+      } catch {
+        // Outside Telegram — no haptics available.
+      }
       setDirty(false);
+      setSaveError(null);
+      writeDraft(gid, null);
+      setDraftRestoredNotice(false);
+    },
+    onError: () => {
+      setSaveError(t("webapp.ux.error_save_failed"));
+      try {
+        WebApp.HapticFeedback?.notificationOccurred?.("error");
+      } catch {
+        // Outside Telegram.
+      }
     },
   });
 
-  if (isLoading || !draft) return <div className="webapp-loading">⏳</div>;
+  if (isError) {
+    return (
+      <main>
+        <ErrorBanner onRetry={() => refetch()} />
+      </main>
+    );
+  }
+  if (isLoading || !draft) {
+    return (
+      <main>
+        <Skeleton rows={2} height={36} />
+        <Skeleton rows={5} height={56} />
+      </main>
+    );
+  }
 
   const updateField = (section: keyof GroupSettings, key: string, value: unknown) => {
-    setDraft({
+    const next = {
       ...draft,
       [section]: { ...(draft[section] as Record<string, unknown>), [key]: value },
-    });
+    };
+    setDraft(next);
     setDirty(true);
+    writeDraft(gid, next);
+  };
+
+  const discardDraft = () => {
+    if (data) {
+      setDraft(data);
+      setDirty(false);
+      writeDraft(gid, null);
+      setDraftRestoredNotice(false);
+    }
   };
 
   const saveCurrentTab = () => {
+    setSaveError(null);
     if (tab === "roles") saveMutation.mutate({ section: "roles", value: draft.roles });
     else if (tab === "distribution")
       saveMutation.mutate({ section: "role_distribution", value: draft.role_distribution });
@@ -152,6 +237,7 @@ export function GroupSettingsPage() {
     else if (tab === "afk") saveMutation.mutate({ section: "afk", value: draft.afk });
     else if (tab === "language")
       saveMutation.mutate({ section: "language", value: draft.language });
+    // "atmosphere" and "messages" tabs have their own save flows.
   };
 
   const currentOverride: string[] | null =
@@ -166,10 +252,10 @@ export function GroupSettingsPage() {
     }
     setDraft({ ...draft, role_distribution: next });
     setDirty(true);
+    writeDraft(gid, { ...draft, role_distribution: next });
   };
 
   const enableOverride = () => {
-    // Sensible starting point: 1 don + 1 detective + rest citizens.
     const seed: string[] = ["don", "detective"];
     while (seed.length < distN) seed.push("citizen");
     setOverride(seed);
@@ -182,24 +268,38 @@ export function GroupSettingsPage() {
     setOverride(copy);
   };
 
+  // Tabs that have their own save flow shouldn't show the global save bar.
+  const showSaveBar = tab !== "atmosphere" && tab !== "messages";
+
   return (
-    <main>
+    <main className={showSaveBar ? "with-sticky-save" : ""}>
       <h2 style={{ marginBottom: "0.5rem" }}>⚙️ {draft.title}</h2>
       <p style={{ color: "var(--muted)", marginTop: 0, fontSize: "0.85rem" }}>
         {t("group_settings.group_id")}: {draft.group_id}
       </p>
 
+      {draftRestoredNotice && (
+        <div className="webapp-notice">
+          <span>{t("webapp.ux.draft_restored")}</span>
+          <button className="webapp-btn webapp-btn-ghost" onClick={discardDraft}>
+            {t("webapp.ux.draft_discard")}
+          </button>
+        </div>
+      )}
+
       <div className="webapp-tabs">
-        <Tab id="roles" current={tab} setTab={setTab}>{t("group_settings.tab_roles")}</Tab>
-        <Tab id="distribution" current={tab} setTab={setTab}>{t("group_settings.tab_distribution")}</Tab>
-        <Tab id="timings" current={tab} setTab={setTab}>{t("group_settings.tab_timings")}</Tab>
-        <Tab id="items" current={tab} setTab={setTab}>{t("group_settings.tab_items")}</Tab>
-        <Tab id="silence" current={tab} setTab={setTab}>{t("group_settings.tab_silence")}</Tab>
-        <Tab id="permissions" current={tab} setTab={setTab}>{t("group_settings.tab_permissions")}</Tab>
-        <Tab id="gameplay" current={tab} setTab={setTab}>{t("group_settings.tab_gameplay")}</Tab>
-        <Tab id="display" current={tab} setTab={setTab}>{t("group_settings.tab_display")}</Tab>
-        <Tab id="afk" current={tab} setTab={setTab}>{t("group_settings.tab_afk")}</Tab>
-        <Tab id="language" current={tab} setTab={setTab}>{t("group_settings.tab_language")}</Tab>
+        <TabBtn id="roles" current={tab} setTab={setTab}>{t("group_settings.tab_roles")}</TabBtn>
+        <TabBtn id="distribution" current={tab} setTab={setTab}>{t("group_settings.tab_distribution")}</TabBtn>
+        <TabBtn id="timings" current={tab} setTab={setTab}>{t("group_settings.tab_timings")}</TabBtn>
+        <TabBtn id="items" current={tab} setTab={setTab}>{t("group_settings.tab_items")}</TabBtn>
+        <TabBtn id="silence" current={tab} setTab={setTab}>{t("group_settings.tab_silence")}</TabBtn>
+        <TabBtn id="permissions" current={tab} setTab={setTab}>{t("group_settings.tab_permissions")}</TabBtn>
+        <TabBtn id="gameplay" current={tab} setTab={setTab}>{t("group_settings.tab_gameplay")}</TabBtn>
+        <TabBtn id="display" current={tab} setTab={setTab}>{t("group_settings.tab_display")}</TabBtn>
+        <TabBtn id="afk" current={tab} setTab={setTab}>{t("group_settings.tab_afk")}</TabBtn>
+        <TabBtn id="language" current={tab} setTab={setTab}>{t("group_settings.tab_language")}</TabBtn>
+        <TabBtn id="atmosphere" current={tab} setTab={setTab}>{t("group_settings.tab_atmosphere")}</TabBtn>
+        <TabBtn id="messages" current={tab} setTab={setTab}>{t("group_settings.tab_messages")}</TabBtn>
       </div>
 
       {tab === "roles" && (
@@ -447,8 +547,10 @@ export function GroupSettingsPage() {
               style={{ width: "auto" }}
               value={draft.language}
               onChange={(e) => {
-                setDraft({ ...draft, language: e.target.value });
+                const next = { ...draft, language: e.target.value };
+                setDraft(next);
                 setDirty(true);
+                writeDraft(gid, next);
               }}
             >
               {LANG_CODES.map(({ code, label }) => (
@@ -461,10 +563,206 @@ export function GroupSettingsPage() {
         </div>
       )}
 
+      {tab === "atmosphere" && (
+        <AtmosphereTab
+          groupId={gid}
+          media={draft.atmosphere_media || {}}
+          onClearedLocal={(event) => {
+            const next = { ...(draft.atmosphere_media || {}) };
+            delete next[event];
+            setDraft({ ...draft, atmosphere_media: next });
+            // No global-bar save needed — clearAtmosphere is its own POST.
+          }}
+        />
+      )}
+
+      {tab === "messages" && <MessagesTab groupId={gid} />}
+
+      {saveError && (
+        <div className="webapp-error-banner" style={{ margin: "0.75rem 0" }}>
+          {saveError}
+        </div>
+      )}
+
+      {showSaveBar && (
+        <button
+          className="webapp-save-btn"
+          onClick={saveCurrentTab}
+          disabled={!dirty || saveMutation.isPending}
+        >
+          {saveMutation.isPending
+            ? t("group_settings.save_saving")
+            : dirty
+              ? t("group_settings.save_dirty")
+              : t("group_settings.save_saved")}
+        </button>
+      )}
+    </main>
+  );
+}
+
+// === Tab body components ===
+
+function AtmosphereTab({
+  groupId,
+  media,
+  onClearedLocal,
+}: {
+  groupId: number;
+  media: Record<string, string>;
+  onClearedLocal: (event: string) => void;
+}) {
+  const { t } = useTranslation();
+  const [busyEvent, setBusyEvent] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const clear = async (event: string) => {
+    setBusyEvent(event);
+    setError(null);
+    try {
+      await groupApi.clearAtmosphere(groupId, event);
+      onClearedLocal(event);
+      try {
+        WebApp.HapticFeedback?.notificationOccurred?.("success");
+      } catch {
+        // Outside Telegram.
+      }
+    } catch {
+      setError(t("webapp.ux.error_save_failed"));
+    } finally {
+      setBusyEvent(null);
+    }
+  };
+
+  return (
+    <div className="webapp-section">
+      <h3>{t("group_settings.section_atmosphere")}</h3>
+      <p style={{ color: "var(--muted)", fontSize: "0.85rem", marginTop: 0 }}>
+        {t("group_settings.atmosphere_hint")}
+      </p>
+      {error && <ErrorBanner message={error} />}
+      {ATMOSPHERE_EVENTS.map((event) => {
+        const fileId = media[event];
+        return (
+          <div key={event} className="webapp-row webapp-atmosphere-row">
+            <label>{t(`group_settings.atmosphere_event_${event}`)}</label>
+            <span className="webapp-atmosphere-status">
+              {fileId ? (
+                <code title={fileId}>{fileId.slice(0, 14)}…</code>
+              ) : (
+                <span style={{ color: "var(--muted)" }}>
+                  {t("group_settings.atmosphere_no_media")}
+                </span>
+              )}
+            </span>
+            {fileId && (
+              <button
+                className="webapp-btn webapp-btn-ghost"
+                disabled={busyEvent === event}
+                onClick={() => clear(event)}
+              >
+                {t("group_settings.atmosphere_clear")}
+              </button>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function MessagesTab({ groupId }: { groupId: number }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["messages", groupId],
+    queryFn: () => groupApi.listMessages(groupId),
+    enabled: !!groupId,
+  });
+
+  // Local override state so the user can edit several at once before saving.
+  const [overrides, setOverrides] = useState<Record<string, string>>({});
+  const [dirty, setDirty] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (data) {
+      const next: Record<string, string> = {};
+      for (const tpl of data.items) {
+        next[tpl.key] = tpl.override;
+      }
+      setOverrides(next);
+      setDirty(false);
+    }
+  }, [data]);
+
+  const saveMutation = useMutation({
+    mutationFn: () => groupApi.saveMessages(groupId, overrides),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["messages", groupId] });
+      setDirty(false);
+      setError(null);
+      try {
+        WebApp.HapticFeedback?.notificationOccurred?.("success");
+      } catch {
+        // Outside Telegram.
+      }
+    },
+    onError: () => setError(t("webapp.ux.error_save_failed")),
+  });
+
+  if (isError) {
+    return (
+      <div className="webapp-section">
+        <ErrorBanner onRetry={() => refetch()} />
+      </div>
+    );
+  }
+  if (isLoading || !data) {
+    return (
+      <div className="webapp-section">
+        <Skeleton rows={3} height={120} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="webapp-section">
+      <h3>{t("group_settings.section_messages")}</h3>
+      <p style={{ color: "var(--muted)", fontSize: "0.85rem", marginTop: 0 }}>
+        {t("group_settings.messages_hint")}
+      </p>
+      {error && <ErrorBanner message={error} />}
+      {data.items.map((tpl: MessageTemplate) => (
+        <div key={tpl.key} className="webapp-message-editor">
+          <h4>{t(`group_settings.messages_key_${tpl.key}`)}</h4>
+          <div className="webapp-message-default">
+            <small>{t("group_settings.messages_default_label")}</small>
+            <pre>{tpl.default || "—"}</pre>
+          </div>
+          <label>
+            <small>{t("group_settings.messages_override_label")}</small>
+            <textarea
+              className="webapp-input webapp-textarea"
+              value={overrides[tpl.key] ?? ""}
+              rows={3}
+              onChange={(e) => {
+                setOverrides({ ...overrides, [tpl.key]: e.target.value });
+                setDirty(true);
+              }}
+            />
+          </label>
+          <small style={{ color: "var(--muted)" }}>
+            {t("group_settings.messages_placeholders_label")}: <code>{tpl.placeholders}</code>
+          </small>
+        </div>
+      ))}
       <button
         className="webapp-save-btn"
-        onClick={saveCurrentTab}
+        onClick={() => saveMutation.mutate()}
         disabled={!dirty || saveMutation.isPending}
+        style={{ marginTop: "1rem" }}
       >
         {saveMutation.isPending
           ? t("group_settings.save_saving")
@@ -472,11 +770,13 @@ export function GroupSettingsPage() {
             ? t("group_settings.save_dirty")
             : t("group_settings.save_saved")}
       </button>
-    </main>
+    </div>
   );
 }
 
-function Tab({
+// === Primitives ===
+
+function TabBtn({
   id,
   current,
   setTab,

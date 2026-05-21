@@ -693,9 +693,10 @@
   "role-snitch": "Snitch",
   "webapp_home": {
     "title": "📱 Mafia WebApp",
-    "subtitle": "Group settings & leaderboard.",
+    "subtitle": "Group settings, leaderboard and game history.",
     "settings_btn": "⚙️ Settings",
     "leaderboard_btn": "🏆 Leaderboard",
+    "history_btn": "📜 Game history",
     "open_via_telegram": "This page must be opened via Telegram WebApp. In the group, tap the \"Settings\" button."
   },
   "group_settings": {
@@ -769,7 +770,26 @@
     "afk_consecutive_leaves_to_ban": "Consecutive leaves to ban",
     "afk_ban_duration_hours": "Ban duration (hours)",
     "language_hint": "Bot and game messages will use this language.",
-    "language_label": "Language"
+    "language_label": "Language",
+    "tab_atmosphere": "🎬 Atmosphere",
+    "tab_messages": "💬 Messages",
+    "section_atmosphere": "Atmosphere media",
+    "atmosphere_hint": "Attach a GIF or video to each key game moment. To upload new media, use the /setatmosphere command inside the group.",
+    "atmosphere_event_night_start": "🌃 Night begins",
+    "atmosphere_event_day_start": "☀️ Day begins",
+    "atmosphere_event_voting_start": "🗳 Voting",
+    "atmosphere_event_game_end_civilian_win": "🏆 Civilians win",
+    "atmosphere_event_game_end_mafia_win": "🤵🏻 Mafia wins",
+    "atmosphere_event_game_end_singleton_win": "🎯 Singleton wins",
+    "atmosphere_no_media": "— not set —",
+    "atmosphere_clear": "🗑 Clear",
+    "atmosphere_cleared": "✅ Cleared",
+    "section_messages": "Message templates",
+    "messages_hint": "Customise bot messages. {placeholder}s are substituted automatically.",
+    "messages_default_label": "Default text",
+    "messages_override_label": "Your text (empty = use default)",
+    "messages_placeholders_label": "Available placeholders",
+    "messages_key_leave_message": "Sent when a user runs /leave"
   },
   "live": {
     "phase_waiting": "Waiting",
@@ -793,7 +813,35 @@
     "leaderboard": {
       "title": "Group leaderboard",
       "empty": "No games played yet",
-      "games_winrate": "{{games}} games · {{pct}}% WR"
+      "games_winrate": "{{games}} games · {{pct}}% WR",
+      "rank_column": "#",
+      "player_column": "Player",
+      "elo_column": "ELO",
+      "games_column": "Games",
+      "winrate_column": "WR%",
+      "page_label": "{{current}} / {{total}}",
+      "prev": "← Prev",
+      "next": "Next →"
+    },
+    "history": {
+      "title": "📜 Game history",
+      "empty": "No finished games yet",
+      "winner_civilians": "Civilians",
+      "winner_mafia": "Mafia",
+      "winner_singleton": "Singleton",
+      "winner_unknown": "Unknown",
+      "duration_minutes": "{{m}} min",
+      "players_count": "{{n}} players",
+      "alive_count": "{{n}} alive",
+      "started_at_label": "Started"
+    },
+    "ux": {
+      "retry": "🔄 Retry",
+      "error_load_failed": "Could not load. Check your connection.",
+      "error_save_failed": "Could not save. Please try again.",
+      "draft_restored": "💾 Restored unsaved changes.",
+      "draft_discard": "Discard",
+      "loading": "Loading…"
     }
   }
 }
