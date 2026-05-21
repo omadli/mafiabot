@@ -229,6 +229,14 @@ registration-message =
     👥 Участники ({ $count }):
     { $players }
 
+registration-message-indefinite =
+    🎲 Регистрация на игру началась!
+    Нажмите кнопку ниже.
+
+    ⏳ Время продлено без ограничения — игра начнётся, когда админ нажмёт /start.
+    👥 Участники ({ $count }):
+    { $players }
+
 registration-no-players-yet = — (пока никто не присоединился)
 
 registration-bounty = <e:currency-diamond> Каждому победителю: { $per_winner } алмазов (эскроу: { $pool })
@@ -527,6 +535,7 @@ profile-info =
 
     <e:currency-dollar> Доллар: { $dollars }
     <e:currency-diamond> Алмаз: { $diamonds }
+    { $premium_line }
 
     <e:item-shield> Защита: { $shield }
     <e:item-killer-shield> Защита от убийцы: { $killer_shield }
@@ -539,6 +548,9 @@ profile-info =
 
     🎯 Побед: { $wins }
     🎲 Всего игр: { $games_total }
+
+profile-premium-active = 👑 Премиум: активен до { $expires_at }
+profile-premium-inactive = 👑 Премиум: не куплен
 
 inventory-header = 🎒 Ваш инвентарь:
 
@@ -600,10 +612,21 @@ shop-items-header =
     Оплата в указанной валюте.
 
 shop-premium-info =
-    👑 Премиум-пользователь:
+    👑 <b>Премиум-пользователь</b>
     • Двойная защита
     • Защита от Путаны
     • Другие привилегии
+
+    Ваш статус: <b>не куплен</b>
+
+shop-premium-info-active =
+    👑 <b>Премиум-пользователь</b>
+    • Двойная защита
+    • Защита от Путаны
+    • Другие привилегии
+
+    Премиум уже активен — действует до <b>{ $expires_at }</b>.
+    Продлите его одной из кнопок ниже.
 
 btn-buy-items = 🎒 Оружие/защита
 
@@ -612,6 +635,10 @@ btn-buy-premium = 👑 Премиум
 btn-buy-premium-30d = ⭐ 1 месяц премиум — { $price } <e:currency-diamond>
 
 btn-buy-premium-365d = ⭐ 1 год премиум — { $price } <e:currency-diamond>
+
+btn-extend-premium-30d = ⏳ Продлить на 30 дней — { $price } <e:currency-diamond>
+
+btn-extend-premium-365d = ⏳ Продлить на 1 год — { $price } <e:currency-diamond>
 
 shop-special-pick-prompt =
     🃏 <b>Особая роль</b>
@@ -644,7 +671,9 @@ buy-insufficient-diamonds = <e:currency-diamond> Недостаточно алм
 
 buy-insufficient-dollars = <e:currency-dollar> Недостаточно долларов
 
-premium-activated = 👑 Премиум активирован: { $days } дней
+premium-activated = 👑 Премиум активирован: +{ $days } дней. Действует до { $expires_at }.
+
+premium-extended = ⏳ Премиум продлён: +{ $days } дней. Теперь действует до { $expires_at }.
 
 payment-success = ✅ Оплата прошла успешно! +<e:currency-diamond> { $diamonds }
 

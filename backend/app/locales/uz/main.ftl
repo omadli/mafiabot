@@ -229,6 +229,14 @@ registration-message =
     👥 Qatnashchilar ({ $count }):
     { $players }
 
+registration-message-indefinite =
+    🎲 O'yin uchun ro'yxatdan o'tish boshlandi!
+    Pastdagi tugmani bosing.
+
+    ⏳ Vaqt cheksiz uzaytirildi — admin /start bossa o'yin boshlanadi.
+    👥 Qatnashchilar ({ $count }):
+    { $players }
+
 registration-no-players-yet = — (hali hech kim qo'shilmagan)
 
 registration-bounty = <e:currency-diamond> Har g'olibga: { $per_winner } olmos (escrow: { $pool })
@@ -526,6 +534,7 @@ profile-info =
 
     <e:currency-dollar> Dollar: { $dollars }
     <e:currency-diamond> Olmos: { $diamonds }
+    { $premium_line }
 
     <e:item-shield> Himoya: { $shield }
     <e:item-killer-shield> Qotildan himoya: { $killer_shield }
@@ -538,6 +547,9 @@ profile-info =
 
     🎯 G'alabalar: { $wins }
     🎲 Jami o'yinlar: { $games_total }
+
+profile-premium-active = 👑 Premium: { $expires_at } gacha aktiv
+profile-premium-inactive = 👑 Premium: olinmagan
 
 inventory-header = 🎒 Sizning inventaringiz:
 
@@ -595,10 +607,21 @@ shop-items-header =
     Narxni belgilangan valyutada to'lang.
 
 shop-premium-info =
-    👑 Premium foydalanuvchi:
+    👑 <b>Premium foydalanuvchi</b>
     • 2x himoya
     • Kezuvchiga qarshi himoya
     • Boshqa imtiyozlar
+
+    Statusingiz: <b>olinmagan</b>
+
+shop-premium-info-active =
+    👑 <b>Premium foydalanuvchi</b>
+    • 2x himoya
+    • Kezuvchiga qarshi himoya
+    • Boshqa imtiyozlar
+
+    Sizda allaqachon premium bor — <b>{ $expires_at }</b> gacha aktiv.
+    Quyidagi tugmalardan biri orqali uzaytiring.
 
 btn-buy-items = 🎒 Qurol/himoya
 
@@ -607,6 +630,10 @@ btn-buy-premium = 👑 Premium
 btn-buy-premium-30d = ⭐ 1 oylik premium — { $price } <e:currency-diamond>
 
 btn-buy-premium-365d = ⭐ 1 yillik premium — { $price } <e:currency-diamond>
+
+btn-extend-premium-30d = ⏳ 30 kunga uzaytirish — { $price } <e:currency-diamond>
+
+btn-extend-premium-365d = ⏳ 1 yilga uzaytirish — { $price } <e:currency-diamond>
 
 shop-special-pick-prompt =
     🃏 <b>Maxsus rol</b>
@@ -639,7 +666,9 @@ buy-insufficient-diamonds = <e:currency-diamond> Olmosingiz yetarli emas
 
 buy-insufficient-dollars = <e:currency-dollar> Dollarlaringiz yetarli emas
 
-premium-activated = 👑 Premium aktivlashtirildi: { $days } kun
+premium-activated = 👑 Premium aktivlashtirildi: +{ $days } kun. { $expires_at } gacha aktiv.
+
+premium-extended = ⏳ Premium uzaytirildi: +{ $days } kun. Endi { $expires_at } gacha aktiv.
 
 payment-success = ✅ To'lov muvaffaqiyatli! +<e:currency-diamond> { $diamonds }
 

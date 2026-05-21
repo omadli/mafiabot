@@ -229,6 +229,14 @@ registration-message =
     👥 Players ({ $count }):
     { $players }
 
+registration-message-indefinite =
+    🎲 Game registration has started!
+    Press the button below to join.
+
+    ⏳ Time extended indefinitely — the game starts when an admin runs /start.
+    👥 Players ({ $count }):
+    { $players }
+
 registration-no-players-yet = — (no one has joined yet)
 
 registration-bounty = <e:currency-diamond> Each winner receives: { $per_winner } diamonds (escrow: { $pool })
@@ -527,6 +535,7 @@ profile-info =
 
     <e:currency-dollar> Dollars: { $dollars }
     <e:currency-diamond> Diamonds: { $diamonds }
+    { $premium_line }
 
     <e:item-shield> Shield: { $shield }
     <e:item-killer-shield> Killer shield: { $killer_shield }
@@ -539,6 +548,9 @@ profile-info =
 
     🎯 Wins: { $wins }
     🎲 Total games: { $games_total }
+
+profile-premium-active = 👑 Premium: active until { $expires_at }
+profile-premium-inactive = 👑 Premium: not purchased
 
 inventory-header = 🎒 Your inventory:
 
@@ -600,10 +612,21 @@ shop-items-header =
     Pay in the listed currency.
 
 shop-premium-info =
-    👑 Premium user:
+    👑 <b>Premium user</b>
     • 2x protection
     • Protection against the Wanderer
     • Other privileges
+
+    Your status: <b>not purchased</b>
+
+shop-premium-info-active =
+    👑 <b>Premium user</b>
+    • 2x protection
+    • Protection against the Wanderer
+    • Other privileges
+
+    You already have premium — active until <b>{ $expires_at }</b>.
+    Use one of the buttons below to extend it.
 
 btn-buy-items = 🎒 Weapons/shields
 
@@ -612,6 +635,10 @@ btn-buy-premium = 👑 Premium
 btn-buy-premium-30d = ⭐ 1-month premium — { $price } <e:currency-diamond>
 
 btn-buy-premium-365d = ⭐ 1-year premium — { $price } <e:currency-diamond>
+
+btn-extend-premium-30d = ⏳ Extend by 30 days — { $price } <e:currency-diamond>
+
+btn-extend-premium-365d = ⏳ Extend by 1 year — { $price } <e:currency-diamond>
 
 shop-special-pick-prompt =
     🃏 <b>Special role</b>
@@ -644,7 +671,9 @@ buy-insufficient-diamonds = <e:currency-diamond> Not enough diamonds
 
 buy-insufficient-dollars = <e:currency-dollar> Not enough dollars
 
-premium-activated = 👑 Premium activated: { $days } days
+premium-activated = 👑 Premium activated: +{ $days } days. Valid until { $expires_at }.
+
+premium-extended = ⏳ Premium extended: +{ $days } days. Now valid until { $expires_at }.
 
 payment-success = ✅ Payment successful! +<e:currency-diamond> { $diamonds }
 

@@ -11,6 +11,7 @@ Mirrors @MafiaAzBot UX:
 from __future__ import annotations
 
 import contextlib
+from datetime import UTC, datetime
 
 from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
@@ -26,6 +27,24 @@ from loguru import logger
 from app.db.models import User, UserInventory, UserStats
 from app.services import exchange_service, payment_service, pricing_service
 from app.services.i18n_service import Translator
+
+
+def _premium_status(user: User) -> tuple[bool, datetime | None]:
+    """Return (is_active, expires_at). Both flag AND expiry must check
+    out — a stale `is_premium=True` after the expiry date is treated as
+    inactive (the cron that resets the flag may not have run yet).
+    """
+    expires_at = user.premium_expires_at
+    if user.is_premium and expires_at is not None and expires_at > datetime.now(UTC):
+        return True, expires_at
+    return False, expires_at
+
+
+def _format_premium_date(expires_at: datetime | None) -> str:
+    if expires_at is None:
+        return "—"
+    return expires_at.strftime("%Y-%m-%d")
+
 
 router = Router(name="private_inventory")
 router.message.filter(F.chat.type == "private")
@@ -78,6 +97,16 @@ async def _build_profile_message(
         emoji_role = _(f"role-{next_role_pick}")
         next_role_display = emoji_role or next_role_pick
 
+    # Premium status line — shown beneath the balance. Active premium
+    # displays the expiry date; otherwise "not purchased". Trailing
+    # whitespace is intentionally absent so the template doesn't render
+    # an extra blank line when the line is short.
+    is_active, expires_at = _premium_status(user)
+    if is_active:
+        premium_line = _("profile-premium-active", expires_at=_format_premium_date(expires_at))
+    else:
+        premium_line = _("profile-premium-inactive")
+
     text = _(
         "profile-info",
         # Pass as str so Fluent doesn't apply locale digit grouping
@@ -86,6 +115,7 @@ async def _build_profile_message(
         name=user.first_name,
         dollars=user.dollars,
         diamonds=user.diamonds,
+        premium_line=premium_line,
         shield=getattr(inv, "shield", 0),
         killer_shield=getattr(inv, "killer_shield", 0),
         vote_shield=getattr(inv, "vote_shield", 0),
@@ -560,29 +590,44 @@ async def callback_shop_special_buy(
 async def callback_shop_premium(
     query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
 ) -> None:
+    """Premium purchase screen.
+
+    Switches to "extend" mode when the caller already has an active
+    premium subscription — header shows the current expiry date and the
+    buttons read "extend by 30 days / 1 year" instead of "buy".
+    Prices are identical in both modes (extend == add to current expiry).
+    """
+    # Re-read user so the active flag/expiry are fresh even if the cached
+    # `user` arg lagged behind a recent purchase.
+    refreshed = await User.get(id=user.id)
+    is_active, expires_at = _premium_status(refreshed)
+
     monthly_price = await pricing_service.get_premium_price(30)
     yearly_price = await pricing_service.get_premium_price(365)
+
+    if is_active:
+        header_text = _(
+            "shop-premium-info-active",
+            expires_at=_format_premium_date(expires_at),
+        )
+        btn_30 = _plain("btn-extend-premium-30d", price=monthly_price)
+        btn_365 = _plain("btn-extend-premium-365d", price=yearly_price)
+    else:
+        header_text = _("shop-premium-info")
+        btn_30 = _plain("btn-buy-premium-30d", price=monthly_price)
+        btn_365 = _plain("btn-buy-premium-365d", price=yearly_price)
+
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text=_plain("btn-buy-premium-30d", price=monthly_price),
-                    callback_data="buy:premium:30",
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    text=_plain("btn-buy-premium-365d", price=yearly_price),
-                    callback_data="buy:premium:365",
-                )
-            ],
+            [InlineKeyboardButton(text=btn_30, callback_data="buy:premium:30")],
+            [InlineKeyboardButton(text=btn_365, callback_data="buy:premium:365")],
             [InlineKeyboardButton(text=_plain("btn-back"), callback_data="inv:back")],
         ]
     )
     if query.message:
         with contextlib.suppress(TelegramBadRequest):
             await query.message.edit_text(  # type: ignore[union-attr]
-                _("shop-premium-info"), reply_markup=keyboard, parse_mode="HTML"
+                header_text, reply_markup=keyboard, parse_mode="HTML"
             )
     await query.answer()
 
@@ -644,12 +689,27 @@ async def callback_buy_premium(
         days = int(days_str)
     except ValueError:
         days = 30
+
+    # Snapshot active-state BEFORE the purchase — we need it to pick the
+    # right alert template (activate vs extend).
+    was_active, _prev_expires = _premium_status(user)
+
     try:
         await payment_service.buy_premium(user, days=days)
     except payment_service.InsufficientDiamonds:
         await query.answer(_plain("buy-insufficient-diamonds"), show_alert=True)
         return
-    await query.answer(_plain("premium-activated", days=days), show_alert=True)
+
+    # Re-read the user so the alert quotes the actual new expiry date
+    # (buy_premium adds to existing expiry, not to "now").
+    refreshed = await User.get(id=user.id)
+    _is_active, new_expires = _premium_status(refreshed)
+    expires_label = _format_premium_date(new_expires)
+    key = "premium-extended" if was_active else "premium-activated"
+    await query.answer(
+        _plain(key, days=days, expires_at=expires_label),
+        show_alert=True,
+    )
     await _refresh_profile(query, user, _, _plain)
 
 
