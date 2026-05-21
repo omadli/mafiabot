@@ -833,23 +833,28 @@ snitch-reveal-broadcast = 📢 Sotqin xabari: { $target } ning roli — { $role 
 help-text =
     ❓ <b>Yordam</b>
 
-    <b>Asosiy buyruqlar (private chat):</b>
+    <b>Shaxsiy chat buyruqlari:</b>
     /start — Bosh menyu
-    /profile — Profil + inventar + statistika
+    /profile — Profil, inventar, do'kon (= /inventory, /items)
     /exchange — <e:currency-diamond> olmos ↔ <e:currency-dollar> dollar
+    /stats — Mening statistikam
+    /global_top — Global reyting
+    /help — Yordam · /rules — Qoidalar
 
     <b>Guruh buyruqlari (admin sifatida qo'shgan guruhda):</b>
-    /game — Yangi o'yin boshlash
-    /join — O'yinga qo'shilish
-    /leave — O'yindan chiqish
-    /vote &lt;raqam&gt; — Ovoz berish
-    /stats — Guruh statistikasi
+    /game [bounty] — Yangi o'yin (ixtiyoriy <e:currency-diamond> bounty)
+    /start — Ro'yxatdagi o'yinni boshlash
+    /leave — O'yindan chiqib ketish
+    /extend &lt;sek&gt; — Ro'yxat vaqtini uzaytirish
+    /stop — O'yinni bekor qilish (admin)
+    /settings — Sozlamalar (admin)
+    /give &lt;miqdor&gt; — <e:currency-diamond> olmos hadya (reply yoki guruh inline)
+    /stats · /top · /global_top · /profile · /group_stats — Statistika
 
-    <b>Premium imkoniyatlari:</b>
-    • 👑 Premium maqom: /buy_premium
-    • 🎁 Olmos sovg'a: <code>/give &lt;miqdor&gt;</code> (reply qilib)
+    <b>💡 Eslatma:</b>
+    • Ro'yxatdan o'tish va ovoz berish — tugmalar orqali (buyruq yo'q)
+    • 👑 Premium status va 🛒 do'kon — /profile menyusi orqali
 
-    <b>Yordam kerakmi?</b>
     📢 Yangiliklar kanali: @Mafiauzbot_news
 
 rules-text =
@@ -870,7 +875,7 @@ rules-text =
 
     ━━━━━━━━━━━━━━━━━━━━
 
-    👨‍👨‍👧‍👦 <b>Tinch aholilar (10):</b>
+    👨‍👨‍👧‍👦 <b>Tinch aholilar (9):</b>
     👨🏼 <b>Tinch aholi</b> — oddiy fuqaro
     🕵🏻‍♂ <b>Komissar Kattani</b> — har tunda kim ekanligini tekshiradi
     👮🏻‍♂ <b>Serjant</b> — Komissar yordamchisi
@@ -879,7 +884,6 @@ rules-text =
     💃 <b>Kezuvchi</b> — bir kishining tuni uxlaydi
     🧙‍♂ <b>Daydi</b> — qotilni ko'ra oladi
     🤞🏼 <b>Omadli</b> — 50% omon qolish
-    🤦🏼 <b>Suidsid</b> — osilsa yutadi
     💣 <b>Afsungar</b> — osilganda kimnidir o'zi bilan ketadi
 
     🤵🏼 <b>Mafiya (5):</b>
@@ -889,7 +893,8 @@ rules-text =
     👩🏼‍💻 <b>Jurnalist</b> — Doktor/Daydi/Kezuvchini topa oladi
     🥷 <b>Ninza</b> — barcha himoyalarni teshib o'tadi
 
-    🎯 <b>Singletonlar (6):</b>
+    🎯 <b>Singletonlar (7):</b>
+    🤦🏼 <b>Suidsid</b> — faqat osilsa g'olib (tunda o'lsa yoki tirik qolsa yutqazadi)
     🔪 <b>Qotil</b> — yakka g'olib (oxirgi tirik bo'lsa)
     🐺 <b>Bo'ri</b> — hujumiga qarab boshqa rolga aylanadi
     🧙 <b>Sehrgar</b> — oxirigacha tirik qolsa g'olib
@@ -910,30 +915,34 @@ language-picker-prompt = 🌐 Tilni tanlang:
 language-switched = ✅ Til o'zgartirildi
 
 help-private =
-    ❓ <b>Yordam (private chat)</b>
+    ❓ <b>Yordam</b>
 
-    /start — botni ishga tushirish
-    /profile — sizning profil
-    /inventory — qurollar/himoyalar
-    /stats — statistika
+    <b>Shaxsiy chat:</b>
+    /start — bosh menyu
+    /profile — profil, inventar, do'kon (= /inventory, /items)
+    /exchange — <e:currency-diamond> olmos ↔ <e:currency-dollar> dollar
+    /stats — mening statistikam
     /global_top — global reyting
     /rules — qoidalar va rollar haqida batafsil
 
-    Guruhlarda /game bilan o'yin boshlang.
+    <b>Guruhda o'ynash:</b>
+    Botni guruhga admin sifatida qo'shing va /game bilan o'yin boshlang.
 
     📢 Yangiliklar kanali: @Mafiauzbot_news
 
 help-group =
-    ❓ Guruh buyruqlari:
+    ❓ <b>Guruh buyruqlari:</b>
 
-    /game [bounty] — yangi o'yin
-    /leave — chiqib ketish
-    /vote @user — ovoz
-    /give amount [reply] — olmos hadya
-    /stats /top /group_stats /profile — statistika
-    /extend N — vaqtni uzaytirish
+    /game [bounty] — yangi o'yin (ixtiyoriy <e:currency-diamond> bounty)
+    /start — ro'yxatdagi o'yinni boshlash
+    /leave — o'yindan chiqish
+    /extend &lt;sek&gt; — ro'yxat vaqtini uzaytirish
     /stop — bekor qilish (admin)
-    /rules — qoidalar
+    /settings — sozlamalar (admin)
+    /give &lt;miqdor&gt; — <e:currency-diamond> olmos hadya (reply yoki guruh inline)
+    /stats · /top · /global_top · /profile · /group_stats — statistika
+
+    💡 <b>Eslatma:</b> ro'yxatdan o'tish va ovoz berish — tugmalar orqali (buyruq yo'q).
 
 rules-summary =
     📖 <b>Mafia o'yin qoidalari</b>
@@ -1204,6 +1213,7 @@ perm-target-all = Hamma
 perm-target-admins = Faqat adminlar
 perm-target-registrar = Birinchi yozilgan
 perm-target-creator = Faqat creator
+perm-target-none = Hech kim
 
 # --- Section G.4: AFK sub-menu ---
 
@@ -1253,6 +1263,8 @@ btn-show-my-role = <e:item-mask> Sizning rolingiz
 show-role-not-in-game = 🚫 Siz bu o'yinda emassiz
 
 show-role-no-game = 🚫 Hozir o'yin yo'q
+
+dm-stale-game-alert = ⏳ Bu o'yin allaqachon tugagan. Eski xabar olib tashlanadi.
 
 show-role-alert =
     <e:item-mask> Sizning rolingiz: { $role }

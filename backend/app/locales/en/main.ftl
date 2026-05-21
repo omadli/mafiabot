@@ -838,21 +838,27 @@ snitch-reveal-broadcast = 📢 Snitch report: { $target }'s role is — { $role 
 help-text =
     ❓ <b>Help</b>
 
-    <b>Main commands (private chat):</b>
+    <b>Private chat commands:</b>
     /start — Main menu
-    /profile — Profile + inventory + stats
+    /profile — Profile, inventory, shop (= /inventory, /items)
     /exchange — <e:currency-diamond> diamonds ↔ <e:currency-dollar> dollars
+    /stats — My statistics
+    /global_top — Global leaderboard
+    /help — Help · /rules — Rules
 
-    <b>Group commands (after adding bot as admin):</b>
-    /game — Start a new game
-    /join — Join a game
-    /leave — Leave a game
-    /vote &lt;number&gt; — Cast your vote
-    /stats — Group statistics
+    <b>Group commands (bot added as admin):</b>
+    /game [bounty] — Start a new game (optional <e:currency-diamond> bounty)
+    /start — Launch the queued game
+    /leave — Leave the game
+    /extend &lt;sec&gt; — Extend registration time
+    /stop — Cancel the game (admin)
+    /settings — Settings (admin)
+    /give &lt;amount&gt; — Gift <e:currency-diamond> diamonds (reply or group inline)
+    /stats · /top · /global_top · /profile · /group_stats — Statistics
 
-    <b>Premium:</b>
-    • 👑 Premium status: /buy_premium
-    • 🎁 Gift diamonds: <code>/give &lt;amount&gt;</code> (as reply)
+    <b>💡 Note:</b>
+    • Joining and voting happen via buttons (no separate commands)
+    • 👑 Premium and 🛒 shop — through the /profile menu
 
     📢 News channel: @Mafiauzbot_news
 
@@ -874,16 +880,32 @@ rules-text =
 
     ━━━━━━━━━━━━━━━━━━━━
 
-    👨‍👨‍👧‍👦 <b>Civilians (10):</b>
-    👨🏼 Citizen · 🕵🏻‍♂ Detective · 👮🏻‍♂ Sergeant · 🎖 Mayor (×2 vote)
-    👨🏻‍⚕ Doctor · 💃 Hooker · 🧙‍♂ Hobo · 🤞🏼 Lucky
-    🤦🏼 Suicide · 💣 Kamikaze
+    👨‍👨‍👧‍👦 <b>Civilians (9):</b>
+    👨🏼 <b>Citizen</b> — ordinary townsfolk
+    🕵🏻‍♂ <b>Detective Cattani</b> — investigates one player each night
+    👮🏻‍♂ <b>Sergeant</b> — Detective's helper
+    🎖 <b>Mayor</b> — vote counts double
+    👨🏻‍⚕ <b>Doctor</b> — heals one player each night
+    💃 <b>Hooker</b> — puts one player to sleep for the night
+    🧙‍♂ <b>Hobo</b> — can identify the killer
+    🤞🏼 <b>Lucky</b> — 50% survival chance
+    💣 <b>Kamikaze</b> — when hanged, takes someone with them
 
     🤵🏼 <b>Mafia (5):</b>
-    🤵🏻 Don · 🤵🏼 Mafia · 👨‍💼 Lawyer · 👩🏼‍💻 Journalist · 🥷 Ninja
+    🤵🏻 <b>Don</b> — kills one player per night
+    🤵🏼 <b>Mafia</b> — supports the Don
+    👨‍💼 <b>Lawyer</b> — protects from the Detective and from hanging
+    👩🏼‍💻 <b>Journalist</b> — can spot the Doctor / Hobo / Hooker
+    🥷 <b>Ninja</b> — pierces all defences
 
-    🎯 <b>Singletons (6):</b>
-    🔪 Maniac · 🐺 Werewolf · 🧙 Mage · 🧟 Arsonist · 🤹 Crook · 🤓 Snitch
+    🎯 <b>Singletons (7):</b>
+    🤦🏼 <b>Suicide</b> — wins only if hanged (night death or survival = loss)
+    🔪 <b>Maniac</b> — solo winner (last one alive)
+    🐺 <b>Werewolf</b> — transforms into another role based on who hits them
+    🧙 <b>Mage</b> — wins by surviving to the end of the game
+    🧟 <b>Arsonist</b> — wins by killing 3+ players
+    🤹 <b>Crook</b> — wins by surviving (steals a day vote)
+    🤓 <b>Snitch</b> — if they target the same player as the Detective, the role is revealed
 
     <e:item-shield> <b>Items (from shop):</b>
     <e:item-shield> Shield · <e:item-killer-shield> Killer shield · <e:scene-hanging> Vote shield · <e:item-rifle> Rifle
@@ -894,30 +916,34 @@ language-picker-prompt = 🌐 Pick a language:
 language-switched = ✅ Language switched
 
 help-private =
-    ❓ <b>Help (private chat)</b>
+    ❓ <b>Help</b>
 
+    <b>Private chat:</b>
     /start — launch the bot
-    /profile — your profile
-    /inventory — weapons/shields
-    /stats — statistics
-    /global_top — global rankings
+    /profile — profile, inventory, shop (= /inventory, /items)
+    /exchange — <e:currency-diamond> diamonds ↔ <e:currency-dollar> dollars
+    /stats — my statistics
+    /global_top — global leaderboard
     /rules — game rules and full role details
 
-    Use /game in a group chat to start a game.
+    <b>Playing in a group:</b>
+    Add the bot to a group as an admin and start a game with /game.
 
     📢 News channel: @Mafiauzbot_news
 
 help-group =
-    ❓ Group commands:
+    ❓ <b>Group commands:</b>
 
-    /game [bounty] — start a new game
+    /game [bounty] — new game (optional <e:currency-diamond> bounty)
+    /start — launch the queued game
     /leave — leave the game
-    /vote @user — cast a vote
-    /give amount [reply] — gift diamonds
-    /stats /top /group_stats /profile — statistics
-    /extend N — extend registration time
-    /stop — cancel game (admins only)
-    /rules — game rules
+    /extend &lt;sec&gt; — extend registration time
+    /stop — cancel the game (admin)
+    /settings — settings (admin)
+    /give &lt;amount&gt; — gift <e:currency-diamond> diamonds (reply or group inline)
+    /stats · /top · /global_top · /profile · /group_stats — statistics
+
+    💡 <b>Note:</b> joining and voting happen via buttons (no separate commands).
 
 rules-summary =
     📖 <b>Mafia game rules</b>
@@ -1188,6 +1214,7 @@ perm-target-all = Everyone
 perm-target-admins = Admins only
 perm-target-registrar = First registrant
 perm-target-creator = Creator only
+perm-target-none = Nobody
 
 # --- Section G.4: AFK sub-menu ---
 
@@ -1237,6 +1264,8 @@ btn-show-my-role = <e:item-mask> Your role
 show-role-not-in-game = 🚫 You are not in this game
 
 show-role-no-game = 🚫 No active game right now
+
+dm-stale-game-alert = ⏳ This game has already ended. The old message will be removed.
 
 show-role-alert =
     <e:item-mask> Your role: { $role }
