@@ -265,6 +265,15 @@ async def callback_toggle_item(
     # PostgreSQL. Use filter().update() with the explicit column kwarg.
     await UserInventory.filter(user_id=user.id).update(settings=settings)
 
+    # If the user is mid-game, push the change into the live Redis state
+    # immediately — otherwise the toggle is only honored on the next game.
+    try:
+        from app.services.game_service import sync_inventory_into_active_game
+
+        await sync_inventory_into_active_game(user.id, code)
+    except Exception as e:
+        logger.debug(f"live-toggle sync failed for user {user.id}/{code}: {e}")
+
     _emoji, name = ITEM_LABELS[code]
     state_text = _("inv-toggle-on") if new_state else _("inv-toggle-off")
     await query.answer(f"{name}: {state_text}", show_alert=False)
@@ -667,6 +676,16 @@ async def callback_buy_item(
         item_s["enabled"] = True
         inv_settings[spec.code] = item_s
         await UserInventory.filter(user_id=user.id).update(settings=inv_settings)
+
+        # Live-game sync — same path as toggle. If the buyer is alive
+        # in an active game, the freshly-bought-and-enabled item is
+        # consumed and added to their in-game items_active right away.
+        try:
+            from app.services.game_service import sync_inventory_into_active_game
+
+            await sync_inventory_into_active_game(user.id, spec.code)
+        except Exception as e:
+            logger.debug(f"live-buy sync failed for user {user.id}/{spec.code}: {e}")
 
     emoji, name = ITEM_LABELS.get(spec.code, ("", spec.code))
     label = f"{emoji} {name}"

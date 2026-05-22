@@ -182,6 +182,15 @@ async def broadcast_night_results(bot: Bot, state: GameState, outcome: NightOutc
         await asyncio.sleep(1.5)
         await _safe_send(bot, state.chat_id, _("night-result-shield-used"))
 
+    # Item shield saves → "shield used" (anonymous). One generic line per
+    # save event keeps the message bus quiet without leaking which player
+    # spent which item. Detective-vs-fake_document is filtered out: the
+    # detective check is silent in the group.
+    save_count = sum(1 for s in outcome.shield_saves if s.item in ("shield", "killer_shield"))
+    for _i in range(save_count):
+        await asyncio.sleep(1.0)
+        await _safe_send(bot, state.chat_id, _("night-result-shield-used"))
+
 
 def _killer_role_label(state: GameState, outcome: NightOutcome, target_id: int, locale: str) -> str:
     """Find which role killed the target — based on actions.

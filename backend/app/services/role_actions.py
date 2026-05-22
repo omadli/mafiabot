@@ -159,7 +159,11 @@ async def send_detective_target_keyboard(
     action_kind: str,
     locale: str,
 ) -> InlineKeyboardMarkup | None:
-    """Build the target keyboard for the chosen detective action."""
+    """Build the target keyboard for the chosen detective action.
+
+    The last row is a "back" button that returns to the check/kill chooser
+    so the detective can change their mind without aborting the night turn.
+    """
     from app.core.roles import get_role
 
     role = get_role("detective")
@@ -167,6 +171,7 @@ async def send_detective_target_keyboard(
     if not targets:
         return None
 
+    _plain = get_plain_translator(locale)
     callback_prefix = f"night:detective:{action_kind}"
     # Detective's "kill" branch can use the rifle too (pierces all defences).
     has_rifle = action_kind == "kill" and await _player_has_rifle(actor.user_id)
@@ -186,6 +191,14 @@ async def send_detective_target_keyboard(
                 )
             )
         rows.append(row)
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text=_plain("btn-back"),
+                callback_data="night:detchoose:back",
+            )
+        ]
+    )
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 

@@ -22,11 +22,26 @@ interface ParsedStart {
 }
 
 function parseStartParam(): ParsedStart {
+  // Telegram surfaces the start param two different ways:
+  //   1. `tg.initDataUnsafe.start_param` — populated when the WebApp is
+  //      launched via "Direct Link Mini App" (t.me link with ?startapp=...).
+  //   2. Plain `?start=…` query string on the URL — populated when an
+  //      inline KeyboardButton/web_app button hands the user a URL that
+  //      embeds the routing hint. aiogram does NOT pipe start_param into
+  //      Telegram for inline WebApp buttons, so this is our actual path
+  //      from the /settings DM menu.
   let startParam: string | undefined;
   try {
     startParam = WebApp.initDataUnsafe?.start_param;
   } catch {
-    return { groupId: null, route: null };
+    // ignore — we'll fall back to the URL query
+  }
+  if (!startParam && typeof window !== "undefined") {
+    const params = new URLSearchParams(window.location.search);
+    startParam =
+      params.get("start") ||
+      params.get("tgWebAppStartParam") ||
+      undefined;
   }
   if (!startParam) return { groupId: null, route: null };
   for (const [prefix, route] of Object.entries(ROUTABLE_PREFIXES)) {
@@ -46,11 +61,11 @@ export function WebAppHome() {
   // change while the WebApp is open.
   const { groupId, route } = useMemo(parseStartParam, []);
 
-  // Auto-redirect for non-"settings" prefixes — the user tapped a
-  // specific bot menu button and expects that page to open directly.
-  // Showing the nav grid first would be a needless second tap.
+  // Auto-redirect when the user came in via a specific bot menu button
+  // (settings / history / leaderboard). The nav grid only makes sense
+  // when the WebApp was opened without a route hint.
   useEffect(() => {
-    if (groupId !== null && route && route !== "settings") {
+    if (groupId !== null && route) {
       navigate(`/webapp/${route}/${groupId}`, { replace: true });
     }
   }, [groupId, route, navigate]);

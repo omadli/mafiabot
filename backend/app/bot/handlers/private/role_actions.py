@@ -41,14 +41,15 @@ async def _back_to_group_kb(
 async def handle_detective_chooser(
     query: CallbackQuery, user: User, _: Translator, bot: Bot, _plain: Translator | None = None
 ) -> None:
-    """Detective picked 'check' or 'kill' — edit the chooser DM to show
-    the target keyboard. The actual target selection is then handled by
-    handle_night_pick via callback `night:detective:<action>:<target>`."""
+    """Detective picked 'check' / 'kill' / 'back' — edit the chooser DM to
+    show the target keyboard (or jump back to the chooser). The actual
+    target selection is then handled by handle_night_pick via callback
+    `night:detective:<action>:<target>`."""
     if query.data is None or query.message is None:
         await query.answer()
         return
     parts = query.data.split(":")
-    if len(parts) != 3 or parts[2] not in ("check", "kill"):
+    if len(parts) != 3 or parts[2] not in ("check", "kill", "back"):
         await query.answer("Invalid", show_alert=True)
         return
     action_kind = parts[2]
@@ -64,6 +65,47 @@ async def handle_detective_chooser(
     actor = state.get_player(user.id)  # type: ignore[attr-defined,var-annotated,arg-type]
     if actor is None or not actor.alive or actor.role != "detective":
         await query.answer(_plain("night-cannot-act"), show_alert=True)
+        return
+
+    # "back" → re-render the check/kill chooser. Lets the detective change
+    # their mind after accidentally tapping into the wrong branch.
+    if action_kind == "back":
+        prior_lines: list[str] = []
+        check_results: dict = actor.extra.get("check_results", {}) or {}
+        if check_results:
+            from app.services.messaging import role_emoji_name
+
+            locale = state.settings.get("language", "uz")  # type: ignore[attr-defined,var-annotated,arg-type]
+            prior_lines.append(_("night-prompt-detective-prior-header"))
+            for _uid_str, info in check_results.items():
+                role_label = role_emoji_name(info.get("role", "citizen"), locale)
+                name = info.get("name", "?")
+                prior_lines.append(
+                    _("night-prompt-detective-prior-line", name=name, role=role_label)
+                )
+            prior_lines.append("")
+
+        prior_text = "\n".join(prior_lines)
+        chooser_text = _("night-prompt-detective-chooser")
+        text = (prior_text + chooser_text) if prior_text else chooser_text
+
+        kb = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text=_plain("btn-detective-check"),
+                        callback_data="night:detchoose:check",
+                    ),
+                    InlineKeyboardButton(
+                        text=_plain("btn-detective-kill"),
+                        callback_data="night:detchoose:kill",
+                    ),
+                ]
+            ]
+        )
+        with contextlib.suppress(Exception):
+            await query.message.edit_text(text, reply_markup=kb, parse_mode="HTML")  # type: ignore[union-attr]
+        await query.answer()
         return
 
     from app.services.role_actions import send_detective_target_keyboard

@@ -235,6 +235,20 @@ async def start_game(state: GameState) -> GameState:
     items_allowed = state.settings.get("items_allowed", {})
     for p in state.players:
         p.items_active = await _resolve_active_items(p.user_id, items_allowed)
+        # Mark premium players so the action resolver can grant the
+        # 2x-shield bonus and protect them from the Hooker. The flag is
+        # captured at start-time so a premium expiring mid-game does not
+        # silently strip the privileges they paid for this game.
+        is_premium = await _is_user_premium(p.user_id)
+        if is_premium:
+            p.extra["is_premium"] = True
+            # Pre-seed shield_uses_left so _consume_shield can debit a
+            # premium-bonus use before stripping the item slot.
+            p.extra["shield_uses_left"] = {
+                "shield": 1,
+                "killer_shield": 1,
+                "vote_shield": 1,
+            }
 
     # Persist Game record (status=running) in DB
     await Game.create(
@@ -396,6 +410,24 @@ async def _consume_special_role_credit(user_id: int, inv: object) -> None:
     )
 
 
+async def _is_user_premium(user_id: int) -> bool:
+    """True iff the user has an active premium subscription right now.
+
+    Both `is_premium=True` AND a future `premium_expires_at` are required
+    — a stale flag from before the cron reset is treated as inactive.
+    """
+    from datetime import UTC, datetime
+
+    user = await User.get_or_none(id=user_id)
+    if user is None:
+        return False
+    if not user.is_premium:
+        return False
+    if user.premium_expires_at is None:
+        return False
+    return user.premium_expires_at > datetime.now(UTC)
+
+
 async def _resolve_active_items(user_id: int, items_allowed: dict) -> list[str]:
     """Determine which items the user has + activated + group allows.
 
@@ -445,6 +477,69 @@ async def _resolve_active_items(user_id: int, items_allowed: dict) -> list[str]:
         await UserInventory.filter(user_id=user_id).update(**decremented)
 
     return active
+
+
+async def sync_inventory_into_active_game(user_id: int, item_code: str) -> None:
+    """Reconcile a single inventory item with the user's in-game items_active.
+
+    Fires when the user toggles or buys an item mid-game so the change is
+    felt immediately instead of next round / next game. The contract:
+
+      * Item now enabled + stock > 0 + not yet active in game → consume 1
+        from stock, append to items_active.
+      * Item now disabled + currently active in game → strip from
+        items_active, refund 1 to stock.
+
+    No-op when the user isn't in a live game or the group disallows the
+    item. Items not in the consumable item list (rifle, special_role) are
+    handled elsewhere and ignored here.
+    """
+    from app.db.models import UserInventory
+
+    consumables = {"shield", "killer_shield", "vote_shield", "mask", "fake_document"}
+    if item_code not in consumables:
+        return
+
+    game_id = await get_user_active_game_id(user_id)
+    if game_id is None:
+        return
+
+    from app.db.models import Game
+
+    db_game = await Game.get_or_none(id=game_id)
+    if db_game is None:
+        return
+    state = await load_state(db_game.group_id)
+    if state is None or state.phase in (Phase.WAITING, Phase.FINISHED, Phase.CANCELLED):
+        return
+    player = state.get_player(user_id)
+    if player is None or not player.alive:
+        return
+
+    items_allowed = state.settings.get("items_allowed", {})
+    if not items_allowed.get(item_code, True):
+        return
+
+    inv = await UserInventory.get_or_none(user_id=user_id)
+    if inv is None:
+        return
+
+    settings = inv.settings or {}
+    enabled = settings.get(item_code, {}).get("enabled", False)
+    in_game = item_code in player.items_active
+    stock = getattr(inv, item_code, 0)
+
+    if enabled and not in_game and stock > 0:
+        player.items_active.append(item_code)
+        await UserInventory.filter(user_id=user_id).update(**{item_code: stock - 1})
+        await save_state(state)
+        return
+
+    if not enabled and in_game:
+        player.items_active.remove(item_code)
+        await UserInventory.filter(user_id=user_id).update(**{item_code: stock + 1})
+        await save_state(state)
+        return
 
 
 async def cancel_game(state: GameState, reason: str = "cancelled") -> None:

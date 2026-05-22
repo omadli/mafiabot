@@ -68,12 +68,18 @@ class PhaseManager:
                 if state is None or state.phase in (Phase.FINISHED, Phase.CANCELLED):
                     break
 
+                # Snapshot the phase we are sleeping for so we can detect
+                # an external transition (e.g. admin /start moved WAITING →
+                # NIGHT while we were asleep on the OLD registration deadline).
+                sleep_phase = state.phase
+                sleep_deadline = state.phase_ends_at
+
                 # Sleep until phase ends.
                 # phase_ends_at = None → indefinite registration (after /extend).
                 # We still wake periodically to allow external trigger via
                 # state changes (e.g. /start by admin sets phase to NIGHT).
-                if state.phase_ends_at is not None:
-                    delay = state.phase_ends_at - int(time.time())
+                if sleep_deadline is not None:
+                    delay = sleep_deadline - int(time.time())
                     if delay > 0:
                         await asyncio.sleep(delay)
                 else:
@@ -91,6 +97,20 @@ class PhaseManager:
                 state = await load_state(group_id)
                 if state is None or state.phase in (Phase.FINISHED, Phase.CANCELLED):
                     break
+
+                # Detect mid-sleep external transition: phase changed under us
+                # (e.g. admin /start → start_game() flipped WAITING → NIGHT and
+                # reset phase_ends_at to a future time). If the new phase still
+                # has time remaining, do NOT advance — loop and sleep again on
+                # the fresh deadline. Without this guard, the manager wakes at
+                # the OLD deadline and immediately fires NIGHT → DAY, robbing
+                # players of their night-action window.
+                if (
+                    state.phase != sleep_phase
+                    and state.phase_ends_at is not None
+                    and state.phase_ends_at - int(time.time()) > 0
+                ):
+                    continue
 
                 # Transition
                 await cls._advance_phase(bot, state)
@@ -273,6 +293,24 @@ class PhaseManager:
             return
 
     @classmethod
+    def _consume_vote_shield(cls, target) -> None:  # type: ignore[no-untyped-def]
+        """Same premium-bonus contract as ActionResolver._consume_shield —
+        premium players get a second save off a single vote_shield slot
+        before the item is finally stripped."""
+        item = "vote_shield"
+        if not target.extra.get("is_premium"):
+            if item in target.items_active:
+                target.items_active.remove(item)
+            return
+        uses_left: dict = target.extra.setdefault("shield_uses_left", {})
+        remaining = uses_left.get(item, 1)
+        if remaining > 0:
+            uses_left[item] = remaining - 1
+            return
+        if item in target.items_active:
+            target.items_active.remove(item)
+
+    @classmethod
     def _find_vote_leader(cls, state: GameState) -> int | None:
         """Find the user_id with most votes (Mayor 2x). None if no votes; 0 if "Hech kim" leads."""
         from app.core.roles import get_role
@@ -331,7 +369,13 @@ class PhaseManager:
 
         # Vote shield
         if "vote_shield" in target.items_active:
-            target.items_active.remove("vote_shield")
+            cls._consume_vote_shield(target)
+            # Flag the broadcast so _on_phase_change can announce
+            # "{mention} osilishga qarshi himoyasidan foydalandi".
+            state.current_round().extra["vote_shield_user"] = {
+                "user_id": target.user_id,
+                "name": target.first_name,
+            }
             logger.info(f"Player {target_id} saved by vote_shield")
             state.current_round().hanged = None
             state.current_votes = {}
@@ -409,7 +453,11 @@ class PhaseManager:
 
         # Vote shield (passive item)
         if "vote_shield" in target.items_active:
-            target.items_active.remove("vote_shield")
+            cls._consume_vote_shield(target)
+            state.current_round().extra["vote_shield_user"] = {
+                "user_id": target.user_id,
+                "name": target.first_name,
+            }
             logger.info(f"Player {target_id} saved by vote_shield")
             state.current_round().hanged = None
             state.current_votes = {}

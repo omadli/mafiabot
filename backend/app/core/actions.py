@@ -56,6 +56,10 @@ class HookerResult:
     actor_id: int
     target_id: int
     target_name: str
+    # True when the Hooker visit ran but the target was immune (e.g.
+    # premium). The Hooker still gets confirmation, but the target is
+    # NOT DMed as if they had slept.
+    blocked: bool = False
 
 
 @dataclass
@@ -105,6 +109,15 @@ class KamikazeTake:
 
 
 @dataclass
+class ShieldSave:
+    """One shield consumption — item used by `target_id` to block an attack."""
+
+    target_id: int
+    item: str  # 'shield' | 'killer_shield' | 'fake_document'
+    attacker_role: str  # which role triggered it (e.g. 'don', 'killer', 'detective')
+
+
+@dataclass
 class NightOutcome:
     deaths: list[int] = field(default_factory=list)
     death_reasons: dict[int, DeathReason] = field(default_factory=dict)
@@ -118,6 +131,7 @@ class NightOutcome:
     kamikaze_takes: list[KamikazeTake] = field(default_factory=list)
     pending_mage_reactions: list[MageReaction] = field(default_factory=list)
     sleeping: set[int] = field(default_factory=set)
+    shield_saves: list[ShieldSave] = field(default_factory=list)
 
 
 # === Resolver ===
@@ -138,6 +152,23 @@ class ActionResolver:
             if a.action_type != "sleep" or a.target_id is None:
                 continue
             if self._hooker_blocked_by_don(state, a):
+                continue
+            # Premium privilege: Hooker cannot put a premium player to sleep.
+            # The visit still happens — Hooker doesn't learn the target is
+            # premium — but the target acts normally that night.
+            target_player = state.get_player(a.target_id)
+            if target_player is not None and target_player.extra.get("is_premium"):
+                logger.info(f"Hooker {a.actor_id} blocked by premium of {a.target_id}")
+                # Still record a HookerResult so the Hooker gets feedback,
+                # but skip the sleep effect by NOT adding to sleeping_targets.
+                outcome.hooker_results.append(
+                    HookerResult(
+                        actor_id=a.actor_id,
+                        target_id=a.target_id,
+                        target_name=target_player.first_name,
+                        blocked=True,
+                    )
+                )
                 continue
             sleeping_targets.add(a.target_id)
             actor = state.get_player(a.actor_id)
@@ -270,11 +301,25 @@ class ActionResolver:
                 )
                 continue
             if saved_by_killer_shield:
-                target.items_active.remove("killer_shield")
+                self._consume_shield(target, "killer_shield")
+                outcome.shield_saves.append(
+                    ShieldSave(
+                        target_id=target_id,
+                        item="killer_shield",
+                        attacker_role=killer_role,
+                    )
+                )
                 logger.debug(f"Player {target_id} saved by killer_shield")
                 continue
             if saved_by_shield:
-                target.items_active.remove("shield")
+                self._consume_shield(target, "shield")
+                outcome.shield_saves.append(
+                    ShieldSave(
+                        target_id=target_id,
+                        item="shield",
+                        attacker_role=killer_role,
+                    )
+                )
                 logger.debug(f"Player {target_id} saved by shield")
                 continue
 
@@ -327,6 +372,22 @@ class ActionResolver:
                 if target is None or actor is None:
                     continue
                 revealed = self._reveal_role_for_detective(target, lawyer_protected)
+                # If the target was concealed by a fake_document, surface
+                # it so the role_feedback DM tells them their document
+                # held up under the spotlight. Don't reveal that to the
+                # detective — they already received "citizen".
+                if (
+                    "fake_document" in target.items_active
+                    and target.role != "citizen"
+                    and revealed == "citizen"
+                ):
+                    outcome.shield_saves.append(
+                        ShieldSave(
+                            target_id=target.user_id,
+                            item="fake_document",
+                            attacker_role="detective",
+                        )
+                    )
                 outcome.detective_results.append(
                     CheckResult(
                         actor_id=actor.user_id,
@@ -454,6 +515,28 @@ class ActionResolver:
         return outcome
 
     # === Helpers ===
+
+    def _consume_shield(self, target: PlayerState, item: str) -> None:
+        """Consume one charge of a shield. Premium players get a second
+        use of each shield in a single game — `extra["shield_uses_left"]`
+        tracks the remaining premium-bonus uses per item.
+
+        Without premium (or once the bonus is spent) the item is removed
+        from `items_active` immediately, matching the old behaviour.
+        """
+        if not target.extra.get("is_premium"):
+            if item in target.items_active:
+                target.items_active.remove(item)
+            return
+
+        uses_left: dict = target.extra.setdefault("shield_uses_left", {})
+        remaining = uses_left.get(item, 1)
+        if remaining > 0:
+            uses_left[item] = remaining - 1
+            return
+        # Bonus spent — finally consume the item slot.
+        if item in target.items_active:
+            target.items_active.remove(item)
 
     def _priority(self, a: NightAction) -> int:
         order = {

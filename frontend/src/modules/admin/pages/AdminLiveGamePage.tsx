@@ -122,10 +122,16 @@ export function AdminLiveGamePage() {
 
 function PlayersPanel({ data }: { data: LiveGameState }) {
   const { t } = useTranslation();
+  // Roles are placeholder ("citizen" for every join) until start_game()
+  // runs. Don't pretend the registration-phase roster is real role data —
+  // show "📝 Ro'yxatda" instead.
+  const isRegistration = data.phase === "waiting" || data.round_num === 0;
   return (
     <>
       <h3 style={{ color: "var(--muted)" }}>
-        {t("admin.live.section_players")} ({data.players.length})
+        {isRegistration
+          ? `${t("admin.live.section_registering")} (${data.players.length})`
+          : `${t("admin.live.section_players")} (${data.players.length})`}
       </h3>
       <div
         className="admin-card"
@@ -153,11 +159,21 @@ function PlayersPanel({ data }: { data: LiveGameState }) {
                     <Link to={`/admin/users/${p.user_id}`}>{p.first_name}</Link>
                   </td>
                   <td>
-                    {ROLE_EMOJI[p.role]} {p.role}
+                    {isRegistration ? (
+                      <span style={{ color: "var(--muted)" }}>
+                        📝 {t("admin.live.role_pending")}
+                      </span>
+                    ) : (
+                      <>
+                        {ROLE_EMOJI[p.role]} {p.role}
+                      </>
+                    )}
                   </td>
-                  <td>{p.team}</td>
+                  <td>{isRegistration ? "—" : p.team}</td>
                   <td>
-                    {p.alive ? (
+                    {isRegistration ? (
+                      <span className="badge">⏳ {t("admin.live.registering")}</span>
+                    ) : p.alive ? (
                       <span className="badge green">{t("admin.live.alive_yes")}</span>
                     ) : (
                       <span className="badge red">💀 {t("admin.live.round_short")}{p.died_at_round}</span>

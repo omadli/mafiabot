@@ -618,6 +618,29 @@ async def _broadcast_hanging_result(bot: Bot, state) -> None:
             logger.debug(f"Hanging cancel broadcast failed: {e}")
         return
 
+    # Vote shield save — when the leader had a vote_shield, no hang
+    # happened, but the chat should hear that the rope slipped.
+    vs_user = extras.get("vote_shield_user")
+    if vs_user:
+        try:
+            mention = player_mention(vs_user["user_id"], vs_user["name"])
+            await bot.send_message(
+                state.group_id,
+                _("hanging-vote-shield-used", mention=mention),
+                parse_mode="HTML",
+            )
+            # DM the saved player so they know their item caught the rope.
+            try:
+                await bot.send_message(
+                    vs_user["user_id"],
+                    _("feedback-vote-shield-used"),
+                )
+            except Exception as e:
+                logger.debug(f"vote_shield DM failed: {e}")
+        except Exception as e:
+            logger.debug(f"vote_shield broadcast failed: {e}")
+        return
+
     # Successful hanging — single combined "tally + osildi" message.
     if not prev_round.hanged:
         return

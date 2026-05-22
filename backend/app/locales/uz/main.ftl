@@ -170,6 +170,24 @@ night-result-no-deaths = 🌅 Ishonish qiyin, lekin bu tunda hech kim o'lmadi...
 
 night-result-shield-used = <e:status-spark> Kimdir himoyasini ishlatdi!
 
+feedback-shield-used =
+    🛡 Kimdir sizni o'ldirishga urindi.
+    Himoyangiz sizni saqlab qoldi.
+
+feedback-killer-shield-used =
+    ⛑ Qotil sizni o'ldirishga urindi.
+    Qotildan himoyangiz sizni saqlab qoldi.
+
+feedback-fake-document-used =
+    📁 Kimdir sizning rolingizga qiziqdi.
+    Siz soxta hujjatlaringizni ko'rsatdingiz va o'zingizni "tinch aholi" qilib ko'rsatdingiz.
+
+feedback-vote-shield-used =
+    ⚖️ Bugun sizni osmoqchi bo'lishdi.
+    Ovozga qarshi himoyangiz sizni saqlab qoldi.
+
+hanging-vote-shield-used = ⚖️ { $mention } osilishga qarshi himoyasidan foydalandi.
+
 
 # ===========================================================
 # SO'NGGI SO'Z

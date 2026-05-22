@@ -79,7 +79,11 @@ async def send_role_feedback(bot: Bot, state: GameState, outcome: NightOutcome) 
         if h.target_id != h.actor_id:
             coros.append(_safe_dm(bot, h.target_id, target_text))
 
-    # Hooker results — confirm to actor + DM target
+    # Hooker results — confirm to actor + DM target.
+    # The Hooker always gets confirmation (so they don't get info on
+    # which targets are premium); the target is only DMed when they
+    # actually went to sleep — premium players who shrugged off the
+    # visit silently act normally.
     for hr in outcome.hooker_results:
         coros.append(
             _safe_dm(
@@ -88,7 +92,21 @@ async def send_role_feedback(bot: Bot, state: GameState, outcome: NightOutcome) 
                 _("feedback-hooker-confirm", target=hr.target_name),
             )
         )
-        coros.append(_safe_dm(bot, hr.target_id, _("feedback-hooker-target")))
+        if not hr.blocked:
+            coros.append(_safe_dm(bot, hr.target_id, _("feedback-hooker-target")))
+
+    # Shield saves — DM the target. The narrative line depends on which
+    # shield triggered (and which attacker role it absorbed). The group
+    # message is anonymous ("Kimdir himoyasini ishlatdi!") — broadcasted
+    # separately by messaging.broadcast_night_results.
+    for s in outcome.shield_saves:
+        if s.item == "fake_document":
+            text = _("feedback-fake-document-used")
+        elif s.item == "killer_shield":
+            text = _("feedback-killer-shield-used")
+        else:  # 'shield'
+            text = _("feedback-shield-used")
+        coros.append(_safe_dm(bot, s.target_id, text))
 
     if coros:
         await asyncio.gather(*coros, return_exceptions=True)

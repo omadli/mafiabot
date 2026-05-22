@@ -170,6 +170,24 @@ night-result-no-deaths = 🌅 Hard to believe, but no one died last night...
 
 night-result-shield-used = <e:status-spark> Someone used their protection!
 
+feedback-shield-used =
+    🛡 Someone tried to kill you tonight.
+    Your shield saved you.
+
+feedback-killer-shield-used =
+    ⛑ A maniac tried to kill you.
+    Your anti-maniac shield saved you.
+
+feedback-fake-document-used =
+    📁 Someone was curious about your role.
+    You flashed your forged papers and they read you as "citizen".
+
+feedback-vote-shield-used =
+    ⚖️ The town tried to hang you today.
+    Your vote shield kept you alive.
+
+hanging-vote-shield-used = ⚖️ { $mention } used a vote shield.
+
 
 # ===========================================================
 # LAST WORDS
