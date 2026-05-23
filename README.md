@@ -108,11 +108,20 @@ docker-compose.yml
 cp .env.example .env
 # Real qiymatlar bilan to'ldiring
 docker compose up -d
-docker compose exec backend aerich init -t app.db.tortoise_config.TORTOISE_ORM
-docker compose exec backend aerich init-db
 ```
 
-To'liq deploy qo'llanmasi: [`nginx/README.md`](./nginx/README.md)
+Birinchi ishga tushganda backend lifespan'i `Tortoise.generate_schemas(safe=True)`
+orqali avtomatik sxema yaratadi — qo'shimcha `aerich` buyrug'i kerak emas.
+
+**Eslatma:** `aerich init-db` ni **hech qachon** deploy qilingan serverda ishlatmang —
+`migrations/models/` papka allaqachon git'da bo'lgani uchun "Inited models already"
+xatosi chiqadi. Mavjud bazaga yangi migratsiya qo'llash uchun:
+
+```bash
+docker compose exec backend aerich upgrade
+```
+
+To'liq deploy qo'llanmasi va troubleshooting: [`DEPLOY.md`](./DEPLOY.md)
 
 ## 📖 Hujjatlar
 
