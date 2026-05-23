@@ -354,6 +354,14 @@ btn-detective-kill = <e:item-rifle> Shoot
 night-no-targets = ❌ No one to choose right now.
 night-no-rifle = <e:item-rifle> You're out of rifle rounds.
 
+rifle-confirm-prompt =
+    🔫 Do you want to shoot <b>{ $target }</b> with the rifle?
+    The rifle pierces every defence on the target.
+    One-shot consumable — gone after firing.
+
+btn-rifle-yes = ✅ Yes, fire
+btn-rifle-no = ❌ No
+
 btn-skip = ⏭ Skip
 
 night-skipped = Turn skipped.

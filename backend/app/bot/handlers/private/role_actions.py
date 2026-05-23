@@ -37,6 +37,119 @@ async def _back_to_group_kb(
     )
 
 
+@router.callback_query(F.data.startswith("night:rfconfirm:"))
+async def handle_rifle_confirm(
+    query: CallbackQuery, user: User, _: Translator, bot: Bot, _plain: Translator | None = None
+) -> None:
+    """Two-button "🔫 otishni xohlaysizmi?" gate before a rifle shot fires.
+
+    Callback shapes — single-handler dispatch so we don't depend on
+    aiogram's filter-order semantics:
+
+      * `night:rfconfirm:don:<target_id>`        — Don taps 🔫 on target
+      * `night:rfconfirm:detective:<target_id>`  — Detective taps 🔫 (kill)
+      * `night:rfconfirm:cancel:<role>`          — Don pressed "Yo'q"
+
+    On "Ha" the confirmation message edits to fire the existing rifle
+    callback (`night:<role>:<target_id>:rifle` /
+    `night:detective:kill:<target_id>:rifle`) which records the action
+    and consumes the rifle. "Yo'q" for Don rebuilds the target list
+    here; for Detective the No button is wired directly to
+    `night:detchoose:kill` (rebuilds the kill list via the existing
+    chooser handler).
+    """
+    if query.data is None or query.message is None:
+        await query.answer()
+        return
+    parts = query.data.split(":")
+    if len(parts) != 4:
+        await query.answer("Invalid", show_alert=True)
+        return
+    head = parts[2]  # "don" | "detective" | "cancel"
+
+    if user.active_game_id is None:
+        await notify_and_drop(query, _plain)
+        return
+    state = await _find_state_by_game_id(user.active_game_id)
+    if is_stale_for_phase(state, Phase.NIGHT):
+        await notify_and_drop(query, _plain)
+        return
+    assert state is not None
+
+    # --- Cancel path (Yo'q tugmasi) ---
+    if head == "cancel":
+        role_code = parts[3]
+        if role_code != "don":
+            await query.answer("Invalid", show_alert=True)
+            return
+        actor = state.get_player(user.id)
+        if actor is None or not actor.alive or actor.role != role_code:
+            await query.answer(_plain("night-cannot-act"), show_alert=True)
+            return
+        from app.services.role_actions import build_attacker_target_keyboard
+
+        locale = state.settings.get("language", "uz")
+        kb = await build_attacker_target_keyboard(state, actor, locale)
+        if kb is None:
+            await query.answer(_plain("night-no-targets"), show_alert=True)
+            return
+        text = _(f"night-prompt-{role_code}")
+        with contextlib.suppress(Exception):
+            await query.message.edit_text(text, reply_markup=kb, parse_mode="HTML")  # type: ignore[union-attr]
+        await query.answer()
+        return
+
+    # --- Prompt path (rifle tapped on a specific target) ---
+    role_code = head
+    if role_code not in ("don", "detective"):
+        await query.answer(_plain("night-cannot-act"), show_alert=True)
+        return
+    try:
+        target_id = int(parts[3])
+    except ValueError:
+        await query.answer("Invalid", show_alert=True)
+        return
+
+    actor = state.get_player(user.id)
+    if actor is None or not actor.alive or actor.role != role_code:
+        await query.answer(_plain("night-cannot-act"), show_alert=True)
+        return
+    target = state.get_player(target_id)
+    if target is None or not target.alive:
+        await query.answer(_plain("night-target-invalid"), show_alert=True)
+        return
+
+    # Validate the player still owns a rifle. The button was rendered at
+    # prompt time; in the meantime they might have spent it on a previous
+    # round or had it stripped by stale state.
+    from app.db.models import UserInventory
+
+    inv = await UserInventory.get_or_none(user_id=user.id)
+    if inv is None or inv.rifle < 1:
+        await query.answer(_plain("night-no-rifle"), show_alert=True)
+        return
+
+    if role_code == "don":
+        yes_cb = f"night:{role_code}:{target_id}:rifle"
+        no_cb = f"night:rfconfirm:cancel:{role_code}"
+    else:  # detective — kill branch (rifle implies kill)
+        yes_cb = f"night:detective:kill:{target_id}:rifle"
+        no_cb = "night:detchoose:kill"
+
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text=_plain("btn-rifle-yes"), callback_data=yes_cb),
+                InlineKeyboardButton(text=_plain("btn-rifle-no"), callback_data=no_cb),
+            ]
+        ]
+    )
+    text = _("rifle-confirm-prompt", target=target.first_name)
+    with contextlib.suppress(Exception):
+        await query.message.edit_text(text, reply_markup=kb, parse_mode="HTML")  # type: ignore[union-attr]
+    await query.answer()
+
+
 @router.callback_query(F.data.startswith("night:detchoose:"))
 async def handle_detective_chooser(
     query: CallbackQuery, user: User, _: Translator, bot: Bot, _plain: Translator | None = None

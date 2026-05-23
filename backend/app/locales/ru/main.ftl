@@ -354,6 +354,14 @@ btn-detective-kill = <e:item-rifle> Убить
 night-no-targets = ❌ Сейчас некого выбрать.
 night-no-rifle = <e:item-rifle> У вас не осталось патронов.
 
+rifle-confirm-prompt =
+    🔫 Хотите выстрелить в <b>{ $target }</b> из винтовки?
+    Винтовка пробивает любую защиту цели.
+    Это одноразовый расходник — после выстрела пропадает.
+
+btn-rifle-yes = ✅ Да, стрелять
+btn-rifle-no = ❌ Нет
+
 btn-skip = ⏭ Пропустить
 
 night-skipped = Ход пропущен.

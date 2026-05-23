@@ -353,6 +353,14 @@ btn-detective-kill = <e:item-rifle> O'ldirish
 night-no-targets = ❌ Hozir hech kimni tanlay olmaysiz.
 night-no-rifle = <e:item-rifle> Sizda miltiq qolmadi.
 
+rifle-confirm-prompt =
+    🔫 <b>{ $target }</b>ni miltiqdan otishni xohlaysizmi?
+    Agar himoyasi bo'lsa, miltiq uni teshib o'tib o'ldiradi.
+    Miltiq bir martalik — ishlatilgach yo'qoladi.
+
+btn-rifle-yes = ✅ Ha, ot
+btn-rifle-no = ❌ Yo'q
+
 btn-skip = ⏭ O'tkazib yuborish
 
 night-skipped = Navbat o'tkazib yuborildi.

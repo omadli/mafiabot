@@ -51,14 +51,14 @@ async def _send_prompt_to_player(
             logger.warning(f"Cannot DM user {actor.user_id} (bot blocked)")
         return
 
-    # Attackers (don/mafia/killer/maniac/detective-kill) who own a rifle get a
-    # secondary "🔫 Miltiq" button per target. Rifle pierces all defences
-    # (see core/actions.py:247) and is consumed on use.
-    has_rifle = (
-        await _player_has_rifle(actor.user_id)
-        if (actor.role in {"don", "mafia", "killer", "maniac"})
-        else False
-    )
+    # Rifle is an attacker-only item that pierces every defence
+    # (see core/actions.py:247). Per spec only the **Don** sees the rifle
+    # row on this single-step keyboard — Mafia/Killer/Maniac don't get it
+    # (Killer already pierces intrinsically; Mafia defers to Don; Maniac
+    # is a singleton). Detective's rifle lives on its 2-step kill keyboard.
+    # The button no longer fires the kill immediately; it routes to an
+    # explicit "🔫 Otishni xohlaysizmi?" confirmation step.
+    has_rifle = actor.role == "don" and await _player_has_rifle(actor.user_id)
 
     # Build keyboard with target buttons
     rows: list[list[InlineKeyboardButton]] = []
@@ -73,7 +73,7 @@ async def _send_prompt_to_player(
             target_row.append(
                 InlineKeyboardButton(
                     text="🔫",
-                    callback_data=f"night:{actor.role}:{target.user_id}:rifle",
+                    callback_data=f"night:rfconfirm:{actor.role}:{target.user_id}",
                 )
             )
         rows.append(target_row)
@@ -174,6 +174,9 @@ async def send_detective_target_keyboard(
     _plain = get_plain_translator(locale)
     callback_prefix = f"night:detective:{action_kind}"
     # Detective's "kill" branch can use the rifle too (pierces all defences).
+    # The rifle button now routes to the confirmation step rather than firing
+    # the shot directly. Implicitly kill-only — we never reach this branch
+    # for the "check" action because rifle requires kill semantics.
     has_rifle = action_kind == "kill" and await _player_has_rifle(actor.user_id)
     rows = []
     for target in targets:
@@ -187,7 +190,7 @@ async def send_detective_target_keyboard(
             row.append(
                 InlineKeyboardButton(
                     text="🔫",
-                    callback_data=f"{callback_prefix}:{target.user_id}:rifle",
+                    callback_data=f"night:rfconfirm:detective:{target.user_id}",
                 )
             )
         rows.append(row)
@@ -208,6 +211,51 @@ async def _player_has_rifle(user_id: int) -> bool:
 
     inv = await UserInventory.get_or_none(user_id=user_id)
     return bool(inv and inv.rifle >= 1)
+
+
+async def build_attacker_target_keyboard(
+    state: GameState, actor: PlayerState, locale: str
+) -> InlineKeyboardMarkup | None:
+    """Rebuild the single-step attacker keyboard (used by Don) on demand.
+
+    Used by the rifle-cancel handler to put the player back on the
+    target picker after they tapped Yo'q on the rifle confirmation.
+    Mirrors the keyboard that `_send_prompt_to_player` originally
+    rendered — same target list, same rifle row if applicable, same
+    skip button.
+    """
+    role = get_role(actor.role)
+    if not role.has_night_action:
+        return None
+    targets = role.valid_targets(state, actor)
+    if not targets:
+        return None
+
+    _plain = get_plain_translator(locale)
+    has_rifle = actor.role == "don" and await _player_has_rifle(actor.user_id)
+
+    rows: list[list[InlineKeyboardButton]] = []
+    for target in targets:
+        target_row = [
+            InlineKeyboardButton(
+                text=f"{target.first_name} (#{target.join_order})",
+                callback_data=f"night:{actor.role}:{target.user_id}",
+            )
+        ]
+        if has_rifle:
+            target_row.append(
+                InlineKeyboardButton(
+                    text="🔫",
+                    callback_data=f"night:rfconfirm:{actor.role}:{target.user_id}",
+                )
+            )
+        rows.append(target_row)
+
+    if state.settings.get("gameplay", {}).get("allow_skip_night_action", True):
+        rows.append(
+            [InlineKeyboardButton(text=_plain("btn-skip"), callback_data=f"night:{actor.role}:0")]
+        )
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def role_action_type(role_code: str) -> str:
