@@ -222,6 +222,21 @@ class PhaseManager:
             outcome = resolver.resolve(state)
             state.current_round().night_deaths = outcome.deaths
 
+            # Burn rifle inventory for shots that actually had to pierce
+            # something. The resolver collects user_ids in `rifles_consumed`;
+            # a "Ha, ot" against an undefended target is NOT in this list,
+            # so the rifle slot survives. Deduped because two rifle shots
+            # by the same actor (theoretically impossible — one target per
+            # actor — but defensive) shouldn't double-debit.
+            if outcome.rifles_consumed:
+                from app.db.models import UserInventory
+
+                for uid in set(outcome.rifles_consumed):
+                    inv = await UserInventory.get_or_none(user_id=uid)
+                    if inv is None or inv.rifle < 1:
+                        continue
+                    await UserInventory.filter(user_id=uid).update(rifle=max(0, inv.rifle - 1))
+
             # Send role feedback DMs (Detective check result, Doctor visitors, Hooker)
             from app.services.role_feedback import send_role_feedback
 

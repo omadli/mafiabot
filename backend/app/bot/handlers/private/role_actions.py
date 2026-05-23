@@ -77,9 +77,12 @@ async def handle_rifle_confirm(
     assert state is not None
 
     # --- Cancel path (Yo'q tugmasi) ---
+    # Single-step roles (don/maniac/killer) ask us to rebuild the target
+    # list here. Detective's cancel routes to night:detchoose:kill so we
+    # don't even reach this branch for it.
     if head == "cancel":
         role_code = parts[3]
-        if role_code != "don":
+        if role_code not in {"don", "maniac", "killer"}:
             await query.answer("Invalid", show_alert=True)
             return
         actor = state.get_player(user.id)
@@ -101,7 +104,7 @@ async def handle_rifle_confirm(
 
     # --- Prompt path (rifle tapped on a specific target) ---
     role_code = head
-    if role_code not in ("don", "detective"):
+    if role_code not in ("don", "maniac", "killer", "detective"):
         await query.answer(_plain("night-cannot-act"), show_alert=True)
         return
     try:
@@ -129,7 +132,7 @@ async def handle_rifle_confirm(
         await query.answer(_plain("night-no-rifle"), show_alert=True)
         return
 
-    if role_code == "don":
+    if role_code in {"don", "maniac", "killer"}:
         yes_cb = f"night:{role_code}:{target_id}:rifle"
         no_cb = f"night:rfconfirm:cancel:{role_code}"
     else:  # detective — kill branch (rifle implies kill)
@@ -303,7 +306,11 @@ async def handle_night_pick(
         return
 
     # If rifle was requested but the player no longer owns one (race vs
-    # purchase), fail loudly so the UX stays honest.
+    # purchase), fail loudly so the UX stays honest. The rifle is NOT
+    # decremented here — consumption is deferred to the resolver, which
+    # only burns it when the shot had to pierce a real defence (shield,
+    # killer_shield, or doctor heal). An undefended target dies but the
+    # rifle slot survives. See ActionResolver._resolve / NightOutcome.
     if use_rifle:
         from app.db.models import UserInventory
 
@@ -322,13 +329,6 @@ async def handle_night_pick(
     )
     state.current_actions[user.id] = action
     await game_service.save_state(state)
-
-    # Consume the rifle now — even if the kill is later cancelled, the
-    # decision to "pull the trigger" was made. Matches the spec at
-    # core/actions.py:247 (rifle pierces all defences).
-    if use_rifle:
-        inv.rifle -= 1
-        await inv.save(update_fields=["rifle"])
 
     await query.answer(
         _plain("night-action-recorded", target=target.first_name),

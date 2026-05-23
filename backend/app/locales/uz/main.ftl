@@ -1395,9 +1395,10 @@ role-desc-journalist =
     ekanligini bilishingiz mumkin. Ammo Komissar va Serjantni tana olmaysiz.
 
 role-desc-killer =
-    Mafiyaning eng kuchli qotili. Sizning miltig'ingiz <b>barcha himoyalarni</b>
-    (Doktor, 🛡 Himoya, ⛑ Qotildan himoya) <b>teshib o'tadi</b>. Tunda Don tanlagan
-    qurbonni o'ldirasiz, ammo Don ruxsat bersa o'zingiz tanlay olasiz.
+    Mafiyaning eng kuchli qotili. Sizning hujumingizni <b>Doktor davolay olmaydi</b> —
+    qurboningiz o'lgan. 🛡 Himoya va ⛑ Qotildan himoya hujumingizni ushlab qoladi,
+    lekin 🔫 Miltig'ingiz bo'lsa, u himoyalarni ham teshib o'tadi.
+    💃 Kezuvchi sizni uxlata olmaydi.
 
 role-desc-maniac =
     Yakka qotil. Sizning g'alabangiz — <b>oxirgi tirik qolish</b> (boshqa hamma o'lsa).

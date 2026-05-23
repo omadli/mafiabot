@@ -139,9 +139,11 @@ def test_fake_document_no_save_for_actual_citizen():
     assert all(s.item != "fake_document" for s in outcome.shield_saves)
 
 
-def test_rifle_pierces_shield_no_save_recorded():
-    # Rifle bypasses every defence — the kill lands and no shield_save
-    # event is recorded (the item is NOT consumed by piercing attacks).
+def test_rifle_pierces_shield_consumes_both():
+    # Rifle pierces the shield AND consumes it (the shield was destroyed).
+    # The rifle slot is also burned because it had to bypass a defence.
+    # No shield_save event is surfaced (target died, no "Kimdir himoyasini
+    # ishlatdi" group line for an unsuccessful save).
     target = PlayerState(
         user_id=10,
         first_name="Civ",
@@ -159,8 +161,96 @@ def test_rifle_pierces_shield_no_save_recorded():
     outcome = ActionResolver().resolve(state)
     assert outcome.deaths == [10]
     assert outcome.shield_saves == []
-    # Shield slot survives — it never "triggered".
-    assert "shield" in state.get_player(10).items_active
+    # Shield was destroyed by the rifle.
+    assert "shield" not in state.get_player(10).items_active
+    # Rifle was needed to pierce → consumed.
+    assert outcome.rifles_consumed == [20]
+
+
+def test_rifle_not_consumed_against_undefended_target():
+    # No shield, no doctor → rifle wasn't needed. Kill lands, but the
+    # rifle slot survives so the player keeps it for a future round.
+    target = PlayerState(
+        user_id=10, first_name="Civ", join_order=1, role="citizen", team=Team.CITIZENS
+    )
+    don = PlayerState(user_id=20, first_name="Don", join_order=2, role="don", team=Team.MAFIA)
+    actions = [
+        NightAction(actor_id=20, role="don", action_type="kill", target_id=10, used_item="rifle")
+    ]
+    state = _state_with([target, don], actions)
+
+    outcome = ActionResolver().resolve(state)
+    assert outcome.deaths == [10]
+    assert outcome.rifles_consumed == []
+
+
+def test_killer_no_longer_pierces_shield():
+    # Killer (Ninza) used to pierce shield intrinsically. Per the new
+    # spec, only the rifle pierces shields — Killer just bypasses the
+    # doctor heal. So a shield should still save against Killer when
+    # rifle isn't involved.
+    target = PlayerState(
+        user_id=10,
+        first_name="Civ",
+        join_order=1,
+        role="citizen",
+        team=Team.CITIZENS,
+        items_active=["shield"],
+    )
+    killer = PlayerState(
+        user_id=20, first_name="Ninza", join_order=2, role="killer", team=Team.MAFIA
+    )
+    actions = [NightAction(actor_id=20, role="killer", action_type="kill", target_id=10)]
+    state = _state_with([target, killer], actions)
+
+    outcome = ActionResolver().resolve(state)
+    assert outcome.deaths == []
+    assert len(outcome.shield_saves) == 1
+    assert outcome.shield_saves[0].item == "shield"
+
+
+def test_killer_still_pierces_doctor_heal():
+    # Killer's intrinsic ability: doctor cannot save the victim.
+    # Shield isn't present here, so the kill goes through.
+    target = PlayerState(
+        user_id=10, first_name="Civ", join_order=1, role="citizen", team=Team.CITIZENS
+    )
+    killer = PlayerState(
+        user_id=20, first_name="Ninza", join_order=2, role="killer", team=Team.MAFIA
+    )
+    doctor = PlayerState(
+        user_id=30, first_name="Doc", join_order=3, role="doctor", team=Team.CITIZENS
+    )
+    actions = [
+        NightAction(actor_id=20, role="killer", action_type="kill", target_id=10),
+        NightAction(actor_id=30, role="doctor", action_type="heal", target_id=10),
+    ]
+    state = _state_with([target, killer, doctor], actions)
+
+    outcome = ActionResolver().resolve(state)
+    assert outcome.deaths == [10]
+    # Doctor visit is logged but `saved=False`.
+    saves_for_target = [r for r in outcome.doctor_results if r.target_id == 10]
+    assert any(not r.saved for r in saves_for_target)
+
+
+def test_hooker_cannot_sleep_killer():
+    # Killer (Ninza) is immune to the Hooker just like premium players.
+    # The visit is recorded with `blocked=True` so the Hooker gets
+    # confirmation feedback, but the target isn't added to `sleeping`.
+    killer = PlayerState(
+        user_id=10, first_name="Ninza", join_order=1, role="killer", team=Team.MAFIA
+    )
+    hooker = PlayerState(
+        user_id=20, first_name="Kez", join_order=2, role="hooker", team=Team.CITIZENS
+    )
+    actions = [NightAction(actor_id=20, role="hooker", action_type="sleep", target_id=10)]
+    state = _state_with([killer, hooker], actions)
+
+    outcome = ActionResolver().resolve(state)
+    assert 10 not in outcome.sleeping
+    assert len(outcome.hooker_results) == 1
+    assert outcome.hooker_results[0].blocked is True
 
 
 # === Bug 5: premium privileges ===

@@ -51,14 +51,16 @@ async def _send_prompt_to_player(
             logger.warning(f"Cannot DM user {actor.user_id} (bot blocked)")
         return
 
-    # Rifle is an attacker-only item that pierces every defence
-    # (see core/actions.py:247). Per spec only the **Don** sees the rifle
-    # row on this single-step keyboard — Mafia/Killer/Maniac don't get it
-    # (Killer already pierces intrinsically; Mafia defers to Don; Maniac
-    # is a singleton). Detective's rifle lives on its 2-step kill keyboard.
-    # The button no longer fires the kill immediately; it routes to an
-    # explicit "🔫 Otishni xohlaysizmi?" confirmation step.
-    has_rifle = actor.role == "don" and await _player_has_rifle(actor.user_id)
+    # Rifle (🔫) is a one-shot attacker item that pierces shields AND
+    # doctor heal. Available to the four direct kill-deciders:
+    #   * Don           — picks the mafia's nightly victim
+    #   * Maniac (Qotil) — singleton kill
+    #   * Killer (Ninza) — already bypasses doctor; rifle gets through shields too
+    #   * Detective     — only on the kill branch (handled in its own keyboard)
+    # Mafia is NOT eligible — they defer to Don's pick.
+    # Button routes to the Ha/Yo'q confirmation gate; rifle is only
+    # consumed if it had to pierce a real defence.
+    has_rifle = actor.role in {"don", "maniac", "killer"} and await _player_has_rifle(actor.user_id)
 
     # Build keyboard with target buttons
     rows: list[list[InlineKeyboardButton]] = []
@@ -232,7 +234,8 @@ async def build_attacker_target_keyboard(
         return None
 
     _plain = get_plain_translator(locale)
-    has_rifle = actor.role == "don" and await _player_has_rifle(actor.user_id)
+    rifle_eligible = {"don", "maniac", "killer"}
+    has_rifle = actor.role in rifle_eligible and await _player_has_rifle(actor.user_id)
 
     rows: list[list[InlineKeyboardButton]] = []
     for target in targets:

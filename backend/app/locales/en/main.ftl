@@ -1394,9 +1394,10 @@ role-desc-journalist =
     or Hooker</b>. But the Detective and Sergeant you can't identify.
 
 role-desc-killer =
-    Mafia's strongest killer. Your rifle <b>pierces every protection</b>
-    (Doctor, 🛡 Shield, ⛑ Killer shield). At night you kill the Don's target;
-    with the Don's permission you can pick your own.
+    Mafia's signature assassin. <b>The Doctor cannot save</b> your victim —
+    whoever you mark dies. 🛡 Shield and ⛑ Killer shield still block your
+    attack, but a 🔫 Rifle in your hands punches through them.
+    💃 The Hooker cannot put you to sleep.
 
 role-desc-maniac =
     Solo killer. Your win: <b>be the last alive</b> (everyone else dead).

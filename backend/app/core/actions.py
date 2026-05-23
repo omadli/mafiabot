@@ -1,9 +1,9 @@
 """Action queue + resolver — 21 roles, items, transformations.
 
 Resolution order (priority lower = first):
-  10  hooker.sleep         (Don+kezuvchi: Don ustun)
+  10  hooker.sleep         (Don+kezuvchi: Don ustun, Killer/Ninza ham immun)
   20  hobo.visit            (witness for kill detection)
-  25  killer.kill           (Ninza — pierces shields)
+  25  killer.kill           (Ninza — pierces doctor heal only; shields still save)
   25  arsonist.queue        (target_queue)
   30  don.kill / mafia.kill / maniac.kill
   35  lawyer.protect        (komissar + osish himoyasi)
@@ -132,6 +132,11 @@ class NightOutcome:
     pending_mage_reactions: list[MageReaction] = field(default_factory=list)
     sleeping: set[int] = field(default_factory=set)
     shield_saves: list[ShieldSave] = field(default_factory=list)
+    # user_ids of attackers whose rifle was actually consumed this night.
+    # Rifle is only spent when it had to pierce a real defence (shield,
+    # killer_shield, or doctor heal). A "Ha, ot" pressed against an
+    # undefended target kills without burning the rifle slot.
+    rifles_consumed: list[int] = field(default_factory=list)
 
 
 # === Resolver ===
@@ -153,19 +158,23 @@ class ActionResolver:
                 continue
             if self._hooker_blocked_by_don(state, a):
                 continue
-            # Premium privilege: Hooker cannot put a premium player to sleep.
-            # The visit still happens — Hooker doesn't learn the target is
-            # premium — but the target acts normally that night.
+            # Hooker immunity: premium players AND Killer (Ninza) cannot
+            # be put to sleep. The visit still happens — Hooker doesn't
+            # learn the target's role/status — but the target acts
+            # normally that night.
             target_player = state.get_player(a.target_id)
-            if target_player is not None and target_player.extra.get("is_premium"):
-                logger.info(f"Hooker {a.actor_id} blocked by premium of {a.target_id}")
+            target_immune = target_player is not None and (
+                target_player.extra.get("is_premium") or target_player.role == "killer"
+            )
+            if target_immune:
+                logger.info(f"Hooker {a.actor_id} blocked by immunity of {a.target_id}")
                 # Still record a HookerResult so the Hooker gets feedback,
                 # but skip the sleep effect by NOT adding to sleeping_targets.
                 outcome.hooker_results.append(
                     HookerResult(
                         actor_id=a.actor_id,
                         target_id=a.target_id,
-                        target_name=target_player.first_name,
+                        target_name=target_player.first_name,  # type: ignore[union-attr]
                         blocked=True,
                     )
                 )
@@ -275,53 +284,81 @@ class ActionResolver:
                 logger.info(f"Lucky {target.user_id} survived (50% chance)")
                 continue
 
-            uses_rifle = any(act.used_item == "rifle" for _, _, act in attackers)
-            piercing = uses_rifle or any(
-                self._role_pierces_shields(role) for role, _, _ in attackers
-            )
+            rifle_actors = [aid for _r, aid, act in attackers if act.used_item == "rifle"]
+            uses_rifle = bool(rifle_actors)
+            attacker_roles = [role for role, _, _ in attackers]
+            killer_role = attacker_roles[0]
 
-            saved_by_doctor = target_id in heal_targets and not piercing
-            saved_by_killer_shield = (
-                "killer_shield" in target.items_active
-                and not uses_rifle
-                and any(role == "killer" for role, _, _ in attackers)
+            # Intrinsic anti-doctor (e.g. Killer/Ninza): doctor cannot
+            # save the victim. Shields still trigger normally.
+            intrinsic_pierces_doctor = any(
+                self._role_pierces_doctor_heal(r) for r in attacker_roles
             )
-            saved_by_shield = "shield" in target.items_active and not piercing
+            killer_in_attackers = "killer" in attacker_roles
 
-            killer_role = attackers[0][0]
-            if saved_by_doctor:
-                outcome.doctor_results.append(
-                    HealResult(
-                        actor_id=heal_targets[target_id],
-                        target_id=target_id,
-                        target_name=target.first_name,
-                        saved=True,
-                        visited_by_killers=[r for r, _, _ in attackers],
-                    )
+            # What would block the kill if NO rifle were used?
+            saved_by_doctor_base = target_id in heal_targets and not intrinsic_pierces_doctor
+            saved_by_killer_shield_base = (
+                "killer_shield" in target.items_active and killer_in_attackers
+            )
+            saved_by_shield_base = "shield" in target.items_active
+
+            # Rifle path: kill lands regardless, but only consume the
+            # rifle when it had to actually pierce a real defence.
+            if uses_rifle:
+                rifle_was_needed = (
+                    saved_by_doctor_base or saved_by_killer_shield_base or saved_by_shield_base
                 )
-                continue
-            if saved_by_killer_shield:
-                self._consume_shield(target, "killer_shield")
-                outcome.shield_saves.append(
-                    ShieldSave(
-                        target_id=target_id,
-                        item="killer_shield",
-                        attacker_role=killer_role,
+                if rifle_was_needed:
+                    for aid in rifle_actors:
+                        outcome.rifles_consumed.append(aid)
+                    # Pierce the highest-priority shield item. We don't
+                    # surface a ShieldSave entry (no "Kimdir himoyasini
+                    # ishlatdi" group line) because the target died
+                    # anyway — the shield was destroyed, not "used".
+                    if saved_by_killer_shield_base:
+                        self._consume_shield(target, "killer_shield")
+                    elif saved_by_shield_base:
+                        self._consume_shield(target, "shield")
+                    # Doctor heal isn't an inventory slot — nothing to
+                    # decrement, but the doctor's "saved" feedback is
+                    # suppressed so they don't think they succeeded.
+                # Fall through to the kill block below.
+            else:
+                # No rifle: defences apply in priority order.
+                if saved_by_doctor_base:
+                    outcome.doctor_results.append(
+                        HealResult(
+                            actor_id=heal_targets[target_id],
+                            target_id=target_id,
+                            target_name=target.first_name,
+                            saved=True,
+                            visited_by_killers=[r for r, _, _ in attackers],
+                        )
                     )
-                )
-                logger.debug(f"Player {target_id} saved by killer_shield")
-                continue
-            if saved_by_shield:
-                self._consume_shield(target, "shield")
-                outcome.shield_saves.append(
-                    ShieldSave(
-                        target_id=target_id,
-                        item="shield",
-                        attacker_role=killer_role,
+                    continue
+                if saved_by_killer_shield_base:
+                    self._consume_shield(target, "killer_shield")
+                    outcome.shield_saves.append(
+                        ShieldSave(
+                            target_id=target_id,
+                            item="killer_shield",
+                            attacker_role=killer_role,
+                        )
                     )
-                )
-                logger.debug(f"Player {target_id} saved by shield")
-                continue
+                    logger.debug(f"Player {target_id} saved by killer_shield")
+                    continue
+                if saved_by_shield_base:
+                    self._consume_shield(target, "shield")
+                    outcome.shield_saves.append(
+                        ShieldSave(
+                            target_id=target_id,
+                            item="shield",
+                            attacker_role=killer_role,
+                        )
+                    )
+                    logger.debug(f"Player {target_id} saved by shield")
+                    continue
 
             # Death
             target.alive = False
@@ -576,6 +613,18 @@ class ActionResolver:
 
         role = get_role(role_code)
         return getattr(role, "pierces_shields", False)
+
+    def _role_pierces_doctor_heal(self, role_code: str) -> bool:
+        """Intrinsic anti-doctor flag — Killer/Ninza's signature ability.
+
+        Distinct from `pierces_shields` (rifle-only now): an intrinsic
+        anti-doctor means the doctor's heal can't save the victim, but
+        shield / killer_shield still trigger normally.
+        """
+        from app.core.roles import get_role
+
+        role = get_role(role_code)
+        return getattr(role, "pierces_doctor_heal", False)
 
     def _reveal_role_for_detective(self, target: PlayerState, lawyer_protected: set[int]) -> str:
         if "fake_document" in target.items_active:
