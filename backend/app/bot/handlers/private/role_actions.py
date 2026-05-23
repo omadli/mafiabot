@@ -58,11 +58,12 @@ async def handle_detective_chooser(
         await notify_and_drop(query, _plain)
         return
     state = await _find_state_by_game_id(user.active_game_id)
-    if is_stale_for_phase(state, Phase.NIGHT):  # type: ignore[arg-type]
+    if is_stale_for_phase(state, Phase.NIGHT):
         await notify_and_drop(query, _plain)
         return
+    assert state is not None  # narrowed by is_stale_for_phase (False → not None)
 
-    actor = state.get_player(user.id)  # type: ignore[attr-defined,var-annotated,arg-type]
+    actor = state.get_player(user.id)
     if actor is None or not actor.alive or actor.role != "detective":
         await query.answer(_plain("night-cannot-act"), show_alert=True)
         return
@@ -75,7 +76,7 @@ async def handle_detective_chooser(
         if check_results:
             from app.services.messaging import role_emoji_name
 
-            locale = state.settings.get("language", "uz")  # type: ignore[attr-defined,var-annotated,arg-type]
+            locale = state.settings.get("language", "uz")
             prior_lines.append(_("night-prompt-detective-prior-header"))
             for _uid_str, info in check_results.items():
                 role_label = role_emoji_name(info.get("role", "citizen"), locale)
@@ -110,8 +111,8 @@ async def handle_detective_chooser(
 
     from app.services.role_actions import send_detective_target_keyboard
 
-    locale = state.settings.get("language", "uz")  # type: ignore[attr-defined,var-annotated,arg-type]
-    kb = await send_detective_target_keyboard(bot, state, actor, action_kind, locale)  # type: ignore[attr-defined,var-annotated,arg-type]
+    locale = state.settings.get("language", "uz")
+    kb = await send_detective_target_keyboard(bot, state, actor, action_kind, locale)
     if kb is None:
         await query.answer(_plain("night-no-targets"), show_alert=True)
         return
@@ -161,28 +162,29 @@ async def handle_night_pick(
         return
 
     state = await _find_state_by_game_id(user.active_game_id)
-    if is_stale_for_phase(state, Phase.NIGHT):  # type: ignore[arg-type]
+    if is_stale_for_phase(state, Phase.NIGHT):
         await notify_and_drop(query, _plain)
         return
+    assert state is not None  # narrowed by is_stale_for_phase (False → not None)
 
-    actor = state.get_player(user.id)  # type: ignore[attr-defined,var-annotated,arg-type]
+    actor = state.get_player(user.id)
     if actor is None or not actor.alive or actor.role != role_code:
         await query.answer(_plain("night-cannot-act"), show_alert=True)
         return
 
     # Skip
     if target_id == 0:
-        state.current_actions.pop(user.id, None)  # type: ignore[attr-defined,var-annotated,arg-type]
-        await game_service.save_state(state)  # type: ignore[attr-defined,var-annotated,arg-type]
+        state.current_actions.pop(user.id, None)
+        await game_service.save_state(state)
         await query.answer(_plain("night-skipped"), show_alert=False)
         if query.message:
-            back_kb = await _back_to_group_kb(state, _, _plain)  # type: ignore[attr-defined,var-annotated,arg-type]
+            back_kb = await _back_to_group_kb(state, _, _plain)
             with contextlib.suppress(Exception):
                 await query.message.edit_text(_("night-skipped-confirm"), reply_markup=back_kb)  # type: ignore[union-attr]
         return
 
     # Validate target
-    target = state.get_player(target_id)  # type: ignore[attr-defined,var-annotated,arg-type]
+    target = state.get_player(target_id)
     if target is None or not target.alive:
         await query.answer(_plain("night-target-invalid"), show_alert=True)
         return
@@ -205,8 +207,8 @@ async def handle_night_pick(
         target_id=target_id,
         used_item=("rifle" if use_rifle else None),
     )
-    state.current_actions[user.id] = action  # type: ignore[attr-defined,var-annotated,arg-type]
-    await game_service.save_state(state)  # type: ignore[attr-defined,var-annotated,arg-type]
+    state.current_actions[user.id] = action
+    await game_service.save_state(state)
 
     # Consume the rifle now — even if the kill is later cancelled, the
     # decision to "pull the trigger" was made. Matches the spec at
@@ -220,7 +222,7 @@ async def handle_night_pick(
         show_alert=False,
     )
     if query.message:
-        back_kb = await _back_to_group_kb(state, _, _plain)  # type: ignore[attr-defined,var-annotated,arg-type]
+        back_kb = await _back_to_group_kb(state, _, _plain)
         with contextlib.suppress(Exception):
             await query.message.edit_text(  # type: ignore[union-attr]
                 _("night-action-confirmed", target=target.first_name),
@@ -231,13 +233,13 @@ async def handle_night_pick(
     # Broadcast to other alive mafia teammates if actor is on the mafia team.
     # Lets the team coordinate / see each other's picks during night.
     if actor.team == Team.MAFIA:
-        await _broadcast_to_mafia(bot, state, actor, target, action_kind)  # type: ignore[attr-defined,var-annotated,arg-type]
+        await _broadcast_to_mafia(bot, state, actor, target, action_kind)
 
     # Atmospheric per-role broadcast to the GROUP (idempotent per round).
     # Each role posts at most once per night — Mafia + Don share the
     # "Don tanladi" message so the team is treated as one. Detective has
     # two flavors depending on action_type.
-    await _broadcast_role_atmosphere(bot, state, actor, action_kind)  # type: ignore[attr-defined,var-annotated,arg-type]
+    await _broadcast_role_atmosphere(bot, state, actor, action_kind)
 
 
 _BROADCAST_KEY_OVERRIDES: dict[tuple[str, str], str] = {
@@ -322,7 +324,7 @@ async def _broadcast_to_mafia(
     await asyncio.gather(*(_dm(uid) for uid in targets), return_exceptions=True)
 
 
-async def _find_state_by_game_id(game_id) -> object | None:
+async def _find_state_by_game_id(game_id) -> GameState | None:
     """Find live state for a game by game UUID — scan group_ids.
 
     For MVP simplicity: load Game from DB to get group_id.
@@ -332,4 +334,4 @@ async def _find_state_by_game_id(game_id) -> object | None:
     db_game = await Game.get_or_none(id=game_id)
     if db_game is None:
         return None
-    return await game_service.load_state(db_game.group_id)  # type: ignore[attr-defined,var-annotated,arg-type]
+    return await game_service.load_state(db_game.group_id)  # type: ignore[attr-defined]

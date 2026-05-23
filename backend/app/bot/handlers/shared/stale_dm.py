@@ -35,7 +35,7 @@ async def resolve_active_state(user: User) -> GameState | None:
     db_game = await Game.get_or_none(id=user.active_game_id)
     if db_game is None:
         return None
-    return await game_service.load_state(db_game.group_id)
+    return await game_service.load_state(db_game.group_id)  # type: ignore[attr-defined]
 
 
 async def notify_and_drop(

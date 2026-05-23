@@ -509,7 +509,7 @@ async def sync_inventory_into_active_game(user_id: int, item_code: str) -> None:
     db_game = await Game.get_or_none(id=game_id)
     if db_game is None:
         return
-    state = await load_state(db_game.group_id)
+    state = await load_state(db_game.group_id)  # type: ignore[attr-defined]
     if state is None or state.phase in (Phase.WAITING, Phase.FINISHED, Phase.CANCELLED):
         return
     player = state.get_player(user_id)
