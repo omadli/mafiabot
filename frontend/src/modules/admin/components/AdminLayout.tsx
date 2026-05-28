@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
+import { LangPicker } from "@shared/components/LangPicker";
 import { authStore } from "@shared/store/auth";
 import type { Locale } from "@shared/i18n";
 
@@ -39,8 +40,8 @@ export function AdminLayout() {
     navigate("/admin/login");
   };
 
-  const onLocaleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    i18n.changeLanguage(e.target.value as Locale);
+  const onLocaleChange = (code: string) => {
+    i18n.changeLanguage(code as Locale);
   };
 
   return (
@@ -62,15 +63,11 @@ export function AdminLayout() {
           ))}
         </nav>
         <div className="admin-user">
-          <select
+          <LangPicker
             value={i18n.language}
             onChange={onLocaleChange}
             className="admin-lang-select"
-          >
-            <option value="uz">🇺🇿 O&apos;zbekcha</option>
-            <option value="ru">🇷🇺 Русский</option>
-            <option value="en">🇬🇧 English</option>
-          </select>
+          />
           <div className="admin-user-name">
             {username} · <span className="role">{role}</span>
           </div>

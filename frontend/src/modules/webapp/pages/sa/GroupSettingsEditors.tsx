@@ -10,6 +10,7 @@
 import { useTranslation } from "react-i18next";
 
 import type { GroupSettings } from "@shared/api/sa";
+import { Flag } from "@shared/components/Flag";
 
 interface EditorProps {
   settings: GroupSettings;
@@ -317,9 +318,9 @@ export function GameplayEditor({ settings, onSave }: EditorProps) {
 export function LanguageEditor({ settings, onSave }: EditorProps) {
   const current = settings.language;
   const options: { code: string; label: string }[] = [
-    { code: "uz", label: "🇺🇿 O'zbekcha" },
-    { code: "ru", label: "🇷🇺 Русский" },
-    { code: "en", label: "🇬🇧 English" },
+    { code: "uz", label: "O'zbekcha" },
+    { code: "ru", label: "Русский" },
+    { code: "en", label: "English" },
   ];
 
   return (
@@ -329,9 +330,17 @@ export function LanguageEditor({ settings, onSave }: EditorProps) {
           key={o.code}
           onClick={() => onSave("language", o.code)}
           className={`sa-chip ${o.code === current ? "active" : ""}`}
-          style={{ justifyContent: "flex-start", padding: "0.6rem 0.8rem" }}
+          style={{
+            justifyContent: "flex-start",
+            padding: "0.6rem 0.8rem",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
         >
-          {o.code === current ? "🟢" : "⚪"} {o.label}
+          <span aria-hidden>{o.code === current ? "🟢" : "⚪"}</span>
+          <Flag lang={o.code} />
+          <span>{o.label}</span>
         </button>
       ))}
     </div>

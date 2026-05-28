@@ -4,6 +4,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
 import { api } from "@shared/api/client";
+import { Pagination, SortableHeader, useTableState } from "@shared/components/TableTools";
+import { TgUser } from "@shared/components/TgLink";
 
 interface UserItem {
   id: number;
@@ -27,15 +29,26 @@ interface UsersResponse {
 
 export function UsersPage() {
   const { t } = useTranslation();
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
+  const { search, setSearch, page, setPage, sort, setSort } = useTableState({
+    initialSort: { by: "id", dir: "desc" },
+  });
+  const [isBanned, setIsBanned] = useState<boolean | "">("");
+  const [isPremium, setIsPremium] = useState<boolean | "">("");
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["users", search, page],
+    queryKey: ["users", search, page, sort, isBanned, isPremium],
     queryFn: async () => {
       const { data } = await api.get<UsersResponse>("/admin/users", {
-        params: { search: search || undefined, page, page_size: 50 },
+        params: {
+          search: search || undefined,
+          page,
+          page_size: 50,
+          sort_by: sort?.by,
+          sort_dir: sort?.dir,
+          is_banned: isBanned === "" ? undefined : isBanned,
+          is_premium: isPremium === "" ? undefined : isPremium,
+        },
       });
       return data;
     },
@@ -65,16 +78,50 @@ export function UsersPage() {
     <>
       <h1 className="admin-page-title">👥 {t("admin.users.title")}</h1>
 
-      <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem", maxWidth: 500 }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "0.6rem",
+          marginBottom: "1rem",
+          flexWrap: "wrap",
+          alignItems: "center",
+        }}
+      >
         <input
           className="admin-input"
+          style={{ flex: "1 1 260px", maxWidth: 360 }}
           placeholder={`🔍 ${t("admin.users.search_placeholder")}`}
           value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <select
+          className="admin-input"
+          style={{ width: "auto" }}
+          value={isBanned === "" ? "" : isBanned ? "y" : "n"}
           onChange={(e) => {
-            setSearch(e.target.value);
+            const v = e.target.value;
+            setIsBanned(v === "" ? "" : v === "y");
             setPage(1);
           }}
-        />
+        >
+          <option value="">{t("admin.users.filter_ban_all", "All")}</option>
+          <option value="y">{t("admin.users.banned")}</option>
+          <option value="n">{t("admin.users.filter_not_banned", "Not banned")}</option>
+        </select>
+        <select
+          className="admin-input"
+          style={{ width: "auto" }}
+          value={isPremium === "" ? "" : isPremium ? "y" : "n"}
+          onChange={(e) => {
+            const v = e.target.value;
+            setIsPremium(v === "" ? "" : v === "y");
+            setPage(1);
+          }}
+        >
+          <option value="">{t("admin.users.filter_premium_all", "All")}</option>
+          <option value="y">{t("admin.users.premium")}</option>
+          <option value="n">{t("admin.users.filter_not_premium", "Not premium")}</option>
+        </select>
       </div>
 
       <div className="admin-card" style={{ padding: 0, overflow: "hidden" }}>
@@ -84,11 +131,19 @@ export function UsersPage() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th>{t("admin.users.col_id")}</th>
+                <SortableHeader field="id" sort={sort} onChange={setSort}>
+                  {t("admin.users.col_id")}
+                </SortableHeader>
                 <th>{t("admin.users.col_name")}</th>
-                <th>{t("admin.users_extra.col_diamonds")}</th>
-                <th>{t("admin.users_extra.col_dollars")}</th>
-                <th>{t("admin.users_extra.col_lvl")}</th>
+                <SortableHeader field="diamonds" sort={sort} onChange={setSort}>
+                  {t("admin.users_extra.col_diamonds")}
+                </SortableHeader>
+                <SortableHeader field="dollars" sort={sort} onChange={setSort}>
+                  {t("admin.users_extra.col_dollars")}
+                </SortableHeader>
+                <SortableHeader field="level" sort={sort} onChange={setSort}>
+                  {t("admin.users_extra.col_lvl")}
+                </SortableHeader>
                 <th>{t("admin.users_extra.col_elo")}</th>
                 <th>{t("admin.users.col_balance")}</th>
                 <th>{t("admin.users.col_status")}</th>
@@ -102,12 +157,12 @@ export function UsersPage() {
                     <Link to={`/admin/users/${u.id}`}>{u.id}</Link>
                   </td>
                   <td>
-                    <Link to={`/admin/users/${u.id}`}>
-                      <div>{u.first_name}</div>
-                      <small style={{ color: "var(--muted)" }}>
-                        {u.username ? `@${u.username}` : "—"}
-                      </small>
-                    </Link>
+                    <TgUser
+                      id={u.id}
+                      firstName={u.first_name}
+                      username={u.username}
+                      internalHref={`/admin/users/${u.id}`}
+                    />
                   </td>
                   <td>{u.diamonds}</td>
                   <td>{u.dollars}</td>
@@ -166,37 +221,9 @@ export function UsersPage() {
         page={page}
         totalPages={Math.ceil((data?.total || 0) / 50)}
         onChange={setPage}
+        total={data?.total}
+        pageSize={50}
       />
     </>
-  );
-}
-
-function Pagination({
-  page,
-  totalPages,
-  onChange,
-}: {
-  page: number;
-  totalPages: number;
-  onChange: (p: number) => void;
-}) {
-  const { t } = useTranslation();
-  if (totalPages <= 1) return null;
-  return (
-    <div style={{ marginTop: "1rem", display: "flex", gap: "0.5rem", alignItems: "center" }}>
-      <button className="admin-btn" disabled={page <= 1} onClick={() => onChange(page - 1)}>
-        ←
-      </button>
-      <span style={{ color: "var(--muted)" }}>
-        {t("admin.common.page")} {page} / {totalPages}
-      </span>
-      <button
-        className="admin-btn"
-        disabled={page >= totalPages}
-        onClick={() => onChange(page + 1)}
-      >
-        →
-      </button>
-    </div>
   );
 }

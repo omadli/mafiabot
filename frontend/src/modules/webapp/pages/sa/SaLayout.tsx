@@ -2,6 +2,7 @@ import { Link, Outlet, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
 import { saApi } from "@shared/api/sa";
+import { LangPicker } from "@shared/components/LangPicker";
 import { useI18n } from "@shared/i18n/useI18n";
 
 const NAV = [
@@ -53,15 +54,12 @@ export function SaLayout() {
             {me?.first_name}
           </small>
         </div>
-        <select
+        <LangPicker
           value={locale}
-          onChange={(e) => setLocale(e.target.value as "uz" | "ru" | "en")}
+          onChange={(code) => setLocale(code as "uz" | "ru" | "en")}
           className="sa-lang-select"
-        >
-          <option value="uz">🇺🇿 UZ</option>
-          <option value="ru">🇷🇺 RU</option>
-          <option value="en">🇬🇧 EN</option>
-        </select>
+          iconOnly
+        />
       </header>
 
       <nav className="sa-nav">

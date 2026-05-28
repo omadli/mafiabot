@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { api } from "@shared/api/client";
 
 import { ErrorBanner, Skeleton } from "../components/Ui";
+import { LangPicker } from "@shared/components/LangPicker";
 import { groupApi, type MessageTemplate } from "@shared/api/group";
 
 // Static role emojis + i18n key suffix — name resolves at render time
@@ -45,11 +46,13 @@ const AFK_CODES = [
   "consecutive_leaves_to_ban",
   "ban_duration_hours",
 ] as const;
-const LANG_CODES = [
-  { code: "uz", label: "🇺🇿 O'zbekcha" },
-  { code: "ru", label: "🇷🇺 Русский" },
-  { code: "en", label: "🇬🇧 English" },
-] as const;
+// Language options for the LangPicker — label is rendered next to an SVG
+// flag so this list intentionally carries no emoji prefix.
+const LANG_OPTIONS = [
+  { code: "uz", label: "O'zbekcha" },
+  { code: "ru", label: "Русский" },
+  { code: "en", label: "English" },
+];
 // Atmosphere events — same key set the bot's /setatmosphere command writes.
 const ATMOSPHERE_EVENTS = [
   "night_start", "day_start", "voting_start",
@@ -542,23 +545,16 @@ export function GroupSettingsPage() {
           </p>
           <div className="webapp-row">
             <label>{t("group_settings.language_label")}</label>
-            <select
-              className="webapp-input"
-              style={{ width: "auto" }}
+            <LangPicker
               value={draft.language}
-              onChange={(e) => {
-                const next = { ...draft, language: e.target.value };
+              options={LANG_OPTIONS}
+              onChange={(code) => {
+                const next = { ...draft, language: code };
                 setDraft(next);
                 setDirty(true);
                 writeDraft(gid, next);
               }}
-            >
-              {LANG_CODES.map(({ code, label }) => (
-                <option key={code} value={code}>
-                  {label}
-                </option>
-              ))}
-            </select>
+            />
           </div>
         </div>
       )}

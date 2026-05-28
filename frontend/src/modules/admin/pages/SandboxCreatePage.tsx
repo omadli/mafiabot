@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
 import { sandboxApi } from "@shared/api/sandbox";
+import { LangPicker } from "@shared/components/LangPicker";
 import type {
   SandboxAutoPlayMode,
   SandboxTimingPreset,
@@ -203,16 +204,11 @@ export function SandboxCreatePage() {
 
             <label className="sb-form-label">
               {t("admin.sandbox.create.language")}:
-              <select
+              <LangPicker
                 value={language}
-                onChange={(e) => setLanguage(e.target.value as "uz" | "ru" | "en")}
-                className="admin-input"
-                style={{ marginLeft: "0.5rem", width: "auto" }}
-              >
-                <option value="uz">🇺🇿 O&apos;zbekcha</option>
-                <option value="ru">🇷🇺 Русский</option>
-                <option value="en">🇬🇧 English</option>
-              </select>
+                onChange={(code) => setLanguage(code as "uz" | "ru" | "en")}
+                style={{ marginLeft: "0.5rem" }}
+              />
             </label>
 
             <label className="sb-form-label">

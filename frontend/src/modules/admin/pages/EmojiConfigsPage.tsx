@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
 import { adminApi } from "@shared/api/admin";
+import { Flag } from "@shared/components/Flag";
 import type { EmojiCategory, EmojiConfig } from "@shared/api/sa";
 
 type Editable = Pick<
@@ -60,9 +61,9 @@ export function EmojiConfigsPage() {
                   <tr>
                     <th style={{ width: 64 }}>{t("admin.role_configs.col_preview")}</th>
                     <th style={{ width: 180 }}>{t("admin.emoji_configs.col_code")}</th>
-                    <th>🇺🇿</th>
-                    <th>🇷🇺</th>
-                    <th>🇬🇧</th>
+                    <th><Flag lang="uz" /></th>
+                    <th><Flag lang="ru" /></th>
+                    <th><Flag lang="en" /></th>
                     <th style={{ width: 90 }}>{t("admin.role_configs.col_static")}</th>
                     <th style={{ width: 200 }}>{t("admin.role_configs.col_custom_id")}</th>
                     <th style={{ width: 100 }}></th>

@@ -86,12 +86,17 @@ class UserListItem(BaseModel):
     created_at: datetime
 
 
+_USER_SORT_FIELDS = {"id", "diamonds", "dollars", "xp", "level", "joined_at"}
+
+
 @router.get("/admin/users")
 async def list_users(
     admin: AdminAccount = Depends(get_current_admin),
     search: str | None = None,
     is_banned: bool | None = None,
     is_premium: bool | None = None,
+    sort_by: str = "id",
+    sort_dir: str = "desc",
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
 ) -> dict:
@@ -103,8 +108,12 @@ async def list_users(
     if is_premium is not None:
         qs = qs.filter(is_premium=is_premium)
 
+    if sort_by not in _USER_SORT_FIELDS:
+        sort_by = "id"
+    order = f"-{sort_by}" if sort_dir == "desc" else sort_by
+
     total = await qs.count()
-    users = await qs.offset((page - 1) * page_size).limit(page_size).order_by("-id")
+    users = await qs.offset((page - 1) * page_size).limit(page_size).order_by(order)
 
     items = []
     for u in users:
@@ -297,11 +306,16 @@ async def grant_premium(
 # === Groups ===
 
 
+_GROUP_SORT_FIELDS = {"id", "title", "created_at"}
+
+
 @router.get("/admin/groups")
 async def list_groups(
     admin: AdminAccount = Depends(get_current_admin),
     search: str | None = None,
     is_blocked: bool | None = None,
+    sort_by: str = "id",
+    sort_dir: str = "desc",
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
 ) -> dict:
@@ -311,8 +325,12 @@ async def list_groups(
     if is_blocked is not None:
         qs = qs.filter(is_blocked=is_blocked)
 
+    if sort_by not in _GROUP_SORT_FIELDS:
+        sort_by = "id"
+    order = f"-{sort_by}" if sort_dir == "desc" else sort_by
+
     total = await qs.count()
-    groups = await qs.offset((page - 1) * page_size).limit(page_size).order_by("-id")
+    groups = await qs.offset((page - 1) * page_size).limit(page_size).order_by(order)
 
     items = []
     for g in groups:
@@ -321,6 +339,7 @@ async def list_groups(
             {
                 "id": g.id,
                 "title": g.title,
+                "invite_link": g.invite_link,
                 "is_active": g.is_active,
                 "is_blocked": g.is_blocked,
                 "onboarding_completed": g.onboarding_completed,
@@ -376,11 +395,16 @@ async def unblock_group(group_id: int, admin: AdminAccount = Depends(get_current
 # === Games ===
 
 
+_GAME_SORT_FIELDS = {"started_at", "finished_at"}
+
+
 @router.get("/admin/games")
 async def list_games(
     admin: AdminAccount = Depends(get_current_admin),
     status_filter: str | None = Query(None, alias="status"),
     group_id: int | None = None,
+    sort_by: str = "started_at",
+    sort_dir: str = "desc",
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
 ) -> dict:
@@ -390,8 +414,12 @@ async def list_games(
     if group_id:
         qs = qs.filter(group_id=group_id)
 
+    if sort_by not in _GAME_SORT_FIELDS:
+        sort_by = "started_at"
+    order = f"-{sort_by}" if sort_dir == "desc" else sort_by
+
     total = await qs.count()
-    games = await qs.offset((page - 1) * page_size).limit(page_size).order_by("-started_at")
+    games = await qs.offset((page - 1) * page_size).limit(page_size).order_by(order)
 
     items = [
         {

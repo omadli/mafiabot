@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
 import { adminApi } from "@shared/api/admin";
+import { Flag } from "@shared/components/Flag";
 import type { RoleConfig, RoleTeam } from "@shared/api/sa";
 
 type EditableFields = Pick<
@@ -68,9 +69,9 @@ export function RoleConfigsPage() {
                   <tr>
                     <th style={{ width: 80 }}>{t("admin.role_configs.col_preview")}</th>
                     <th style={{ width: 80 }}>{t("admin.role_configs.col_role")}</th>
-                    <th>🇺🇿 {t("admin.role_configs.col_name_uz")}</th>
-                    <th>🇷🇺 {t("admin.role_configs.col_name_ru")}</th>
-                    <th>🇬🇧 {t("admin.role_configs.col_name_en")}</th>
+                    <th><Flag lang="uz" /> {t("admin.role_configs.col_name_uz")}</th>
+                    <th><Flag lang="ru" /> {t("admin.role_configs.col_name_ru")}</th>
+                    <th><Flag lang="en" /> {t("admin.role_configs.col_name_en")}</th>
                     <th style={{ width: 100 }}>
                       {t("admin.role_configs.col_static")}
                     </th>

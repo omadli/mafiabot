@@ -4,6 +4,7 @@ import { AxiosError } from "axios";
 import { useTranslation } from "react-i18next";
 
 import { authStore } from "@shared/store/auth";
+import { LangPicker } from "@shared/components/LangPicker";
 import { api } from "@shared/api/client";
 import type { Locale } from "@shared/i18n";
 
@@ -51,16 +52,12 @@ export function LoginPage() {
   return (
     <div className="login-shell">
       <div className="login-card">
-        <select
+        <LangPicker
           value={i18n.language}
-          onChange={(e) => i18n.changeLanguage(e.target.value as Locale)}
+          onChange={(code) => i18n.changeLanguage(code as Locale)}
           className="admin-lang-select"
           style={{ marginBottom: "1rem" }}
-        >
-          <option value="uz">🇺🇿 O&apos;zbekcha</option>
-          <option value="ru">🇷🇺 Русский</option>
-          <option value="en">🇬🇧 English</option>
-        </select>
+        />
         <h1>🎲 {t("admin.logo")}</h1>
         <p className="login-sub">{t("admin.login.title")}</p>
         <form onSubmit={submit}>
