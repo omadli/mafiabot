@@ -8,13 +8,14 @@ from pathlib import Path
 
 from aiogram import Bot
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.types import FSInputFile
+from aiogram.types import FSInputFile, InlineKeyboardButton, InlineKeyboardMarkup
 from loguru import logger
 
+from app.config import settings
 from app.core.actions import NightOutcome
 from app.core.roles import get_role
 from app.core.state import GameState, Phase
-from app.services.i18n_service import get_translator
+from app.services.i18n_service import get_plain_translator, get_translator
 
 # Bundled default atmosphere GIFs (committed alongside the code). Used
 # whenever a group hasn't configured its own atmosphere_media file_id
@@ -225,9 +226,14 @@ def _strip_emojis(text: str) -> str:
     return re.sub(r"[^\w\s,.':!?\-—()«»\"]", "", text, flags=re.UNICODE).strip()
 
 
-async def _safe_send(bot: Bot, chat_id: int, text: str) -> None:
+async def _safe_send(
+    bot: Bot,
+    chat_id: int,
+    text: str,
+    reply_markup: InlineKeyboardMarkup | None = None,
+) -> None:
     try:
-        await bot.send_message(chat_id, text)
+        await bot.send_message(chat_id, text, reply_markup=reply_markup)
     except TelegramBadRequest as e:
         logger.warning(f"send_message failed for chat {chat_id}: {e}")
     except Exception as e:
@@ -266,14 +272,34 @@ async def broadcast_phase_change(bot: Bot, state: GameState) -> None:
 
     caption = _(key, **params)
 
+    # On NIGHT, attach a "Botga o'tish" URL button so players in the group
+    # can jump to their private chat (where role action prompts arrive).
+    reply_markup: InlineKeyboardMarkup | None = None
+    if state.phase == Phase.NIGHT:
+        _plain = get_plain_translator(locale)
+        reply_markup = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text=_plain("btn-open-bot"),
+                        url=f"https://t.me/{settings.bot_username}",
+                    )
+                ]
+            ]
+        )
+
     if media_file_id:
         try:
-            await bot.send_animation(state.chat_id, media_file_id, caption=caption)
+            await bot.send_animation(
+                state.chat_id, media_file_id, caption=caption, reply_markup=reply_markup
+            )
             return
         except Exception as e:
             logger.debug(f"send_animation failed (falling back to send_video): {e}")
             try:
-                await bot.send_video(state.chat_id, media_file_id, caption=caption)
+                await bot.send_video(
+                    state.chat_id, media_file_id, caption=caption, reply_markup=reply_markup
+                )
                 return
             except Exception as e2:
                 logger.warning(f"atmosphere_media send failed for {media_key}: {e2}")
@@ -286,10 +312,15 @@ async def broadcast_phase_change(bot: Bot, state: GameState) -> None:
         cached_file_id = _DEFAULT_FILE_ID_CACHE.get(cache_key)
         try:
             if cached_file_id:
-                msg = await bot.send_animation(state.chat_id, cached_file_id, caption=caption)
+                msg = await bot.send_animation(
+                    state.chat_id, cached_file_id, caption=caption, reply_markup=reply_markup
+                )
             else:
                 msg = await bot.send_animation(
-                    state.chat_id, FSInputFile(default_path), caption=caption
+                    state.chat_id,
+                    FSInputFile(default_path),
+                    caption=caption,
+                    reply_markup=reply_markup,
                 )
                 # Cache the Telegram-assigned file_id so subsequent sends
                 # are zero-bandwidth.
@@ -299,7 +330,7 @@ async def broadcast_phase_change(bot: Bot, state: GameState) -> None:
         except Exception as e:
             logger.debug(f"default atmosphere GIF send failed: {e}")
 
-    await _safe_send(bot, state.chat_id, caption)
+    await _safe_send(bot, state.chat_id, caption, reply_markup=reply_markup)
 
 
 async def broadcast_game_end(bot: Bot, state: GameState) -> None:

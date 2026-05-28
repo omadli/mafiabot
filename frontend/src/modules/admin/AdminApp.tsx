@@ -14,6 +14,9 @@ import { GroupsPage } from "./pages/GroupsPage";
 import { LoginPage } from "./pages/LoginPage";
 import { RoleConfigsPage } from "./pages/RoleConfigsPage";
 import { RoleStatsPage } from "./pages/RoleStatsPage";
+import { SandboxCreatePage } from "./pages/SandboxCreatePage";
+import { SandboxDetailPage } from "./pages/SandboxDetailPage";
+import { SandboxListPage } from "./pages/SandboxListPage";
 import { SystemSettingsPage } from "./pages/SystemSettingsPage";
 import { TopPlayersPage } from "./pages/TopPlayersPage";
 import { UserDetailPage } from "./pages/UserDetailPage";
@@ -39,6 +42,9 @@ export function AdminApp() {
           <Route path="role-configs" element={<RoleConfigsPage />} />
           <Route path="emoji-configs" element={<EmojiConfigsPage />} />
           <Route path="top-players" element={<TopPlayersPage />} />
+          <Route path="sandbox" element={<SandboxListPage />} />
+          <Route path="sandbox/new" element={<SandboxCreatePage />} />
+          <Route path="sandbox/:sandboxId" element={<SandboxDetailPage />} />
           <Route path="system-settings" element={<SystemSettingsPage />} />
           <Route path="audit" element={<AuditPage />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />

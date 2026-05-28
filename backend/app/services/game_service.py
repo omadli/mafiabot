@@ -15,6 +15,7 @@ from loguru import logger
 from app.core.distribution import distribute_mvp_roles
 from app.core.redis_state import get_state_backend
 from app.core.roles import get_role
+from app.core.sandbox_ids import is_sandbox_state, is_sandbox_user_id
 from app.core.state import (
     GameState,
     Phase,
@@ -82,6 +83,11 @@ async def get_user_active_game_id(user_id: int) -> UUID | None:
 
 
 async def set_user_active_game(user_id: int, game_id: UUID | None) -> None:
+    # Sandbox fake users have no DB row — and the `users.id > 0` CHECK
+    # constraint would loudly reject any INSERT into the negative range.
+    # Treat as a no-op so the engine code stays branch-free.
+    if is_sandbox_user_id(user_id):
+        return
     user = await User.get_or_none(id=user_id)
     if user is None:
         return
@@ -229,38 +235,46 @@ async def start_game(state: GameState) -> GameState:
     # role with whichever player got that role in random distribution.
     # If the picked role isn't in THIS game's distribution, the credit is
     # NOT consumed — the pick carries over to a future game.
-    await _apply_special_role_picks(state)
+    # Sandbox games skip this — fake users have no inventory rows.
+    sandbox = is_sandbox_state(state)
+    if not sandbox:
+        await _apply_special_role_picks(state)
 
-    # Activate items from inventory (settings.enabled + items_allowed in group)
-    items_allowed = state.settings.get("items_allowed", {})
-    for p in state.players:
-        p.items_active = await _resolve_active_items(p.user_id, items_allowed)
-        # Mark premium players so the action resolver can grant the
-        # 2x-shield bonus and protect them from the Hooker. The flag is
-        # captured at start-time so a premium expiring mid-game does not
-        # silently strip the privileges they paid for this game.
-        is_premium = await _is_user_premium(p.user_id)
-        if is_premium:
-            p.extra["is_premium"] = True
-            # Pre-seed shield_uses_left so _consume_shield can debit a
-            # premium-bonus use before stripping the item slot.
-            p.extra["shield_uses_left"] = {
-                "shield": 1,
-                "killer_shield": 1,
-                "vote_shield": 1,
-            }
+    # Activate items from inventory (settings.enabled + items_allowed in group).
+    # Sandbox players carry no items by default; the dashboard can add them
+    # later via the override path.
+    if not sandbox:
+        items_allowed = state.settings.get("items_allowed", {})
+        for p in state.players:
+            p.items_active = await _resolve_active_items(p.user_id, items_allowed)
+            # Mark premium players so the action resolver can grant the
+            # 2x-shield bonus and protect them from the Hooker. The flag is
+            # captured at start-time so a premium expiring mid-game does not
+            # silently strip the privileges they paid for this game.
+            is_premium = await _is_user_premium(p.user_id)
+            if is_premium:
+                p.extra["is_premium"] = True
+                # Pre-seed shield_uses_left so _consume_shield can debit a
+                # premium-bonus use before stripping the item slot.
+                p.extra["shield_uses_left"] = {
+                    "shield": 1,
+                    "killer_shield": 1,
+                    "vote_shield": 1,
+                }
 
-    # Persist Game record (status=running) in DB
-    await Game.create(
-        id=state.id,
-        group_id=state.group_id,
-        status=GameStatus.RUNNING,
-        bounty_per_winner=state.bounty_per_winner,
-        bounty_pool=state.bounty_pool,
-        bounty_initiator_id=state.bounty_initiator_id,
-        settings_snapshot=state.settings,
-        history={},
-    )
+    # Persist Game record (status=running) in DB. Sandbox games live
+    # entirely in Redis + the SandboxSession row managed by sandbox_service.
+    if not sandbox:
+        await Game.create(
+            id=state.id,
+            group_id=state.group_id,
+            status=GameStatus.RUNNING,
+            bounty_per_winner=state.bounty_per_winner,
+            bounty_pool=state.bounty_pool,
+            bounty_initiator_id=state.bounty_initiator_id,
+            settings_snapshot=state.settings,
+            history={},
+        )
     state.started_at = int(time.time())
 
     # Move to night #1
@@ -278,7 +292,14 @@ async def start_game(state: GameState) -> GameState:
 
 
 async def finish_game(state: GameState, winner: Team | None) -> None:
-    """Persist final state to DB, run stats finalization, clean up Redis."""
+    """Persist final state to DB, run stats finalization, clean up Redis.
+
+    Sandbox games take a separate path: the engine work (game-end DMs via
+    SandboxBot, state finalization in Redis) still runs, but DB-writing
+    paths (`Game` row update, stats finalization, ELO/achievements,
+    bounty payout) are skipped. Sandbox snapshot + transcript dump are
+    handled by `sandbox_service.on_game_finish` (task #12).
+    """
     from datetime import datetime
 
     state.phase = Phase.FINISHED
@@ -293,38 +314,50 @@ async def finish_game(state: GameState, winner: Team | None) -> None:
 
         state.winner_user_ids = _wuids(state, winner)
 
-    # Persist to DB
-    db_game = await Game.get_or_none(id=state.id)
-    if db_game is not None:
-        db_game.status = GameStatus.FINISHED
-        db_game.finished_at = datetime.now(UTC)
-        db_game.winner_team = (
-            WinnerTeam(winner.value) if winner is not None else None  # type: ignore[arg-type]
-        )
-        db_game.history = state.to_history_dict()
-        await db_game.save()
+    sandbox = is_sandbox_state(state)
 
-    # Run stats finalization (GameResult, UserStats, GroupUserStats, ELO)
-    try:
-        from app.services.stats_service import finalize_game_stats
+    # Persist to DB (skipped for sandbox — there's no Game row in the
+    # first place since start_game's create was guarded).
+    if not sandbox:
+        db_game = await Game.get_or_none(id=state.id)
+        if db_game is not None:
+            db_game.status = GameStatus.FINISHED
+            db_game.finished_at = datetime.now(UTC)
+            db_game.winner_team = (
+                WinnerTeam(winner.value) if winner is not None else None  # type: ignore[arg-type]
+            )
+            db_game.history = state.to_history_dict()
+            await db_game.save()
 
-        await finalize_game_stats(state)
-    except Exception as e:
-        logger.exception(f"Stats finalization failed for game {state.id}: {e}")
+    # Stats finalization writes GameResult / UserStats / GroupUserStats /
+    # ELO — none of which apply to sandbox runs.
+    if not sandbox:
+        try:
+            from app.services.stats_service import finalize_game_stats
+
+            await finalize_game_stats(state)
+        except Exception as e:
+            logger.exception(f"Stats finalization failed for game {state.id}: {e}")
 
     # Per-player game-end DM (role, won/lost, XP/ELO/$). Best-effort —
     # any failure here MUST NOT block bounty payout or state cleanup.
+    # For sandbox, the bot is the SandboxBot so DMs land in the transcript.
     try:
-        from app.main import bot
+        if sandbox:
+            from app.services.recording_bot import SandboxBotRegistry
+
+            bot_inst = SandboxBotRegistry.get(state.group_id)
+        else:
+            from app.main import bot as bot_inst  # type: ignore[no-redef,assignment]
         from app.services.game_end_dm import send_per_player_game_end_dm
 
-        if bot is not None:
-            await send_per_player_game_end_dm(bot, state)
+        if bot_inst is not None:
+            await send_per_player_game_end_dm(bot_inst, state)
     except Exception as e:
         logger.exception(f"Game-end DM dispatch failed for game {state.id}: {e}")
 
-    # Bounty payout (if /game N was used)
-    if state.bounty_pool and state.bounty_per_winner and state.winner_user_ids:
+    # Bounty payout (real-money / diamond settlement) — never for sandbox.
+    if not sandbox and state.bounty_pool and state.bounty_per_winner and state.winner_user_ids:
         try:
             from app.services.giveaway_service import payout_bounty
 
@@ -338,15 +371,30 @@ async def finish_game(state: GameState, winner: Team | None) -> None:
         except Exception as e:
             logger.exception(f"Bounty payout failed for game {state.id}: {e}")
 
-    # Clear active_game for all participants
+    # Clear active_game for all participants. `set_user_active_game` is
+    # itself sandbox-aware (no-ops for negative IDs), so this loop is
+    # safe to run unconditionally.
     for p in state.players:
         await set_user_active_game(p.user_id, None)
 
-    # Remove Redis state
+    # Sandbox cleanup: snapshot transcript to DB + mark session finished.
+    # Lives in sandbox_service so the finish hook can be implemented
+    # alongside the rest of stop/restart/destroy (task #12).
+    if sandbox:
+        try:
+            from app.services import sandbox_service
+
+            hook = getattr(sandbox_service, "on_game_finish", None)
+            if hook is not None:
+                await hook(state, winner)
+        except Exception as e:
+            logger.exception(f"Sandbox finish hook failed for game {state.id}: {e}")
+
+    # Remove Redis state (works for real + sandbox; harmless on either).
     await delete_state(state.group_id)
 
     logger.info(
-        f"Game {state.id} finished, winner={winner}, "
+        f"{'Sandbox ' if sandbox else ''}Game {state.id} finished, winner={winner}, "
         f"duration={state.finished_at - (state.started_at or state.finished_at)}s"
     )
 
@@ -548,33 +596,39 @@ async def cancel_game(state: GameState, reason: str = "cancelled") -> None:
     Also unpins+deletes the registration message if one is still pinned —
     otherwise a stale "Join Game" card lingers in the chat forever after a
     failed-to-fill registration auto-cancel.
+
+    Sandbox path: skip DB writes + bounty refund (no Game row, no real
+    money), defer cleanup to `sandbox_service.on_game_cancel`.
     """
     from datetime import datetime
 
     state.phase = Phase.CANCELLED
     state.finished_at = int(time.time())
 
-    db_game = await Game.get_or_none(id=state.id)
-    if db_game is not None:
-        db_game.status = GameStatus.CANCELLED
-        db_game.finished_at = datetime.now(UTC)
-        db_game.history = state.to_history_dict()
-        await db_game.save()
+    sandbox = is_sandbox_state(state)
 
-    # Refund bounty escrow
-    if state.bounty_pool and state.bounty_initiator_id:
-        try:
-            from app.services.giveaway_service import payout_bounty
+    if not sandbox:
+        db_game = await Game.get_or_none(id=state.id)
+        if db_game is not None:
+            db_game.status = GameStatus.CANCELLED
+            db_game.finished_at = datetime.now(UTC)
+            db_game.history = state.to_history_dict()
+            await db_game.save()
 
-            await payout_bounty(
-                pool=state.bounty_pool,
-                per_winner=0,
-                winner_user_ids=[],  # empty → full refund
-                initiator_id=state.bounty_initiator_id,
-                game_id=state.id,
-            )
-        except Exception as e:
-            logger.exception(f"Bounty refund failed for game {state.id}: {e}")
+        # Refund bounty escrow
+        if state.bounty_pool and state.bounty_initiator_id:
+            try:
+                from app.services.giveaway_service import payout_bounty
+
+                await payout_bounty(
+                    pool=state.bounty_pool,
+                    per_winner=0,
+                    winner_user_ids=[],  # empty → full refund
+                    initiator_id=state.bounty_initiator_id,
+                    game_id=state.id,
+                )
+            except Exception as e:
+                logger.exception(f"Bounty refund failed for game {state.id}: {e}")
 
     for p in state.players:
         await set_user_active_game(p.user_id, None)
@@ -584,7 +638,12 @@ async def cancel_game(state: GameState, reason: str = "cancelled") -> None:
     # of cleanup. Bot may also be unavailable during early-shutdown paths.
     if state.registration_message_id is not None:
         try:
-            from app.main import bot
+            if sandbox:
+                from app.services.recording_bot import SandboxBotRegistry
+
+                bot = SandboxBotRegistry.get(state.group_id)
+            else:
+                from app.main import bot  # type: ignore[no-redef,assignment]
 
             if bot is not None:
                 import contextlib
@@ -601,5 +660,15 @@ async def cancel_game(state: GameState, reason: str = "cancelled") -> None:
             logger.debug(f"Registration message cleanup failed: {e}")
         state.registration_message_id = None
 
+    if sandbox:
+        try:
+            from app.services import sandbox_service
+
+            hook = getattr(sandbox_service, "on_game_cancel", None)
+            if hook is not None:
+                await hook(state, reason)
+        except Exception as e:
+            logger.exception(f"Sandbox cancel hook failed for game {state.id}: {e}")
+
     await delete_state(state.group_id)
-    logger.info(f"Game {state.id} cancelled: {reason}")
+    logger.info(f"{'Sandbox ' if sandbox else ''}Game {state.id} cancelled: {reason}")

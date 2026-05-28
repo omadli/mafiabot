@@ -163,14 +163,31 @@
   border-color: var(--accent);
 }
 
-.admin-btn-danger {
+.admin-btn-danger,
+.admin-btn.danger {
   border-color: #c0392b;
   color: #e74c3c;
 }
 
-.admin-btn-danger:hover {
+.admin-btn-danger:hover,
+.admin-btn.danger:hover {
   background: #c0392b;
   color: white;
+}
+
+.admin-btn.small {
+  padding: 0.25rem 0.55rem;
+  font-size: 0.75rem;
+}
+
+.admin-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.admin-btn:disabled:hover {
+  background: transparent;
+  border-color: #2a2a45;
 }
 
 .admin-input {

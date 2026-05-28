@@ -1,0 +1,793 @@
+/* ============================================================================
+ * Sandbox dashboard — central stylesheet.
+ *
+ * Layout invariants:
+ *   - Detail page is a CSS Grid that fills the viewport minus the
+ *     admin sidebar (240px) and main padding (2rem). On tablet
+ *     (<= 1100px) the right sidebar collapses below the chats; on
+ *     mobile (<= 760px) every panel stacks and the avatar rail moves
+ *     to a horizontal strip.
+ *   - All sandbox-specific component classes are scoped under
+ *     `.sb-*` so the rules don't leak into other admin pages.
+ *   - Colours pull from AdminLayout.css variables (--accent, --card,
+ *     --fg, --muted, --bg) — never hardcode hex values here unless
+ *     introducing a sandbox-only accent that the design team owns.
+ * ========================================================================= */
+
+:root {
+  /* Sandbox-only accents (derived from the admin palette for harmony). */
+  --sb-accent: var(--accent, #5b8def);
+  --sb-accent-alt: #9b6ee0;
+  --sb-border: #2a2a45;
+  --sb-card-alt: #1a1a2e;
+  --sb-err: #e74c3c;
+  --sb-warn: #f0a020;
+  --sb-ok: #4ade80;
+}
+
+/* ----- List page ---------------------------------------------------------- */
+
+.sb-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.sb-list-empty,
+.sb-list-loading {
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: var(--muted);
+}
+
+.sb-list-empty {
+  font-style: italic;
+}
+
+.sb-id-cell {
+  font-family: monospace;
+  color: var(--muted);
+}
+
+.sb-id-cell a {
+  color: inherit;
+  text-decoration: none;
+}
+.sb-id-cell a:hover {
+  color: var(--accent);
+}
+
+.sb-row-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: nowrap;
+}
+
+/* ----- Create page -------------------------------------------------------- */
+
+.sb-create-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) minmax(280px, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.sb-form-label {
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.sb-form-label strong {
+  display: inline-block;
+  min-width: 1.5rem;
+}
+
+.sb-form-hint {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
+
+.sb-form-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+
+.sb-roles-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.sb-role-toggle {
+  display: flex;
+  align-items: center;
+  padding: 0.25rem 0;
+  cursor: pointer;
+}
+
+.sb-role-toggle input {
+  margin-right: 0.5rem;
+}
+
+.sb-role-toggle.off {
+  opacity: 0.5;
+}
+
+.sb-role-group-label {
+  color: var(--muted);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.4rem;
+  display: block;
+}
+
+.sb-create-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.sb-error-banner {
+  color: var(--sb-err);
+  background: rgba(231, 57, 43, 0.08);
+  border: 1px solid rgba(231, 57, 43, 0.25);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.9rem;
+}
+
+/* ----- Distribution preview ---------------------------------------------- */
+
+.sb-preview-card {
+  background: var(--sb-card-alt);
+  border: 1px solid var(--sb-border);
+}
+
+.sb-preview-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.sb-preview-row {
+  margin-bottom: 0.6rem;
+}
+
+.sb-preview-row strong {
+  font-size: 0.85rem;
+}
+
+.sb-preview-chip {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  margin: 0 0.25rem 0.25rem 0;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 5px;
+  font-size: 0.78rem;
+}
+
+.sb-preview-team-mafia {
+  color: salmon;
+}
+.sb-preview-team-singleton {
+  color: gold;
+}
+.sb-preview-team-civilian {
+  color: lightgreen;
+}
+
+/* ----- Detail page — top-level layout ------------------------------------- */
+
+.sb-detail {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: calc(100vh - 1rem);
+  gap: 0.5rem;
+}
+
+.sb-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.6rem 0.85rem;
+}
+
+.sb-detail-title {
+  margin: 0;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sb-detail-title code {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.sb-detail-pill {
+  font-size: 0.85rem;
+}
+
+.sb-detail-pill.muted {
+  color: var(--muted);
+}
+
+.sb-detail-pill.ok {
+  color: var(--sb-ok);
+}
+
+.sb-detail-pill.err {
+  color: var(--sb-err);
+}
+
+.sb-detail-spacer {
+  flex: 1;
+}
+
+/* 4-column body: rail | group | dm | sidebar */
+.sb-detail-body {
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr) minmax(0, 1fr) 320px;
+  gap: 0.5rem;
+  min-height: 0;
+}
+
+.sb-panel {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sb-panel-header {
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid var(--sb-border);
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.85rem;
+}
+
+.sb-panel-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ----- Avatar rail ------------------------------------------------------- */
+
+.sb-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem 0.25rem;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.sb-rail-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.sb-rail-toggle {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--muted);
+  padding: 0.15rem;
+  border-radius: 4px;
+}
+
+.sb-rail-toggle:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--fg);
+}
+
+/* ----- Player chip ------------------------------------------------------- */
+
+.sb-chip {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: 0.2rem 0;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--sb-border);
+  border-radius: 10px;
+  cursor: pointer;
+  color: inherit;
+  font-size: 1.1rem;
+  line-height: 1;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.sb-chip:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.sb-chip.active {
+  background: rgba(91, 141, 239, 0.18);
+  border-color: var(--sb-accent);
+  border-width: 2px;
+}
+
+.sb-chip.dead {
+  opacity: 0.45;
+}
+
+.sb-chip.dead .sb-chip-emoji {
+  filter: grayscale(1);
+}
+
+.sb-chip-order {
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  width: 16px;
+  height: 16px;
+  background: var(--card);
+  border: 1px solid var(--sb-border);
+  border-radius: 50%;
+  font-size: 0.65rem;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sb-chip-dead-badge {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  font-size: 0.7rem;
+}
+
+.sb-chip-unread {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 9px;
+  height: 9px;
+  background: var(--sb-err);
+  border-radius: 50%;
+  border: 1px solid var(--card);
+}
+
+/* ----- Chat panel + bubbles ---------------------------------------------- */
+
+.sb-chat-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 0.75rem;
+  scroll-behavior: smooth;
+}
+
+.sb-chat-empty,
+.sb-chat-truncated {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.8rem;
+  padding: 1rem;
+}
+
+.sb-chat-empty {
+  padding: 2rem;
+  font-style: italic;
+}
+
+.sb-chat-truncated {
+  padding: 0.4rem 0.6rem;
+  margin-bottom: 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+}
+
+.sb-jump-pill {
+  position: absolute;
+  bottom: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.4rem 0.85rem;
+  background: var(--sb-accent);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  z-index: 2;
+}
+
+.sb-jump-pill:hover {
+  filter: brightness(1.1);
+}
+
+/* Bubble (BotMessage) */
+.sb-bubble {
+  background: var(--card);
+  border: 1px solid var(--sb-border);
+  border-left: 3px solid var(--sb-accent);
+  border-radius: 10px;
+  padding: 0.6rem 0.85rem;
+  margin: 0.35rem 0;
+  font-size: 0.95rem;
+  max-width: min(640px, 100%);
+  word-break: break-word;
+}
+
+.sb-bubble.compact {
+  padding: 0.5rem 0.7rem;
+  font-size: 0.9rem;
+}
+
+.sb-bubble.dm {
+  border-left-color: var(--sb-accent-alt);
+}
+
+.sb-bubble.deleted {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+
+.sb-bubble-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.3rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.sb-bubble-id {
+  font-family: monospace;
+}
+
+.sb-bubble-edited {
+  margin-left: 0.4rem;
+  color: var(--sb-warn);
+}
+
+.sb-bubble-deleted {
+  margin-left: 0.4rem;
+  color: var(--sb-err);
+}
+
+.sb-bubble-text {
+  line-height: 1.45;
+}
+
+.sb-bubble-text a {
+  color: var(--sb-accent);
+}
+
+.sb-bubble-text code {
+  background: rgba(255, 255, 255, 0.07);
+  padding: 0.05em 0.3em;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+.sb-bubble-text pre {
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.5rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  margin: 0.25rem 0;
+}
+
+/* Media chip */
+.sb-media {
+  display: inline-block;
+  padding: 0.35rem 0.6rem;
+  margin-bottom: 0.4rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* Inline keyboard */
+.sb-keyboard {
+  margin-top: 0.5rem;
+}
+
+.sb-keyboard-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+}
+
+.sb-kb-btn {
+  display: inline-block;
+  padding: 0.4rem 0.7rem;
+  margin: 0 0.3rem 0.3rem 0;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--sb-border);
+  color: var(--fg);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  font-family: inherit;
+}
+
+.sb-kb-btn:hover:not(:disabled) {
+  background: rgba(91, 141, 239, 0.18);
+  border-color: var(--sb-accent);
+}
+
+.sb-kb-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.sb-kb-btn.url {
+  color: var(--sb-accent);
+}
+
+.sb-kb-btn.static {
+  cursor: default;
+  opacity: 0.7;
+}
+
+/* ----- Chat selector tabs ------------------------------------------------- */
+
+.sb-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--sb-border);
+  padding: 0 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  overflow-x: auto;
+}
+
+.sb-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.sb-tab.active {
+  border-bottom-color: var(--sb-accent);
+  color: var(--fg);
+}
+
+.sb-tab:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.sb-tab-count {
+  margin-left: 0.35rem;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+/* ----- Game state sidebar ------------------------------------------------ */
+
+.sb-sidebar-scroll {
+  padding: 0.5rem;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.sb-sidebar-section {
+  margin-bottom: 0.75rem;
+}
+
+.sb-stat-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+}
+
+.sb-stat-row:last-child {
+  margin-bottom: 0;
+}
+
+.sb-player-list {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+}
+
+.sb-player-list li {
+  padding: 0.3rem 0.25rem;
+  border-radius: 4px;
+}
+
+.sb-player-list li.active {
+  background: rgba(91, 141, 239, 0.1);
+}
+
+.sb-player-list li.dead {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
+.sb-player-order {
+  color: var(--muted);
+  display: inline-block;
+  width: 1.5rem;
+}
+
+.sb-player-meta {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.sb-player-last-action {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-left: 1.5rem;
+}
+
+.sb-winner-card {
+  background: rgba(91, 141, 239, 0.12);
+  border-color: var(--sb-accent);
+}
+
+/* ----- Control bar ------------------------------------------------------- */
+
+.sb-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.85rem;
+  border-top: 1px solid var(--sb-border);
+  background: rgba(255, 255, 255, 0.03);
+  flex-wrap: wrap;
+}
+
+.sb-controls-spacer {
+  flex: 1;
+}
+
+.sb-controls-error {
+  color: var(--sb-err);
+  font-size: 0.85rem;
+  margin-left: 0.5rem;
+  cursor: pointer;
+}
+
+.sb-controls-status {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* ----- Destroy modal ----------------------------------------------------- */
+
+.sb-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.sb-modal {
+  max-width: 440px;
+  width: calc(100% - 2rem);
+  padding: 1.25rem;
+}
+
+/* ============================================================================
+ * Responsive breakpoints
+ * ========================================================================= */
+
+/* Tablet: sidebar drops below the chats. */
+@media (max-width: 1100px) {
+  .sb-detail {
+    height: auto;
+    min-height: calc(100vh - 1rem);
+  }
+
+  .sb-detail-body {
+    grid-template-columns: 56px 1fr 1fr;
+    grid-template-rows: minmax(40vh, 1fr) auto;
+  }
+
+  .sb-detail-body > .sb-sidebar-card {
+    grid-column: 1 / -1;
+    max-height: 40vh;
+  }
+
+  .sb-create-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Mobile: stack everything; avatar rail moves to a horizontal strip. */
+@media (max-width: 760px) {
+  .sb-detail {
+    height: auto;
+  }
+
+  .sb-detail-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+    gap: 0.5rem;
+  }
+
+  /* The rail becomes a horizontal scrollable strip on mobile. */
+  .sb-rail-card {
+    overflow-x: auto;
+  }
+
+  .sb-rail {
+    flex-direction: row;
+    align-items: center;
+    padding: 0.3rem 0.5rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    width: 100%;
+  }
+
+  .sb-rail-toolbar {
+    flex-direction: row;
+    margin: 0 0.5rem 0 0;
+  }
+
+  .sb-chat-scroll {
+    /* Cap chat height so the page stays scrollable on phones. */
+    max-height: 50vh;
+  }
+
+  .sb-roles-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sb-controls {
+    padding: 0.5rem;
+  }
+
+  .sb-controls > .admin-btn {
+    flex: 1 1 40%;
+    min-width: 0;
+  }
+}
+
+/* Compact-density tweak for the list table on narrow screens. */
+@media (max-width: 600px) {
+  .sb-list-table-wrap {
+    overflow-x: auto;
+  }
+
+  .admin-table.sb-list-table {
+    min-width: 720px;
+  }
+}

@@ -5,8 +5,9 @@ from __future__ import annotations
 from datetime import UTC
 
 from aiogram import Router
+from aiogram.enums import ChatType
 from aiogram.filters import Command, CommandObject
-from aiogram.types import Message
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
 
 from app.db.models import GroupStats, GroupUserStats, User, UserStats
 from app.services.i18n_service import Translator
@@ -231,26 +232,54 @@ async def cmd_global_top(message: Message, _: Translator) -> None:
 
 
 @router.message(Command("profile", prefix="/!"))
-async def cmd_profile(message: Message, _: Translator, command: CommandObject) -> None:
+async def cmd_profile(
+    message: Message,
+    user: User,
+    _: Translator,
+    command: CommandObject,
+    _plain: Translator | None = None,
+) -> None:
     target_user: User | None = None
+    explicit_target = False
 
     if message.reply_to_message and message.reply_to_message.from_user:
+        explicit_target = True
         target_user = await User.get_or_none(id=message.reply_to_message.from_user.id)
     elif command.args and command.args.strip().startswith("@"):
+        explicit_target = True
         uname = command.args.strip().lstrip("@")
         target_user = await User.get_or_none(username=uname)
 
-    if target_user is None:
+    # An explicit @user / reply that didn't resolve is a real error;
+    # don't silently coerce it to the caller's profile.
+    if target_user is None and explicit_target:
         await message.answer(_("profile-target-not-found"))
         return
 
+    # No reply / no @user → fall back to the caller's own profile so the
+    # command is useful without arguments.
+    if target_user is None:
+        target_user = user
+
+    # In private chat, surface a shortcut to the single-screen Inventory.
+    reply_markup: InlineKeyboardMarkup | None = None
+    if message.chat.type == ChatType.PRIVATE and _plain is not None:
+        reply_markup = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(text=_plain("btn-inventory"), callback_data="menu:profile")]
+            ]
+        )
+
     stats = await UserStats.get_or_none(user=target_user)
     if stats is None or stats.games_total == 0:
-        await message.answer(_("profile-no-games", name=target_user.first_name))
+        await message.answer(
+            _("profile-no-games", name=target_user.first_name),
+            reply_markup=reply_markup,
+        )
         return
 
     text = _format_user_stats(target_user, stats, _)
-    await message.answer(text)
+    await message.answer(text, reply_markup=reply_markup)
 
 
 # === /group_stats ===

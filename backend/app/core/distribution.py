@@ -4,10 +4,11 @@ Algorithm (matches @MafiaAzBot reference at N=30):
 1. Mafia count = floor(N * ratio) where ratio in {1/4, 1/3}.
 2. Mafia composition (priority order):
    - 1 Don (always)
-   - +1 Lawyer (if N >= 6 and lawyer enabled)
-   - +1 Journalist (if N >= 8 and journalist enabled)
-   - +1 Killer/Ninza (if N >= 10 and killer enabled)
+   - +1 Lawyer (if N >= 12 and lawyer enabled)
+   - +1 Journalist (if N >= 17 and journalist enabled)
+   - +1 Killer/Ninza (if N >= 25 and killer enabled)
    - rest filled with plain Mafia
+   In small games (N < 12) the Mafia roster is just Don + plain Mafia.
 3. Singleton count = max(1, N // 4) at N >= 8 (else 0).
    - Multi-instance: Werewolf x2 at N >= 24, Maniac x2 at N >= 28.
 4. Civilians = remainder. Composition (priority order):
@@ -52,11 +53,14 @@ CIVILIAN_PRIORITY: list[tuple[str, int]] = [
     # kamikaze handled separately (multi-instance)
 ]
 
-# Mafia roles in priority (excluding plain mafia which is filler)
+# Mafia roles in priority (excluding plain mafia which is filler).
+# Thresholds keep Advokat / Jurnalist out of small games so the default
+# Mafia roster is Don + plain Mafia until the table is big enough to
+# warrant role variety.
 MAFIA_PRIORITY: list[tuple[str, int]] = [
-    ("lawyer", 6),
-    ("journalist", 8),
-    ("killer", 10),
+    ("lawyer", 12),
+    ("journalist", 17),
+    ("killer", 25),
 ]
 
 
@@ -195,7 +199,11 @@ def distribute_roles(
 
 
 def _default_enabled() -> dict[str, bool]:
-    """Default: civilian core roles enabled, others off (admin opt-in)."""
+    """Default: every role ON. Thresholds in MAFIA_PRIORITY /
+    CIVILIAN_PRIORITY and the singleton target count keep small games
+    sensible, so blanket-enabling is safe — admins opt OUT of unwanted
+    roles instead of opting in.
+    """
     return {
         "citizen": True,
         "detective": True,
@@ -204,20 +212,20 @@ def _default_enabled() -> dict[str, bool]:
         "sergeant": True,
         "mayor": True,
         "hobo": True,
-        "lucky": False,
-        "suicide": False,
-        "kamikaze": False,
+        "lucky": True,
+        "suicide": True,
+        "kamikaze": True,
         "don": True,
         "mafia": True,
         "lawyer": True,
-        "journalist": False,
-        "killer": False,
-        "maniac": False,
-        "werewolf": False,
-        "mage": False,
-        "arsonist": False,
-        "crook": False,
-        "snitch": False,
+        "journalist": True,
+        "killer": True,
+        "maniac": True,
+        "werewolf": True,
+        "mage": True,
+        "arsonist": True,
+        "crook": True,
+        "snitch": True,
     }
 
 

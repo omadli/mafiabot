@@ -12,6 +12,7 @@ MODELS_MODULES = [
     "app.db.models.system_settings",
     "app.db.models.role_config",
     "app.db.models.emoji_config",
+    "app.db.models.sandbox",
     "aerich.models",
 ]
 

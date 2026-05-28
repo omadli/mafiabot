@@ -5,6 +5,13 @@ Tomon yoki Singleton g'olib bo'lganini tekshiradi.
 
 from app.core.state import GameState, Team
 
+# Singletons that actively threaten Citizens — Citizens cannot claim victory
+# while any of these are still alive, even after every Mafia is gone.
+# Today: only Maniac. Werewolf is passive until transformed (and after
+# transformation .team is updated, so the standard team counts cover it);
+# Arsonist is excluded by explicit user choice.
+HOSTILE_SINGLETON_ROLES: frozenset[str] = frozenset({"maniac"})
+
 
 def check_winner(state: GameState) -> Team | None:
     """Return winning team if game has ended, else None.
@@ -20,6 +27,9 @@ def check_winner(state: GameState) -> Team | None:
     alive = state.alive_players()
     mafia_alive = [p for p in alive if p.team == Team.MAFIA]
     citizens_alive = [p for p in alive if p.team == Team.CITIZENS]
+    singletons_alive = [p for p in alive if p.team == Team.SINGLETON]
+    non_mafia_alive = citizens_alive + singletons_alive
+    hostile_singletons_alive = [p for p in singletons_alive if p.role in HOSTILE_SINGLETON_ROLES]
 
     # === Singleton victories ===
     # 1. Maniac alone — only maniac alive (or maniac + 1 powerless person)
@@ -56,10 +66,16 @@ def check_winner(state: GameState) -> Team | None:
         return Team.SINGLETON
 
     # === Citizens vs Mafia ===
-    if not mafia_alive and citizens_alive:
+    # Citizens win only when every Mafia AND every hostile singleton (Maniac)
+    # is dead — otherwise the active killer can still wipe survivors and the
+    # game must continue.
+    if not mafia_alive and not hostile_singletons_alive and citizens_alive:
         return Team.CITIZENS
 
-    if len(mafia_alive) >= len(citizens_alive):
+    # Mafia wins by parity against ALL non-mafia survivors (Citizens +
+    # Singletons), not just Citizens — singletons are also opposition the
+    # Mafia must clear out.
+    if mafia_alive and len(mafia_alive) >= len(non_mafia_alive):
         return Team.MAFIA
 
     return None

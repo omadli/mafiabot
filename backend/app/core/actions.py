@@ -415,7 +415,7 @@ class ActionResolver:
                 # detective — they already received "citizen".
                 if (
                     "fake_document" in target.items_active
-                    and target.role != "citizen"
+                    and target.team != Team.CITIZENS
                     and revealed == "citizen"
                 ):
                     outcome.shield_saves.append(
@@ -627,7 +627,10 @@ class ActionResolver:
         return getattr(role, "pierces_doctor_heal", False)
 
     def _reveal_role_for_detective(self, target: PlayerState, lawyer_protected: set[int]) -> str:
-        if "fake_document" in target.items_active:
+        # fake_document only conceals threats to civilians (Mafia + Singletons).
+        # Citizens-team players gain nothing from it — they're already aligned
+        # with the detective and don't need to hide.
+        if "fake_document" in target.items_active and target.team != Team.CITIZENS:
             return "citizen"
         if target.user_id in lawyer_protected and target.team == Team.MAFIA:
             return "citizen"

@@ -1,53 +1,9 @@
 import { Link, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { LiveGameState, useLiveGame } from "../hooks/useLiveGame";
-
-const ROLE_EMOJI: Record<string, string> = {
-  citizen: "👨🏼",
-  detective: "🕵🏻‍♂",
-  sergeant: "👮🏻‍♂",
-  mayor: "🎖",
-  doctor: "👨🏻‍⚕",
-  hooker: "💃",
-  hobo: "🧙‍♂",
-  lucky: "🤞🏼",
-  suicide: "🤦🏼",
-  kamikaze: "💣",
-  don: "🤵🏻",
-  mafia: "🤵🏼",
-  lawyer: "👨‍💼",
-  journalist: "👩🏼‍💻",
-  killer: "🥷",
-  maniac: "🔪",
-  werewolf: "🐺",
-  mage: "🧙",
-  arsonist: "🧟",
-  crook: "🤹",
-  snitch: "🤓",
-};
-
-const PHASE_EMOJI: Record<string, string> = {
-  waiting: "📋",
-  night: "🌙",
-  day: "☀️",
-  voting: "🗳",
-  hanging_confirm: "⚖️",
-  last_words: "💬",
-  finished: "🏁",
-  cancelled: "🚫",
-};
-
-function useCountdown(deadline: number | null): number {
-  const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
-  useEffect(() => {
-    if (!deadline) return;
-    const t = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1000);
-    return () => clearInterval(t);
-  }, [deadline]);
-  return deadline ? Math.max(0, deadline - now) : 0;
-}
+import { useCountdown } from "../hooks/useCountdown";
+import { ROLE_EMOJI, PHASE_EMOJI } from "../constants/roles";
 
 export function AdminLiveGamePage() {
   const { t } = useTranslation();

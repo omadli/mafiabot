@@ -8,6 +8,7 @@ from datetime import UTC
 from loguru import logger
 from tortoise.transactions import in_transaction
 
+from app.core.sandbox_ids import is_sandbox_state
 from app.core.state import DeathReason, GameState, Phase, Team
 from app.db.models import (
     Game,
@@ -28,6 +29,10 @@ DOLLARS_LOSS = 2  # default for losers (winners use SystemSettings.rewards)
 
 async def finalize_game_stats(state: GameState) -> None:
     """Called after Game.history is saved. Persists GameResult + updates UserStats/GroupUserStats."""
+    # Sandbox games leave no statistical footprint — UserStats/ELO/
+    # GroupUserStats are reserved for real player history.
+    if is_sandbox_state(state):
+        return
     if state.winner_team is None:
         logger.info(f"Game {state.id} has no winner, skipping stats")
         return

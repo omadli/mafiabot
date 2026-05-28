@@ -362,6 +362,11 @@ async def notify_unlock(bot, user_id: int, ach: AchievementDef, locale: str) -> 
 
 async def check_and_unlock(user: User, state: GameState) -> list[AchievementDef]:
     """Check all achievements for user after game finished. Returns newly unlocked ones."""
+    from app.core.sandbox_ids import is_sandbox_state, is_sandbox_user_id
+
+    # Sandbox runs leave no achievement footprint.
+    if is_sandbox_state(state) or is_sandbox_user_id(user.id):
+        return []
     stats = await UserStats.get_or_none(user=user)
     if stats is None:
         return []

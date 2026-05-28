@@ -139,6 +139,74 @@ def test_fake_document_no_save_for_actual_citizen():
     assert all(s.item != "fake_document" for s in outcome.shield_saves)
 
 
+def test_fake_document_does_not_conceal_citizens_team_roles():
+    # Doctor/Hooker/Lucky and other CITIZENS-team roles must NOT be hidden
+    # by fake_document — the item only helps Mafia and Singletons.
+    for role in ("doctor", "hooker", "lucky", "mayor", "sergeant", "hobo"):
+        target = PlayerState(
+            user_id=10,
+            first_name="Cit",
+            join_order=1,
+            role=role,
+            team=Team.CITIZENS,
+            items_active=["fake_document"],
+        )
+        det = PlayerState(
+            user_id=20,
+            first_name="Kom",
+            join_order=2,
+            role="detective",
+            team=Team.CITIZENS,
+        )
+        actions = [NightAction(actor_id=20, role="detective", action_type="check", target_id=10)]
+        state = _state_with([target, det], actions)
+
+        outcome = ActionResolver().resolve(state)
+        assert len(outcome.detective_results) == 1
+        assert (
+            outcome.detective_results[0].revealed_role == role
+        ), f"{role} should not be concealed by fake_document"
+        assert all(s.item != "fake_document" for s in outcome.shield_saves)
+
+
+def test_fake_document_conceals_singleton_threats():
+    # Anti-civilian singletons (Maniac, Arsonist, Werewolf, Snitch) and
+    # passive singletons (Mage, Crook) all benefit from fake_document.
+    for role, team in (
+        ("maniac", Team.SINGLETON),
+        ("arsonist", Team.SINGLETON),
+        ("werewolf", Team.SINGLETON),
+        ("snitch", Team.SINGLETON),
+        ("mage", Team.SINGLETON),
+        ("crook", Team.SINGLETON),
+    ):
+        target = PlayerState(
+            user_id=10,
+            first_name="Sgl",
+            join_order=1,
+            role=role,
+            team=team,
+            items_active=["fake_document"],
+        )
+        det = PlayerState(
+            user_id=20,
+            first_name="Kom",
+            join_order=2,
+            role="detective",
+            team=Team.CITIZENS,
+        )
+        actions = [NightAction(actor_id=20, role="detective", action_type="check", target_id=10)]
+        state = _state_with([target, det], actions)
+
+        outcome = ActionResolver().resolve(state)
+        assert len(outcome.detective_results) == 1
+        assert (
+            outcome.detective_results[0].revealed_role == "citizen"
+        ), f"{role} should be concealed by fake_document"
+        fake_saves = [s for s in outcome.shield_saves if s.item == "fake_document"]
+        assert len(fake_saves) == 1
+
+
 def test_rifle_pierces_shield_consumes_both():
     # Rifle pierces the shield AND consumes it (the shield was destroyed).
     # The rifle slot is also burned because it had to bypass a defence.

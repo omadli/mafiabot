@@ -55,18 +55,32 @@ def test_role_count_matches_n():
         assert len(result) == n, f"Failed for N={n}"
 
 
-def test_singletons_only_when_enabled():
-    """Singletons disabled by default — should not appear in distribution."""
+def test_singletons_appear_by_default_at_n8():
+    """All singletons are ON by default — at N >= 8 the singleton pool
+    should be drawn from and at least one singleton should appear.
+    """
+    singleton_codes = {"suicide", "maniac", "werewolf", "mage", "arsonist", "crook", "snitch"}
     result = distribute_roles(_user_ids(15))
     roles = [r.role for r in result]
-    singletons = ["maniac", "werewolf", "mage", "arsonist", "crook", "snitch"]
+    assert any(r in singleton_codes for r in roles), "Expected some singleton at N=15 by default"
+
+
+def test_singletons_suppressed_when_explicitly_disabled():
+    """Admin can opt OUT of singletons by disabling them in group settings."""
+    disabled = dict.fromkeys(
+        ("suicide", "maniac", "werewolf", "mage", "arsonist", "crook", "snitch"), False
+    )
+    result = distribute_roles(_user_ids(15), enabled_roles=disabled)
+    roles = [r.role for r in result]
+    singletons = ["maniac", "werewolf", "mage", "arsonist", "crook", "snitch", "suicide"]
     for s in singletons:
-        assert s not in roles, f"Singleton {s} appeared without being enabled"
+        assert s not in roles, f"Singleton {s} appeared despite being disabled"
 
 
 def test_singletons_appear_when_enabled():
-    """When singleton enabled, it should appear at N >= 8."""
-    enabled = {"maniac": True}
+    """When singleton enabled (here: only maniac), it should appear at N >= 8."""
+    enabled = dict.fromkeys(("suicide", "werewolf", "mage", "arsonist", "crook", "snitch"), False)
+    enabled["maniac"] = True
     result = distribute_roles(_user_ids(10), enabled_roles=enabled)
     roles = [r.role for r in result]
     assert "maniac" in roles
@@ -126,9 +140,11 @@ def test_n20_extra_sergeant():
 
 
 def test_n24_werewolf_multi_instance():
-    """At N>=24, werewolf may appear twice."""
-    enabled = {"werewolf": True}
-    # Run multiple times: with only werewolf enabled, all singletons must be werewolves
+    """At N>=24, werewolf may appear twice. Isolate by disabling other
+    singletons so the singleton pool is werewolf-only.
+    """
+    enabled = dict.fromkeys(("suicide", "maniac", "mage", "arsonist", "crook", "snitch"), False)
+    enabled["werewolf"] = True
     result = distribute_roles(_user_ids(24), mafia_ratio="high", enabled_roles=enabled)
     roles = [r.role for r in result]
     werewolf_count = sum(1 for r in roles if r == "werewolf")
@@ -153,6 +169,50 @@ def test_override_ignored_when_length_mismatches():
     roles = [r.role for r in result]
     assert "detective" in roles
     assert "don" in roles
+
+
+def test_lawyer_journalist_absent_in_small_games():
+    """Per user spec: default Mafia roster in small games is Don + Mafia only.
+    Advokat/Jurnalist must not appear below their thresholds (12 / 17).
+    """
+    for n in (4, 5, 8, 10, 11):
+        result = distribute_roles(_user_ids(n), mafia_ratio="high")
+        roles = [r.role for r in result]
+        assert "lawyer" not in roles, f"Lawyer appeared at N={n}"
+        assert "journalist" not in roles, f"Journalist appeared at N={n}"
+
+
+def test_lawyer_appears_at_n12():
+    """Lawyer kicks in at N >= 12 when enabled (default enabled)."""
+    # high ratio so mafia_count has room: 12 // 3 = 4 → don + lawyer + 2 mafia
+    result = distribute_roles(_user_ids(12), mafia_ratio="high")
+    roles = [r.role for r in result]
+    assert "lawyer" in roles
+    assert "journalist" not in roles  # below journalist threshold
+
+
+def test_journalist_appears_at_n17():
+    """Journalist kicks in at N >= 17 when enabled."""
+    enabled = {"journalist": True}
+    result = distribute_roles(_user_ids(17), mafia_ratio="high", enabled_roles=enabled)
+    roles = [r.role for r in result]
+    assert "lawyer" in roles
+    assert "journalist" in roles
+
+
+def test_killer_absent_below_n25():
+    """Killer (Ninza) is default-on but capped to N >= 25 tables."""
+    for n in (12, 17, 20, 24):
+        result = distribute_roles(_user_ids(n), mafia_ratio="high")
+        roles = [r.role for r in result]
+        assert "killer" not in roles, f"Killer appeared at N={n}"
+
+
+def test_killer_appears_at_n25_by_default():
+    """At N >= 25 Killer auto-joins the Mafia roster (default enabled)."""
+    result = distribute_roles(_user_ids(25), mafia_ratio="high")
+    roles = [r.role for r in result]
+    assert "killer" in roles
 
 
 def test_override_shuffles_assignment():

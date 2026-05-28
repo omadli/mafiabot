@@ -96,6 +96,7 @@ join-success =
     ✅ You have successfully joined the game :)
 
 btn-back-to-group = 🔙 Back to group
+btn-open-bot = 🤖 Open bot
 
 
 # ===========================================================
@@ -266,21 +267,51 @@ btn-join-game = 🎮 Join Game
 # PHASE CHANGES
 # ===========================================================
 
-phase-night-start = 🌃 Night #{ $round }. Whispers of the night drift across the town...
+phase-night-start =
+    <b>🌚 🌃Night:</b> { $round }
+    <i>Only the brave and the fearless stepped outside. Come morning, we'll count the survivors...</i>
 
-phase-night-start-1 = 🌃 Night #{ $round }. Whispers of the night drift across the town...
-phase-night-start-2 = 🌑 Night #{ $round }. The town murmurs under the moon — someone stopped breathing.
-phase-night-start-3 = 🌃 Night #{ $round }. Lock your doors — there are footsteps in the street.
-phase-night-start-4 = 🦉 Night #{ $round }. The owl is watching, but even it can't see everything.
-phase-night-start-5 = 🌌 Night #{ $round }. The stars bear witness — the town doesn't sleep, it just pretends.
+phase-night-start-1 =
+    <b>🌚 🌃Night:</b> { $round }
+    <i>Only the brave and the fearless stepped outside. Come morning, we'll count the survivors...</i>
+phase-night-start-2 =
+    <b>🌚 🌃Night:</b> { $round }
+    <i>The town murmurs under the moon — someone stopped breathing.</i>
+phase-night-start-3 =
+    <b>🌚 🌃Night:</b> { $round }
+    <i>Lock your doors — there are footsteps in the street.</i>
+phase-night-start-4 =
+    <b>🌚 🌃Night:</b> { $round }
+    <i>The owl is watching, but even it can't see everything.</i>
+phase-night-start-5 =
+    <b>🌚 🌃Night:</b> { $round }
+    <i>The stars bear witness — the town doesn't sleep, it just pretends.</i>
 
-phase-day-start = <e:scene-day> Day #{ $round }. The sun dried the blood spilled in the night...
+phase-day-start =
+    <b>Good morning🌝</b>
+    <b>🌄Day:</b> { $round }
+    Whispers of the night drift across the town..
 
-phase-day-start-1 = <e:scene-day> Day #{ $round }. The sun dried the blood spilled in the night...
-phase-day-start-2 = 🌅 Day #{ $round }. The town wakes — but someone won't wake again.
-phase-day-start-3 = ☕ Day #{ $round }. Breakfast time, but a few seats are empty...
-phase-day-start-4 = 🐓 Day #{ $round }. The rooster crowed — time to count heads.
-phase-day-start-5 = 🌤 Day #{ $round }. Dawn breaks, but night's shadows still linger.
+phase-day-start-1 =
+    <b>Good morning🌝</b>
+    <b>🌄Day:</b> { $round }
+    Whispers of the night drift across the town..
+phase-day-start-2 =
+    <b>Good morning🌝</b>
+    <b>🌄Day:</b> { $round }
+    The sun dried the blood spilled in the night...
+phase-day-start-3 =
+    <b>Good morning🌝</b>
+    <b>🌄Day:</b> { $round }
+    The town wakes — but someone won't wake again.
+phase-day-start-4 =
+    <b>Good morning🌝</b>
+    <b>🌄Day:</b> { $round }
+    Breakfast time, but a few seats are empty...
+phase-day-start-5 =
+    <b>Good morning🌝</b>
+    <b>🌄Day:</b> { $round }
+    The rooster crowed — time to count heads.
 
 
 
@@ -310,6 +341,8 @@ leave-not-allowed = /leave is disabled in this group.
 leave-already-dead = You are already dead.
 
 leave-broadcast = { $mention } could not bear the evil of this city and took their own life.
+
+leave-self-hanged = 🪢 { $mention } didn't wait for the verdict and hanged themselves.
 
 unjoin-success = ✅ { $name } has left the registration.
 
@@ -1332,6 +1365,30 @@ dm-your-role =
 
     { $description }
 
+# Short role blurbs — for the "Your role" alert popup (Telegram ~200-char
+# limit on callback alerts). Full prose lives in role-desc-{code}.
+role-short-citizen = No special abilities. Join the debate and try to spot the mafia.
+role-short-detective = Each night you investigate 1 player and learn whether they're mafia or civilian.
+role-short-sergeant = Detective's deputy. If the Detective dies, you take over the night check.
+role-short-mayor = Your vote counts as two.
+role-short-doctor = Each night heal 1 player, blocking the kill. You can heal yourself only once.
+role-short-hooker = Each night put 1 player to sleep, cancelling their night action.
+role-short-hobo = Visit a player at night and see who else came to their house.
+role-short-lucky = If the mafia attacks, you survive with 50% luck.
+role-short-suicide = Win if you get hanged by day. Lose if killed at night.
+role-short-kamikaze = If hanged, take 1 player with you to hell.
+role-short-don = Tonight you decide who dies. You are the head of the Mafia.
+role-short-mafia = Mafia member. At night you help carry out the Don's kill.
+role-short-lawyer = Each night protect 1 mafia from Detective checks and hanging.
+role-short-journalist = Mafia spy. At night learn whether a player is Doctor/Hobo/Hooker.
+role-short-killer = The Doctor can't heal your kill. The Hooker can't put you to sleep.
+role-short-maniac = Lone killer. Win by being the last alive. Kill 1 player at night.
+role-short-werewolf = Attack a player at night and become their role (Don→Mafia, Detective→Sergeant).
+role-short-mage = Mage. Survive to the end and win alone.
+role-short-arsonist = Douse targets at night. On the 3rd, they all burn at once.
+role-short-crook = Crook. Survive to the end to win. You can vote in someone else's name.
+role-short-snitch = Pick a player at night. If the Detective picks the same one — you win!
+
 role-desc-citizen =
     No special abilities — but <b>your power is your voice</b>.
     Stay quiet at night. By day, take part in the debate: read suspects'
@@ -1377,9 +1434,7 @@ role-desc-kamikaze =
     (your choice). Taking a mafia member with you counts as a separate win.
 
 role-desc-don =
-    Mafia boss. Each night <b>you pick the kill target</b> (the mafia obeys your
-    pick). To the Detective you appear as "civilian". Catching you is a huge
-    civilian win.
+    Tonight <b>you decide who dies</b>. You are the head of the Mafia.
 
 role-desc-mafia =
     Mafia member. You back the Don at night and join in killing the chosen

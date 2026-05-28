@@ -121,7 +121,11 @@ def get_translator(
 
     def _(key: str, **kwargs: Any) -> str:
         # Dynamic role labels
-        if key.startswith("role-") and not key.startswith("role-desc-"):
+        if (
+            key.startswith("role-")
+            and not key.startswith("role-desc-")
+            and not key.startswith("role-short-")
+        ):
             slug = key[len("role-") :]
             dyn = role_config_service.role_label_sync(slug, locale, overrides=role_overrides)
             if dyn is not None:

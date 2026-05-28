@@ -11,6 +11,15 @@ from app.db.models.emoji_config import EmojiConfig
 from app.db.models.game import Game, GameStatus, WinnerTeam
 from app.db.models.group import Group, GroupSettings
 from app.db.models.role_config import RoleConfig
+from app.db.models.sandbox import (
+    SandboxAutoPlayMode,
+    SandboxSession,
+    SandboxStatus,
+    SandboxTimingPreset,
+    SandboxTranscriptEntry,
+    TranscriptEntryType,
+    TranscriptScope,
+)
 from app.db.models.statistics import (
     GameResult,
     GroupStats,
@@ -46,11 +55,18 @@ __all__ = [
     "GroupUserStats",
     "OneTimeToken",
     "RoleConfig",
+    "SandboxAutoPlayMode",
+    "SandboxSession",
+    "SandboxStatus",
+    "SandboxTimingPreset",
+    "SandboxTranscriptEntry",
     "StatsPeriodSnapshot",
     "SystemSettings",
     "Transaction",
     "TransactionStatus",
     "TransactionType",
+    "TranscriptEntryType",
+    "TranscriptScope",
     "User",
     "UserAchievement",
     "UserInventory",

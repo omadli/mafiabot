@@ -96,6 +96,7 @@ join-success =
     ✅ Siz o'yinga omadli qo'shildingiz :)
 
 btn-back-to-group = 🔙 Guruhga o'tish
+btn-open-bot = 🤖 Botga o'tish
 
 
 # ===========================================================
@@ -266,21 +267,51 @@ btn-join-game = 🎮 O'yinga qo'shilish
 # FAZA O'ZGARISHLARI
 # ===========================================================
 
-phase-night-start = 🌃 Tun #{ $round }. Shamollar tundagi mish-mishlarni butun shaharga yetkazmoqda...
+phase-night-start =
+    <b>🌚 🌃Tun:</b> { $round }
+    <i>Ko'chaga faqat jasur va qo'rqmas odamlar chiqishdi. Ertalab tirik qolganlarni sanaymiz...</i>
 
-phase-night-start-1 = 🌃 Tun #{ $round }. Shamollar tundagi mish-mishlarni butun shaharga yetkazmoqda...
-phase-night-start-2 = 🌑 Tun #{ $round }. Shahar oy nuri ostida pichirlay boshladi — kimdir nafas olishni unutdi...
-phase-night-start-3 = 🌃 Tun #{ $round }. Eshiklarni mahkamlang, ko'chada qadamlar eshitilmoqda...
-phase-night-start-4 = 🦉 Tun #{ $round }. Boyqush hushyor, lekin u ham hammasini ko'ra olmaydi...
-phase-night-start-5 = 🌌 Tun #{ $round }. Yulduzlar guvoh — kechasi shahar uxlamaydi, faqat o'zini uxlayotgandek ko'rsatadi.
+phase-night-start-1 =
+    <b>🌚 🌃Tun:</b> { $round }
+    <i>Ko'chaga faqat jasur va qo'rqmas odamlar chiqishdi. Ertalab tirik qolganlarni sanaymiz...</i>
+phase-night-start-2 =
+    <b>🌚 🌃Tun:</b> { $round }
+    <i>Shahar oy nuri ostida pichirlay boshladi — kimdir nafas olishni unutdi...</i>
+phase-night-start-3 =
+    <b>🌚 🌃Tun:</b> { $round }
+    <i>Eshiklarni mahkamlang, ko'chada qadamlar eshitilmoqda...</i>
+phase-night-start-4 =
+    <b>🌚 🌃Tun:</b> { $round }
+    <i>Boyqush hushyor, lekin u ham hammasini ko'ra olmaydi...</i>
+phase-night-start-5 =
+    <b>🌚 🌃Tun:</b> { $round }
+    <i>Yulduzlar guvoh — kechasi shahar uxlamaydi, faqat o'zini uxlayotgandek ko'rsatadi.</i>
 
-phase-day-start = <e:scene-day> Kun #{ $round }. Quyosh chiqib tunda to'kilgan qonlarni quritdi...
+phase-day-start =
+    <b>Xayrli tong🌝</b>
+    <b>🌄Kun:</b> { $round }
+    Shamollar tundagi mish-mishlarni butun shaharga yetkazmoqda..
 
-phase-day-start-1 = <e:scene-day> Kun #{ $round }. Quyosh chiqib tunda to'kilgan qonlarni quritdi...
-phase-day-start-2 = 🌅 Kun #{ $round }. Shahar uyg'ondi — ammo kimdir endi uyg'onmaydi.
-phase-day-start-3 = ☕ Kun #{ $round }. Nonushta vaqti keldi, lekin ba'zi joylar bo'sh qoldi...
-phase-day-start-4 = 🐓 Kun #{ $round }. Xo'roz qichqirdi — hisob-kitob qilish vaqti.
-phase-day-start-5 = 🌤 Kun #{ $round }. Tong otdi, lekin tunning qora soyalari hali ham ko'cha boshida.
+phase-day-start-1 =
+    <b>Xayrli tong🌝</b>
+    <b>🌄Kun:</b> { $round }
+    Shamollar tundagi mish-mishlarni butun shaharga yetkazmoqda..
+phase-day-start-2 =
+    <b>Xayrli tong🌝</b>
+    <b>🌄Kun:</b> { $round }
+    Quyosh chiqib tunda to'kilgan qonlarni quritdi...
+phase-day-start-3 =
+    <b>Xayrli tong🌝</b>
+    <b>🌄Kun:</b> { $round }
+    Shahar uyg'ondi — ammo kimdir endi uyg'onmaydi.
+phase-day-start-4 =
+    <b>Xayrli tong🌝</b>
+    <b>🌄Kun:</b> { $round }
+    Nonushta vaqti keldi, lekin ba'zi joylar bo'sh qoldi...
+phase-day-start-5 =
+    <b>Xayrli tong🌝</b>
+    <b>🌄Kun:</b> { $round }
+    Xo'roz qichqirdi — hisob-kitob qilish vaqti.
 
 
 # ===========================================================
@@ -309,6 +340,8 @@ leave-not-allowed = Bu guruhda /leave taqiqlangan.
 leave-already-dead = Siz allaqachon o'lgansiz.
 
 leave-broadcast = { $mention } bu shaharning yovuzliklariga chiday olmadi va o'z joniga qasd qildi.
+
+leave-self-hanged = 🪢 { $mention } sud qarorini kutmay o'zini osib qo'ydi.
 
 unjoin-success = ✅ { $name } ro'yxatdan chiqib ketdi.
 
@@ -1331,6 +1364,30 @@ dm-your-role =
 
     { $description }
 
+# Qisqa rol tavsiflari — "Sizning rolingiz" alert tugmasi uchun (Telegram
+# show_alert limiti ~200 belgi). Uzun versiyalari role-desc-{code} da.
+role-short-citizen = Sizda maxsus qobiliyat yo'q. Kunduzgi muhokamada faol bo'ling va mafiyani topishga harakat qiling.
+role-short-detective = Har tunda 1 o'yinchini tekshirib, u mafiya yoki tinch ekanligini bilasiz.
+role-short-sergeant = Komissarning yordamchisi. Komissar o'lsa, uning vazifasini olib tekshira boshlaysiz.
+role-short-mayor = Hokim. Sizning ovozingiz 2 barobar hisoblanadi.
+role-short-doctor = Har tunda 1 o'yinchini davolab, hujumdan saqlaysiz. O'zingizni faqat 1 marta davolaysiz.
+role-short-hooker = Har tunda 1 o'yinchini uxlatib, uning tundagi harakatini bekor qilasiz.
+role-short-hobo = Tunda 1 o'yinchining uyiga borasiz va kim u yerga kelganini ko'rasiz.
+role-short-lucky = Mafiya hujum qilsa, 50% omad bilan tirik qolasiz.
+role-short-suicide = Kunduzgi ovozda osilsangiz — g'olibsiz! Tunda o'lsangiz — yutqizasiz.
+role-short-kamikaze = Osilsangiz, o'zingiz bilan birga 1 odamni jahannamga olib ketasiz.
+role-short-don = Bu tunda kim o'lishini siz hal qilasiz. Siz — Mafialar sardorisiz.
+role-short-mafia = Mafiya guruhi a'zosi. Tunda Don tanlagan nishonni o'ldirishda ishtirok etasiz.
+role-short-lawyer = Har tunda 1 mafiyani Komissar tekshiruvidan va osishdan himoya qilasiz.
+role-short-journalist = Mafiya josusi. Tunda o'yinchini tekshirib Doktor/Daydi/Kezuvchi ekanini bilasiz.
+role-short-killer = Sizning hujumingizni Doktor davolay olmaydi. Kezuvchi sizni uxlata olmaydi.
+role-short-maniac = Yakka qotil. G'alabangiz — oxirgacha tirik qolish. Tunda 1 o'yinchini o'ldirasiz.
+role-short-werewolf = Tunda hujum qilgan o'yinchining roliga aylanasiz (Don→Mafiya, Komissar→Serjant).
+role-short-mage = Sehrgar. Oxirigacha tirik qolsangiz — yakka g'olibsiz.
+role-short-arsonist = Tunda nishonlarni "yoqasiz". 3 ta nishon qo'yganingizda — barchasi o'ladi.
+role-short-crook = Aferist. Oxirgacha tirik qolsangiz — yakka g'olib. Boshqa nomidan ovoz bera olasiz.
+role-short-snitch = Tunda 1 o'yinchini tanlaysiz. Komissar ham aynan shuni tekshirsa — g'olibsiz!
+
 role-desc-citizen =
     Sizning maxsus qobiliyatingiz yo'q — lekin <b>kuchingiz ovozingizda</b>.
     Tunda jim o'tirasiz. Kunduzi muhokamada faol bo'ling: mafiyani gap-so'zlaridan
@@ -1378,9 +1435,7 @@ role-desc-kamikaze =
     jahannamga olib ketasiz (tanlovingiz bo'yicha). Mafiyani olib ketsangiz — alohida g'olib.
 
 role-desc-don =
-    Mafiya boshlig'i. Har tunda <b>kimni o'ldirishni siz tanlaysiz</b> (mafiya guruhi
-    sizning tanlovingizga bo'ysunadi). Komissarga "tinch aholi" deb ko'rinasiz.
-    Sizni topish — tinch aholi uchun katta yutuq.
+    Bu tunda <b>kim o'lishini siz hal qilasiz</b>. Siz — Mafialar sardorisiz.
 
 role-desc-mafia =
     Mafiya guruhi a'zosi. Tunda Donni qo'llab-quvvatlaysiz va u tanlagan nishonni

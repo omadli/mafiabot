@@ -31,6 +31,19 @@ class PhaseManager:
 
     # group_id → task (so we can cancel on /stop)
     _tasks: ClassVar[dict[int, asyncio.Task]] = {}
+    # group_id → lock that serializes tick_once. The timer loop and any
+    # external force-advance (e.g. /leave by the hang target) must not
+    # interleave a single phase transition, otherwise night actions get
+    # re-resolved or the round counter bumps twice.
+    _locks: ClassVar[dict[int, asyncio.Lock]] = {}
+
+    @classmethod
+    def _lock_for(cls, group_id: int) -> asyncio.Lock:
+        lock = cls._locks.get(group_id)
+        if lock is None:
+            lock = asyncio.Lock()
+            cls._locks[group_id] = lock
+        return lock
 
     @classmethod
     def start_for(
@@ -54,6 +67,8 @@ class PhaseManager:
         if task is not None and not task.done():
             task.cancel()
             logger.info(f"Phase manager cancelled for group {group_id}")
+        # Drop the lock — the next game in this group gets a fresh one.
+        cls._locks.pop(group_id, None)
 
     @classmethod
     async def _loop(
@@ -112,75 +127,10 @@ class PhaseManager:
                 ):
                     continue
 
-                # Transition
-                await cls._advance_phase(bot, state)
-                # _advance_phase may have ended the game (cancel_game /
-                # finish_game already wiped the Redis state). Re-saving
-                # here would resurrect a CANCELLED/FINISHED state in Redis
-                # and block the next /game with "game already running".
-                if state.phase not in (Phase.CANCELLED, Phase.FINISHED):
-                    await save_state(state)
-
-                # === Winner check BEFORE the next-phase intro ===
-                # If the phase that just completed produced a game-ending event
-                # (night kills wiped a team, or a critical hanging finished
-                # mafia/citizens), we must end the game right here — not
-                # after the next NIGHT/DAY has already been announced to
-                # the group. The on_phase_change(FINISHED) handler narrates
-                # the killing event and then the game-over message.
-                if state.phase not in (Phase.WAITING, Phase.CANCELLED, Phase.FINISHED):
-                    winner = check_winner(state)
-                    if winner is not None:
-                        state.winner_team = winner
-                        state.winner_user_ids = winner_user_ids(state, winner)
-                        state.phase = Phase.FINISHED
-                        await save_state(state)
-                        await finish_game(state, winner)
-                        if on_phase_change is not None:
-                            try:
-                                await on_phase_change(state)
-                            except Exception as e:
-                                logger.exception(f"on_phase_change failed: {e}")
-                        try:
-                            from app.services.ws_broker import emit_game_event
-
-                            await emit_game_event(
-                                "phase_change",
-                                game_id=str(state.id),
-                                group_id=state.group_id,
-                                phase=state.phase.value,
-                                round_num=state.round_num,
-                                alive=len(state.alive_players()),
-                            )
-                        except Exception as e:
-                            logger.debug(f"WS emit failed: {e}")
-                        break
-
-                if on_phase_change is not None:
-                    try:
-                        await on_phase_change(state)
-                    except Exception as e:
-                        logger.exception(f"on_phase_change failed: {e}")
-
-                # Emit WS event to admin subscribers
-                try:
-                    from app.services.ws_broker import emit_game_event
-
-                    await emit_game_event(
-                        "phase_change",
-                        game_id=str(state.id),
-                        group_id=state.group_id,
-                        phase=state.phase.value,
-                        round_num=state.round_num,
-                        alive=len(state.alive_players()),
-                    )
-                except Exception as e:
-                    logger.debug(f"WS emit failed: {e}")
-
-                # The game may have already been cancelled by _advance_phase
-                # (e.g., not enough players at end of registration). Exit
-                # cleanly in that case — on_phase_change already broadcast.
-                if state.phase in (Phase.CANCELLED, Phase.FINISHED):
+                new_phase = await cls.tick_once(bot, group_id, on_phase_change, force=True)
+                # tick_once returns None only when the state vanished or was
+                # already terminal — in either case the loop is done.
+                if new_phase is None or new_phase in (Phase.CANCELLED, Phase.FINISHED):
                     break
 
         except asyncio.CancelledError:
@@ -190,6 +140,100 @@ class PhaseManager:
             logger.exception(f"Phase loop error for group {group_id}: {e}")
         finally:
             cls._tasks.pop(group_id, None)
+
+    @classmethod
+    async def tick_once(
+        cls,
+        bot: Bot,
+        group_id: int,
+        on_phase_change: Callable[[GameState], Awaitable[None]] | None = None,
+        *,
+        force: bool = False,
+    ) -> Phase | None:
+        """Run exactly one phase advance + post-advance bookkeeping.
+
+        Returns the new `state.phase` after the advance, or `None` when
+        the game state is missing or already terminal so the caller can
+        bail out.
+
+        Two callers:
+          - `_loop` (timer-driven): calls with `force=True` after its own
+            deadline + external-transition checks have already cleared.
+          - `sandbox_service.advance_phase` (manual mode): calls directly
+            on operator click. Same `force=True`.
+
+        Both behaviours are identical from here on — winner detection,
+        state save, on_phase_change hook, and the `phase_change` WS
+        event match the original loop body verbatim.
+
+        Serialized on a per-group lock so the timer loop and external
+        callers (e.g. /leave by the hang target forcing an early
+        advance) cannot interleave a single phase transition.
+        """
+        async with cls._lock_for(group_id):
+            state = await load_state(group_id)
+            if state is None or state.phase in (Phase.FINISHED, Phase.CANCELLED):
+                return None
+
+            # Advance the phase. `_advance_phase` may itself terminate the game
+            # (insufficient players at end of registration, etc.).
+            await cls._advance_phase(bot, state)
+            # _advance_phase may have ended the game (cancel_game / finish_game
+            # already wiped the Redis state). Re-saving here would resurrect a
+            # CANCELLED/FINISHED state in Redis and block the next /game.
+            if state.phase not in (Phase.CANCELLED, Phase.FINISHED):
+                await save_state(state)
+
+            # === Winner check BEFORE the next-phase intro ===
+            # If the phase that just completed produced a game-ending event
+            # (night kills wiped a team, or a critical hanging finished
+            # mafia/citizens), we must end the game right here — not after
+            # the next NIGHT/DAY has already been announced to the group.
+            # The on_phase_change(FINISHED) handler narrates the killing
+            # event and then the game-over message.
+            if state.phase not in (Phase.WAITING, Phase.CANCELLED, Phase.FINISHED):
+                winner = check_winner(state)
+                if winner is not None:
+                    state.winner_team = winner
+                    state.winner_user_ids = winner_user_ids(state, winner)
+                    state.phase = Phase.FINISHED
+                    await save_state(state)
+                    await finish_game(state, winner)
+                    await cls._invoke_hook(state, on_phase_change)
+                    await cls._emit_phase_change(state)
+                    return state.phase
+
+            await cls._invoke_hook(state, on_phase_change)
+            await cls._emit_phase_change(state)
+            return state.phase
+
+    @staticmethod
+    async def _invoke_hook(
+        state: GameState,
+        on_phase_change: Callable[[GameState], Awaitable[None]] | None,
+    ) -> None:
+        if on_phase_change is None:
+            return
+        try:
+            await on_phase_change(state)
+        except Exception as e:
+            logger.exception(f"on_phase_change failed: {e}")
+
+    @staticmethod
+    async def _emit_phase_change(state: GameState) -> None:
+        try:
+            from app.services.ws_broker import emit_game_event
+
+            await emit_game_event(
+                "phase_change",
+                game_id=str(state.id),
+                group_id=state.group_id,
+                phase=state.phase.value,
+                round_num=state.round_num,
+                alive=len(state.alive_players()),
+            )
+        except Exception as e:
+            logger.debug(f"WS emit failed: {e}")
 
     @classmethod
     async def _advance_phase(cls, bot: Bot, state: GameState) -> None:

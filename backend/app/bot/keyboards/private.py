@@ -30,7 +30,7 @@ def main_menu_keyboard(_plain: Translator) -> InlineKeyboardMarkup:
                 ),
             ],
             [
-                InlineKeyboardButton(text=_plain("btn-shop"), callback_data="shop:open"),
+                InlineKeyboardButton(text=_plain("btn-shop"), callback_data="shop:items"),
                 InlineKeyboardButton(
                     text=_plain("btn-buy-diamonds"), callback_data="shop:diamonds"
                 ),

@@ -199,11 +199,30 @@ async def cmd_leave(
     await game_service.save_state(state)
     await game_service.set_user_active_game(user.id, None)
 
-    # ELO/XP penalty (Bosqich 2 — to'liq qo'llanadi)
-    leave_msg_template = state.settings.get("messages", {}).get("leave_message", "")
     from app.services.messaging import player_mention, role_emoji_name
 
     mention = player_mention(user.id, user.first_name)
+
+    # Self-hang during HANGING_CONFIRM: the player about to be hanged
+    # bailed out before the 👍/👎 verdict. Replace the regular leave
+    # broadcast with a "skipped the verdict" line and force-end the
+    # confirm phase immediately instead of letting the timer expire.
+    pending_target = state.rounds[-1].extra.get("pending_hang_target") if state.rounds else None
+    if state.phase == Phase.HANGING_CONFIRM and pending_target == user.id:
+        await message.answer(_("leave-self-hanged", mention=mention), parse_mode="HTML")
+        try:
+            await PhaseManager.tick_once(
+                bot,
+                message.chat.id,
+                on_phase_change=lambda s: _on_phase_change(bot, s),
+                force=True,
+            )
+        except Exception as e:
+            logger.warning(f"Force-advance after self-hang leave failed: {e}")
+        return
+
+    # ELO/XP penalty (Bosqich 2 — to'liq qo'llanadi)
+    leave_msg_template = state.settings.get("messages", {}).get("leave_message", "")
     show_role_on_death = state.settings.get("display", {}).get("show_role_on_death", True)
 
     if leave_msg_template:
@@ -223,6 +242,25 @@ async def cmd_leave(
     else:
         text = _("leave-broadcast", mention=mention)
     await message.answer(text, parse_mode="HTML")
+
+    # Re-check win conditions — a leave may have collapsed a team
+    # (e.g. the only Don left → civilians win; the last civilian left
+    # in a 3-player endgame → mafia wins). Force-end the game instead
+    # of waiting for the current phase timer to expire.
+    from app.core.win_conditions import check_winner, winner_user_ids
+
+    winner = check_winner(state)
+    if winner is not None:
+        state.winner_team = winner
+        state.winner_user_ids = winner_user_ids(state, winner)
+        state.phase = Phase.FINISHED
+        await game_service.save_state(state)
+        PhaseManager.cancel_for(message.chat.id)
+        await game_service.finish_game(state, winner)
+        try:
+            await _on_phase_change(bot, state)
+        except Exception as e:
+            logger.warning(f"Game-end broadcast after leave failed: {e}")
 
 
 @router.message(Command("stop", prefix="/!"))
@@ -301,9 +339,10 @@ async def callback_show_my_role(
         return
 
     role_label = _plain(f"role-{player.role}")
-    role_desc = _plain(f"role-desc-{player.role}")
+    role_desc = _plain(f"role-short-{player.role}")
     text = _plain("show-role-alert", role=role_label, description=role_desc)
-    # Telegram caps callback answer text at ~200 chars
+    # Telegram caps callback answer text at ~200 chars; role-short-* keys
+    # are sized to fit, but keep the truncation as a safety net.
     if len(text) > 195:
         text = text[:192] + "..."
     await query.answer(text, show_alert=True)
