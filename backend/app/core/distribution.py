@@ -1,29 +1,13 @@
-"""Role distribution: 4-30 players, 21 roles, mafia_ratio aware.
+"""Role distribution: 4-30 players, 21 roles.
 
-Algorithm (matches @MafiaAzBot reference at N=30):
-1. Mafia count = floor(N * ratio) where ratio in {1/4, 1/3}.
-2. Mafia composition (priority order):
-   - 1 Don (always)
-   - +1 Lawyer (if N >= 12 and lawyer enabled)
-   - +1 Journalist (if N >= 17 and journalist enabled)
-   - +1 Killer/Ninza (if N >= 25 and killer enabled)
-   - rest filled with plain Mafia
-   In small games (N < 12) the Mafia roster is just Don + plain Mafia.
-3. Singleton count = max(1, N // 4) at N >= 8 (else 0).
-   - Multi-instance: Werewolf x2 at N >= 24, Maniac x2 at N >= 28.
-4. Civilians = remainder. Composition (priority order):
-   - 1 Detective (always)
-   - +1 Doctor (if N >= 5 and doctor enabled)
-   - +1 Hooker (if N >= 6 and hooker enabled)
-   - +1 Sergeant (if N >= 8 and sergeant enabled)
-   - +1 extra Sergeant (if N >= 20)
-   - +1 Mayor (if N >= 10 and mayor enabled)
-   - +1 Hobo (if N >= 12 and hobo enabled)
-   - +1 Lucky (if N >= 14 and lucky enabled)
-   - +1 Suicide (if N >= 16 and suicide enabled)
-   - +Kamikaze x ceil(N/10) (if N >= 18 and kamikaze enabled)
-   - rest filled with plain Citizens
-5. Shuffle and assign to user_ids.
+The default per-N role roster is an explicit lookup table built up
+incrementally from N=4 by adding one role per N. This mirrors the user's
+spec verbatim — each `_INCREMENTS` entry is the role added on top of
+the previous N's roster.
+
+Tweak the table here when the game designer changes the default
+build-up; everything else (sandbox, group settings, tests) routes
+through this single source of truth.
 """
 
 from __future__ import annotations
@@ -31,37 +15,67 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass
 
-# Singletons that may appear multiple times in a single game at high N.
-SINGLETON_MULTI_THRESHOLDS: dict[str, int] = {
-    "werewolf": 24,  # +1 extra werewolf at N>=24
-    "maniac": 28,  # +1 extra maniac at N>=28
+# Mafia-team roles. Used to pick a sensible substitute when an
+# admin-disabled role appears in the default table — a mafia slot
+# becomes plain `mafia`, anything else becomes `citizen`.
+_MAFIA_TEAM_ROLES: frozenset[str] = frozenset({"don", "mafia", "lawyer", "journalist", "killer"})
+
+# Hand-tuned roster for the smallest tables. From N=7 onwards each
+# next-N roster is the previous one plus exactly one role
+# (see `_INCREMENTS`), so we only need to spell out N=4..6 here.
+_BASE_TABLE: dict[int, list[str]] = {
+    4: ["citizen", "citizen", "detective", "don"],
+    5: ["citizen", "citizen", "detective", "don", "doctor"],
+    # N=6 swaps one citizen for `mafia` + adds `hooker`. The
+    # build-up is not strictly additive at this step.
+    6: ["citizen", "detective", "don", "mafia", "doctor", "hooker"],
 }
 
-SINGLETON_ROLES = ["suicide", "maniac", "werewolf", "mage", "arsonist", "crook", "snitch"]
-
-# Civilian roles in priority order (excluding citizen which is filler).
-# Suidsid moved to SINGLETON_ROLES — it has a solo win condition
-# (voted out = wins; killed at night or surviving without being voted = loses).
-CIVILIAN_PRIORITY: list[tuple[str, int]] = [
-    ("detective", 4),
-    ("doctor", 5),
-    ("hooker", 6),
-    ("sergeant", 8),
-    ("mayor", 10),
-    ("hobo", 12),
-    ("lucky", 14),
-    # kamikaze handled separately (multi-instance)
+# (N, role_added_on_top_of_previous_N). Edit this list to change the
+# default build-up — the per-N table is derived from it at import time.
+_INCREMENTS: list[tuple[int, str]] = [
+    (7, "sergeant"),
+    (8, "kamikaze"),
+    (9, "mafia"),  # mafia=2
+    (10, "werewolf"),
+    (11, "hobo"),
+    (12, "mafia"),  # mafia=3
+    (13, "suicide"),
+    (14, "maniac"),  # 🔪 Qotil (singleton)
+    (15, "lawyer"),
+    (16, "mafia"),  # mafia=4
+    (17, "mayor"),
+    (18, "kamikaze"),  # kamikaze=2
+    (19, "mafia"),  # mafia=5
+    (20, "mage"),
+    (21, "arsonist"),
+    (22, "werewolf"),  # werewolf=2
+    (23, "journalist"),
+    (24, "lucky"),
+    (25, "mafia"),  # mafia=6
+    (26, "snitch"),
+    (27, "crook"),
+    (28, "killer"),  # 🥷 Ninza (mafia)
+    (29, "kamikaze"),  # kamikaze=3
+    (30, "sergeant"),  # sergeant=2
 ]
 
-# Mafia roles in priority (excluding plain mafia which is filler).
-# Thresholds keep Advokat / Jurnalist out of small games so the default
-# Mafia roster is Don + plain Mafia until the table is big enough to
-# warrant role variety.
-MAFIA_PRIORITY: list[tuple[str, int]] = [
-    ("lawyer", 12),
-    ("journalist", 17),
-    ("killer", 25),
-]
+
+def _build_distribution_table() -> dict[int, list[str]]:
+    table: dict[int, list[str]] = {n: list(roles) for n, roles in _BASE_TABLE.items()}
+    for n, role in _INCREMENTS:
+        if n - 1 not in table:
+            raise RuntimeError(f"Increment for N={n} but no roster for N={n - 1}")
+        table[n] = table[n - 1] + [role]
+        if len(table[n]) != n:
+            raise RuntimeError(f"Distribution for N={n} has {len(table[n])} roles, expected {n}")
+    return table
+
+
+# N → list of role codes (length == N). Single source of truth for
+# default role distribution; both `distribute_roles` and any UI that
+# previews the roster (super-admin panel) should read from here.
+DEFAULT_DISTRIBUTION: dict[int, list[str]] = _build_distribution_table()
 
 
 @dataclass
@@ -72,17 +86,27 @@ class RoleAssignment:
 
 def distribute_roles(
     user_ids: list[int],
-    mafia_ratio: str = "low",
+    mafia_ratio: str = "low",  # retained for back-compat
     enabled_roles: dict[str, bool] | None = None,
     override: list[str] | None = None,
 ) -> list[RoleAssignment]:
-    """Assign roles to N players based on settings.
+    """Assign roles to N players from the default distribution table.
 
     `override` is an optional admin-provided role list for this N. When
     supplied and its length matches N exactly, the algorithm is bypassed
     entirely and these roles are dealt out (shuffled) verbatim. If the
     length doesn't match (stale config), we silently fall back to the
-    algorithm to avoid blocking the game.
+    default table.
+
+    `enabled_roles` lets admins opt OUT of specific roles. A disabled
+    role in the default roster is substituted with `mafia` for mafia
+    slots and `citizen` for everything else. `don` is never disabled
+    (the game needs at least one mafia leader); citizens and plain
+    mafia aren't disable-able either.
+
+    `mafia_ratio` is kept in the signature for back-compat with the
+    previous algorithm but no longer affects the roster — the spec
+    fixes mafia counts per N.
     """
     n = len(user_ids)
     if n < 4:
@@ -92,142 +116,38 @@ def distribute_roles(
 
     if override is not None and len(override) == n:
         roles = list(override)
-        random.shuffle(roles)
-        shuffled_users = list(user_ids)
-        random.shuffle(shuffled_users)
-        return [
-            RoleAssignment(user_id=u, role=r) for u, r in zip(shuffled_users, roles, strict=False)
-        ]
+    else:
+        roles = list(DEFAULT_DISTRIBUTION[n])
+        if enabled_roles:
+            roles = _apply_enabled_filter(roles, enabled_roles)
 
-    enabled = _default_enabled()
-    if enabled_roles:
-        enabled.update(enabled_roles)
-
-    # 1. Mafia count
-    mafia_count = max(1, n // 3) if mafia_ratio == "high" else max(1, n // 4)
-
-    # 2. Mafia composition
-    mafia_roles: list[str] = ["don"]
-    for role_code, threshold in MAFIA_PRIORITY:
-        if len(mafia_roles) >= mafia_count:
-            break
-        if n >= threshold and enabled.get(role_code, False):
-            mafia_roles.append(role_code)
-    while len(mafia_roles) < mafia_count:
-        mafia_roles.append("mafia")
-
-    # 3. Singletons — scale with N
-    target_singletons = max(1, n // 4) if n >= 8 else 0
-
-    available_singletons = [r for r in SINGLETON_ROLES if enabled.get(r, False)]
-    chosen_singletons: list[str] = []
-    if available_singletons and target_singletons > 0:
-        # Pick unique ones first
-        unique_pick = random.sample(
-            available_singletons, min(target_singletons, len(available_singletons))
-        )
-        chosen_singletons.extend(unique_pick)
-
-        # Multi-instance for high N: add extra werewolf/maniac if conditions met
-        for role, threshold in SINGLETON_MULTI_THRESHOLDS.items():
-            if (
-                n >= threshold
-                and role in unique_pick
-                and len(chosen_singletons) < target_singletons
-            ):
-                chosen_singletons.append(role)
-
-        # If still not enough, allow duplicates from chosen pool
-        while len(chosen_singletons) < target_singletons and unique_pick:
-            chosen_singletons.append(random.choice(unique_pick))
-
-    # 4. Civilians
-    civilian_count = n - len(mafia_roles) - len(chosen_singletons)
-    if civilian_count < 0:
-        # Singleton overflow — trim
-        chosen_singletons = chosen_singletons[: n - len(mafia_roles)]
-        civilian_count = 0
-
-    civilian_roles: list[str] = []
-    if enabled.get("detective", True) and civilian_count > 0:
-        civilian_roles.append("detective")
-    for role_code, threshold in CIVILIAN_PRIORITY[1:]:
-        if len(civilian_roles) >= civilian_count:
-            break
-        if n >= threshold and enabled.get(role_code, False):
-            civilian_roles.append(role_code)
-
-    # Extra sergeant at N>=20
-    if (
-        n >= 20
-        and enabled.get("sergeant", True)
-        and civilian_roles.count("sergeant") < 2
-        and len(civilian_roles) < civilian_count
-    ):
-        civilian_roles.append("sergeant")
-
-    # Multi-instance kamikaze: ceil(N/10) at N>=18
-    if n >= 18 and enabled.get("kamikaze", False):
-        kamikaze_count = (n + 9) // 10  # ceil(N/10)
-        for _ in range(kamikaze_count):
-            if len(civilian_roles) >= civilian_count:
-                break
-            civilian_roles.append("kamikaze")
-
-    # Fill rest with plain citizens
-    while len(civilian_roles) < civilian_count:
-        civilian_roles.append("citizen")
-    if len(civilian_roles) > civilian_count:
-        civilian_roles = civilian_roles[:civilian_count]
-
-    # 5. Combine + shuffle
-    all_roles = mafia_roles + chosen_singletons + civilian_roles
-    if len(all_roles) != n:
-        raise RuntimeError(
-            f"Distribution mismatch: {len(all_roles)} roles for {n} players "
-            f"(mafia={len(mafia_roles)}, singleton={len(chosen_singletons)}, "
-            f"civilian={len(civilian_roles)})"
-        )
-
-    random.shuffle(all_roles)
-    shuffled_users = user_ids.copy()
+    random.shuffle(roles)
+    shuffled_users = list(user_ids)
     random.shuffle(shuffled_users)
 
-    return [
-        RoleAssignment(user_id=u, role=r) for u, r in zip(shuffled_users, all_roles, strict=False)
-    ]
+    return [RoleAssignment(user_id=u, role=r) for u, r in zip(shuffled_users, roles, strict=False)]
 
 
-def _default_enabled() -> dict[str, bool]:
-    """Default: every role ON. Thresholds in MAFIA_PRIORITY /
-    CIVILIAN_PRIORITY and the singleton target count keep small games
-    sensible, so blanket-enabling is safe — admins opt OUT of unwanted
-    roles instead of opting in.
+def _apply_enabled_filter(roles: list[str], enabled: dict[str, bool]) -> list[str]:
+    """Substitute admin-disabled roles with citizen/mafia by team.
+
+    Don is always kept (the game requires a mafia leader). Plain
+    `citizen` and `mafia` are also un-disable-able since they're the
+    fallback slots themselves.
     """
-    return {
-        "citizen": True,
-        "detective": True,
-        "doctor": True,
-        "hooker": True,
-        "sergeant": True,
-        "mayor": True,
-        "hobo": True,
-        "lucky": True,
-        "suicide": True,
-        "kamikaze": True,
-        "don": True,
-        "mafia": True,
-        "lawyer": True,
-        "journalist": True,
-        "killer": True,
-        "maniac": True,
-        "werewolf": True,
-        "mage": True,
-        "arsonist": True,
-        "crook": True,
-        "snitch": True,
-    }
+    result: list[str] = []
+    for role in roles:
+        if role in ("don", "citizen", "mafia"):
+            result.append(role)
+            continue
+        if enabled.get(role, True):
+            result.append(role)
+        elif role in _MAFIA_TEAM_ROLES:
+            result.append("mafia")
+        else:
+            result.append("citizen")
+    return result
 
 
-# Backward-compat alias
+# Backward-compat alias — used by game_service.distribute_mvp_roles().
 distribute_mvp_roles = distribute_roles

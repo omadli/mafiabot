@@ -1,19 +1,37 @@
-"""Tests for role distribution algorithm."""
+"""Tests for role distribution table.
+
+The default per-N roster is a hand-curated lookup table in
+`app/core/distribution.py:DEFAULT_DISTRIBUTION`. These tests pin the
+roster shape for each N so accidental edits to the build-up are caught.
+"""
+
+from __future__ import annotations
 
 import pytest
-from app.core.distribution import distribute_roles
+from app.core.distribution import DEFAULT_DISTRIBUTION, distribute_roles
+
+_MAFIA_TEAM = {"don", "mafia", "lawyer", "journalist", "killer"}
+_SINGLETONS = {"suicide", "maniac", "werewolf", "mage", "arsonist", "crook", "snitch"}
 
 
 def _user_ids(n: int) -> list[int]:
     return list(range(100, 100 + n))
 
 
+def _count(roles: list[str], code: str) -> int:
+    return sum(1 for r in roles if r == code)
+
+
+# === Basic validation ===
+
+
 def test_min_4_players_works():
     result = distribute_roles(_user_ids(4))
     assert len(result) == 4
     roles = [r.role for r in result]
-    assert "don" in roles  # always at least 1 mafia
-    assert "detective" in roles  # always detective
+    assert "don" in roles
+    assert "detective" in roles
+    assert _count(roles, "citizen") == 2
 
 
 def test_below_min_raises():
@@ -26,203 +44,231 @@ def test_above_max_raises():
         distribute_roles(_user_ids(31))
 
 
-def test_low_ratio_n10():
-    result = distribute_roles(_user_ids(10), mafia_ratio="low")
-    roles = [r.role for r in result]
-    # low: mafia = N // 4 = 2 (don + 1)
-    mafia_count = sum(1 for r in roles if r in ("don", "mafia", "lawyer", "journalist", "killer"))
-    assert mafia_count == 2
+def test_table_covers_4_through_30():
+    for n in range(4, 31):
+        assert n in DEFAULT_DISTRIBUTION, f"Missing distribution for N={n}"
+        assert (
+            len(DEFAULT_DISTRIBUTION[n]) == n
+        ), f"N={n} roster has {len(DEFAULT_DISTRIBUTION[n])} roles"
 
 
-def test_high_ratio_n9_more_mafia():
-    result = distribute_roles(_user_ids(9), mafia_ratio="high")
-    roles = [r.role for r in result]
-    mafia_count = sum(1 for r in roles if r in ("don", "mafia", "lawyer", "journalist", "killer"))
-    # high: mafia = N // 3 = 3
-    assert mafia_count == 3
+def test_role_count_matches_n_for_every_size():
+    for n in range(4, 31):
+        result = distribute_roles(_user_ids(n))
+        assert len(result) == n, f"Failed for N={n}"
 
 
 def test_unique_user_ids_preserved():
     user_ids = _user_ids(8)
     result = distribute_roles(user_ids)
-    assigned_ids = {r.user_id for r in result}
-    assert assigned_ids == set(user_ids)
+    assert {r.user_id for r in result} == set(user_ids)
 
 
-def test_role_count_matches_n():
-    for n in (4, 5, 7, 10, 15, 20, 30):
-        result = distribute_roles(_user_ids(n))
-        assert len(result) == n, f"Failed for N={n}"
+# === Pin the exact spec, low-N ===
 
 
-def test_singletons_appear_by_default_at_n8():
-    """All singletons are ON by default — at N >= 8 the singleton pool
-    should be drawn from and at least one singleton should appear.
+def test_n4_roster():
+    assert sorted(DEFAULT_DISTRIBUTION[4]) == ["citizen", "citizen", "detective", "don"]
+
+
+def test_n5_adds_doctor():
+    roles = DEFAULT_DISTRIBUTION[5]
+    assert _count(roles, "citizen") == 2
+    assert "doctor" in roles
+    assert "detective" in roles
+    assert "don" in roles
+
+
+def test_n6_introduces_mafia_and_hooker_at_cost_of_a_citizen():
+    roles = DEFAULT_DISTRIBUTION[6]
+    assert _count(roles, "citizen") == 1
+    assert _count(roles, "mafia") == 1
+    assert "hooker" in roles
+    assert "doctor" in roles
+
+
+def test_n7_adds_sergeant_not_hobo():
+    """Per spec swap: Sergeant lands at N=7, Hobo waits till N=11."""
+    roles = DEFAULT_DISTRIBUTION[7]
+    assert "sergeant" in roles
+    assert "hobo" not in roles
+
+
+def test_n8_adds_first_kamikaze():
+    assert "kamikaze" in DEFAULT_DISTRIBUTION[8]
+    # Only one singleton at N=8 — keeps the small game civilian-heavy.
+    assert _count(DEFAULT_DISTRIBUTION[8], "kamikaze") == 1
+
+
+def test_n9_grows_mafia_to_2():
+    assert _count(DEFAULT_DISTRIBUTION[9], "mafia") == 2
+
+
+def test_n10_adds_werewolf():
+    assert "werewolf" in DEFAULT_DISTRIBUTION[10]
+
+
+def test_n11_adds_hobo():
+    """Sergeant/Hobo swap: Hobo joins at N=11 (not N=7)."""
+    assert "hobo" in DEFAULT_DISTRIBUTION[11]
+
+
+# === Mid-range pins ===
+
+
+def test_n14_adds_maniac_qotil_singleton():
+    """At N=14 we get the singleton 🔪 Qotil (`maniac`), NOT the mafia
+    🥷 Ninza (`killer`) — Killer doesn't show up until N=28.
     """
-    singleton_codes = {"suicide", "maniac", "werewolf", "mage", "arsonist", "crook", "snitch"}
-    result = distribute_roles(_user_ids(15))
+    assert "maniac" in DEFAULT_DISTRIBUTION[14]
+    assert "killer" not in DEFAULT_DISTRIBUTION[14]
+
+
+def test_n15_adds_lawyer():
+    assert "lawyer" in DEFAULT_DISTRIBUTION[15]
+
+
+def test_n17_adds_mayor_not_lucky():
+    """Mayor/Lucky swap: Mayor lands at N=17, Lucky at N=24."""
+    assert "mayor" in DEFAULT_DISTRIBUTION[17]
+    assert "lucky" not in DEFAULT_DISTRIBUTION[17]
+
+
+def test_n18_grows_kamikaze_to_2():
+    assert _count(DEFAULT_DISTRIBUTION[18], "kamikaze") == 2
+
+
+def test_n22_grows_werewolf_to_2():
+    assert _count(DEFAULT_DISTRIBUTION[22], "werewolf") == 2
+
+
+def test_n23_adds_journalist():
+    assert "journalist" in DEFAULT_DISTRIBUTION[23]
+
+
+def test_n24_adds_lucky_not_mayor():
+    """Per swap: Lucky arrives at N=24 (Mayor was already in by then)."""
+    assert "lucky" in DEFAULT_DISTRIBUTION[24]
+
+
+# === High-N pins ===
+
+
+def test_n28_adds_killer_ninza():
+    """N=28 increment is the mafia 🥷 Ninza (`killer`), not a 2nd Qotil."""
+    assert "killer" in DEFAULT_DISTRIBUTION[28]
+    assert _count(DEFAULT_DISTRIBUTION[28], "killer") == 1
+    # And maniac count must STAY at 1 here (no 2nd Qotil per the swap).
+    assert _count(DEFAULT_DISTRIBUTION[28], "maniac") == 1
+
+
+def test_n29_grows_kamikaze_to_3():
+    assert _count(DEFAULT_DISTRIBUTION[29], "kamikaze") == 3
+
+
+def test_n30_grows_sergeant_to_2():
+    assert _count(DEFAULT_DISTRIBUTION[30], "sergeant") == 2
+
+
+def test_n30_final_role_breakdown():
+    """Sanity: the N=30 roster matches the user's spec total."""
+    roles = DEFAULT_DISTRIBUTION[30]
+    mafia = sum(1 for r in roles if r in _MAFIA_TEAM)
+    singleton = sum(1 for r in roles if r in _SINGLETONS)
+    civilian = len(roles) - mafia - singleton
+    # Spec at N=30: 1 don + 6 mafia + 1 lawyer + 1 journalist + 1 killer = 10
+    # singletons: 1 suicide + 1 maniac + 2 werewolf + 1 mage + 1 arsonist + 1 snitch + 1 crook = 8
+    # civilians: 1 citizen + 1 detective + 1 doctor + 1 hooker + 2 sergeant + 1 hobo + 1 mayor + 1 lucky + 3 kamikaze = 12
+    assert mafia == 10
+    assert singleton == 8
+    assert civilian == 12
+
+
+def test_no_killer_below_n28():
+    """🥷 Ninza is exclusive to N=28+ in the default table."""
+    for n in range(4, 28):
+        assert "killer" not in DEFAULT_DISTRIBUTION[n], f"Killer leaked into N={n}"
+
+
+def test_no_journalist_below_n23():
+    for n in range(4, 23):
+        assert "journalist" not in DEFAULT_DISTRIBUTION[n]
+
+
+def test_no_lawyer_below_n15():
+    for n in range(4, 15):
+        assert "lawyer" not in DEFAULT_DISTRIBUTION[n]
+
+
+# === enabled_roles substitution ===
+
+
+def test_disabling_a_singleton_substitutes_citizen():
+    """Disabled singleton becomes a citizen in the same slot — never silently
+    dropped (otherwise N players would receive N-1 roles)."""
+    result = distribute_roles(_user_ids(8), enabled_roles={"kamikaze": False})
     roles = [r.role for r in result]
-    assert any(r in singleton_codes for r in roles), "Expected some singleton at N=15 by default"
+    assert "kamikaze" not in roles
+    # N=8 had 1 kamikaze → now an extra citizen.
+    assert _count(roles, "citizen") == _count(DEFAULT_DISTRIBUTION[8], "citizen") + 1
 
 
-def test_singletons_suppressed_when_explicitly_disabled():
-    """Admin can opt OUT of singletons by disabling them in group settings."""
-    disabled = dict.fromkeys(
-        ("suicide", "maniac", "werewolf", "mage", "arsonist", "crook", "snitch"), False
-    )
-    result = distribute_roles(_user_ids(15), enabled_roles=disabled)
+def test_disabling_a_mafia_role_substitutes_plain_mafia():
+    """Disabling Lawyer at N=15 keeps the mafia headcount intact via `mafia`."""
+    result = distribute_roles(_user_ids(15), enabled_roles={"lawyer": False})
     roles = [r.role for r in result]
-    singletons = ["maniac", "werewolf", "mage", "arsonist", "crook", "snitch", "suicide"]
-    for s in singletons:
-        assert s not in roles, f"Singleton {s} appeared despite being disabled"
+    assert "lawyer" not in roles
+    spec_mafia = sum(1 for r in DEFAULT_DISTRIBUTION[15] if r in _MAFIA_TEAM)
+    actual_mafia = sum(1 for r in roles if r in _MAFIA_TEAM)
+    assert actual_mafia == spec_mafia
 
 
-def test_singletons_appear_when_enabled():
-    """When singleton enabled (here: only maniac), it should appear at N >= 8."""
-    enabled = dict.fromkeys(("suicide", "werewolf", "mage", "arsonist", "crook", "snitch"), False)
-    enabled["maniac"] = True
-    result = distribute_roles(_user_ids(10), enabled_roles=enabled)
+def test_don_cannot_be_disabled_via_enabled_roles():
+    """Disabling Don in admin settings is meaningless — every game needs one."""
+    result = distribute_roles(_user_ids(8), enabled_roles={"don": False})
     roles = [r.role for r in result]
-    assert "maniac" in roles
+    assert "don" in roles
 
 
-def test_n30_high_ratio_matches_reference():
-    """30 players, high ratio, all roles enabled — match @MafiaAzBot reference.
-
-    Reference shows: 10 mafia, 7 singletons, 13 civilians.
-    """
-    enabled = dict.fromkeys(
-        (
-            "lucky",
-            "suicide",
-            "kamikaze",
-            "journalist",
-            "killer",
-            "maniac",
-            "werewolf",
-            "mage",
-            "arsonist",
-            "crook",
-            "snitch",
-        ),
-        True,
-    )
-    result = distribute_roles(_user_ids(30), mafia_ratio="high", enabled_roles=enabled)
-    roles = [r.role for r in result]
-
-    mafia_codes = {"don", "mafia", "lawyer", "journalist", "killer"}
-    singleton_codes = {"suicide", "maniac", "werewolf", "mage", "arsonist", "crook", "snitch"}
-
-    mafia_count = sum(1 for r in roles if r in mafia_codes)
-    singleton_count = sum(1 for r in roles if r in singleton_codes)
-    civilian_count = len(roles) - mafia_count - singleton_count
-
-    assert mafia_count == 10, f"Expected 10 mafia, got {mafia_count}"
-    assert singleton_count == 7, f"Expected 7 singletons, got {singleton_count}"
-    assert civilian_count == 13, f"Expected 13 civilians, got {civilian_count}"
-
-
-def test_n30_kamikaze_multi_instance():
-    """At N=30, kamikaze should appear 3 times (ceil(30/10))."""
-    enabled = {"kamikaze": True, "lucky": True, "suicide": True}
-    result = distribute_roles(_user_ids(30), mafia_ratio="high", enabled_roles=enabled)
-    roles = [r.role for r in result]
-    kamikaze_count = sum(1 for r in roles if r == "kamikaze")
-    assert kamikaze_count == 3, f"Expected 3 kamikazes, got {kamikaze_count}"
-
-
-def test_n20_extra_sergeant():
-    """At N>=20, sergeant appears twice."""
-    result = distribute_roles(_user_ids(20))
-    roles = [r.role for r in result]
-    sergeant_count = sum(1 for r in roles if r == "sergeant")
-    assert sergeant_count == 2, f"Expected 2 sergeants at N=20, got {sergeant_count}"
-
-
-def test_n24_werewolf_multi_instance():
-    """At N>=24, werewolf may appear twice. Isolate by disabling other
-    singletons so the singleton pool is werewolf-only.
-    """
-    enabled = dict.fromkeys(("suicide", "maniac", "mage", "arsonist", "crook", "snitch"), False)
-    enabled["werewolf"] = True
-    result = distribute_roles(_user_ids(24), mafia_ratio="high", enabled_roles=enabled)
-    roles = [r.role for r in result]
-    werewolf_count = sum(1 for r in roles if r == "werewolf")
-    # N=24 → singletons = 24//4 = 6; with only werewolf enabled, all become werewolf
-    assert werewolf_count >= 2, f"Expected >=2 werewolves, got {werewolf_count}"
+# === Override path (admin-supplied verbatim list) ===
 
 
 def test_override_used_verbatim_when_length_matches():
-    """Admin-provided override bypasses the algorithm entirely."""
     override = ["don", "detective", "doctor", "citizen", "mafia"]
     result = distribute_roles(_user_ids(5), override=override)
     assert sorted(r.role for r in result) == sorted(override)
 
 
 def test_override_ignored_when_length_mismatches():
-    """Stale override (wrong length) falls back to the algorithm."""
-    override = ["don", "detective"]  # only 2 roles for a 5-player game
+    """Stale override (wrong length) falls back to the default table."""
+    override = ["don", "detective"]  # 2 roles for a 5-player game
     result = distribute_roles(_user_ids(5), override=override)
-    # Length must match player count regardless
     assert len(result) == 5
-    # Algorithm always assigns 1 detective + 1 don at N=5
     roles = [r.role for r in result]
-    assert "detective" in roles
     assert "don" in roles
+    assert "detective" in roles
 
 
-def test_lawyer_journalist_absent_in_small_games():
-    """Per user spec: default Mafia roster in small games is Don + Mafia only.
-    Advokat/Jurnalist must not appear below their thresholds (12 / 17).
-    """
-    for n in (4, 5, 8, 10, 11):
-        result = distribute_roles(_user_ids(n), mafia_ratio="high")
-        roles = [r.role for r in result]
-        assert "lawyer" not in roles, f"Lawyer appeared at N={n}"
-        assert "journalist" not in roles, f"Journalist appeared at N={n}"
-
-
-def test_lawyer_appears_at_n12():
-    """Lawyer kicks in at N >= 12 when enabled (default enabled)."""
-    # high ratio so mafia_count has room: 12 // 3 = 4 → don + lawyer + 2 mafia
-    result = distribute_roles(_user_ids(12), mafia_ratio="high")
-    roles = [r.role for r in result]
-    assert "lawyer" in roles
-    assert "journalist" not in roles  # below journalist threshold
-
-
-def test_journalist_appears_at_n17():
-    """Journalist kicks in at N >= 17 when enabled."""
-    enabled = {"journalist": True}
-    result = distribute_roles(_user_ids(17), mafia_ratio="high", enabled_roles=enabled)
-    roles = [r.role for r in result]
-    assert "lawyer" in roles
-    assert "journalist" in roles
-
-
-def test_killer_absent_below_n25():
-    """Killer (Ninza) is default-on but capped to N >= 25 tables."""
-    for n in (12, 17, 20, 24):
-        result = distribute_roles(_user_ids(n), mafia_ratio="high")
-        roles = [r.role for r in result]
-        assert "killer" not in roles, f"Killer appeared at N={n}"
-
-
-def test_killer_appears_at_n25_by_default():
-    """At N >= 25 Killer auto-joins the Mafia roster (default enabled)."""
-    result = distribute_roles(_user_ids(25), mafia_ratio="high")
-    roles = [r.role for r in result]
-    assert "killer" in roles
-
-
-def test_override_shuffles_assignment():
-    """Override roles get shuffled across user_ids (not deterministic order)."""
+def test_override_shuffles_assignment_deterministically():
+    """Same RNG seed → same shuffle (sanity check for the override path)."""
     import random
 
     override = ["don", "detective", "doctor", "citizen", "mafia"]
-    # With seeded RNG, two runs should produce identical results
     random.seed(123)
     a = distribute_roles(_user_ids(5), override=override)
     random.seed(123)
     b = distribute_roles(_user_ids(5), override=override)
     assert [(r.user_id, r.role) for r in a] == [(r.user_id, r.role) for r in b]
+
+
+# === mafia_ratio is now a no-op back-compat parameter ===
+
+
+def test_mafia_ratio_parameter_is_accepted_but_ignored():
+    """`mafia_ratio` lingers in the signature so existing callers compile,
+    but it no longer alters the roster — the table is fixed per N."""
+    low = distribute_roles(_user_ids(10), mafia_ratio="low")
+    high = distribute_roles(_user_ids(10), mafia_ratio="high")
+    low_mafia = sum(1 for r in low if r.role in _MAFIA_TEAM)
+    high_mafia = sum(1 for r in high if r.role in _MAFIA_TEAM)
+    assert low_mafia == high_mafia
