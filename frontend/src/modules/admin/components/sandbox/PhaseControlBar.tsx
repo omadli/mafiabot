@@ -7,6 +7,7 @@
  */
 
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
 import { sandboxApi } from "@shared/api/sandbox";
@@ -27,6 +28,7 @@ export function PhaseControlBar({
   controls,
 }: PhaseControlBarProps) {
   const { t } = useTranslation();
+  const qc = useQueryClient();
   const [destroyOpen, setDestroyOpen] = useState(false);
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
@@ -41,6 +43,13 @@ export function PhaseControlBar({
     setStarting(true);
     try {
       await sandboxApi.start(sandboxId);
+      // Refresh the detail query so the toolbar drops the Start button and
+      // the rest of the dashboard sees the new "running" status. Without
+      // this, the second click on a still-CREATED-looking UI hits the
+      // backend with the session already RUNNING.
+      await qc.invalidateQueries({ queryKey: ["sandbox-detail", sandboxId] });
+      qc.invalidateQueries({ queryKey: ["sandbox-state", sandboxId] });
+      qc.invalidateQueries({ queryKey: ["sandbox-list"] });
     } catch (e) {
       setStartError((e as Error).message || t("admin.sandbox.errors.start_failed"));
     } finally {

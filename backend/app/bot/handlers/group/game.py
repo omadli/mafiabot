@@ -557,6 +557,15 @@ async def _on_phase_change(bot: Bot, state) -> None:
         # Broadcast previous round's hanging result before next night begins
         await _broadcast_hanging_result(bot, state)
         await broadcast_phase_change(bot, state)
+        # Mirror the DAY broadcast: tell the group who's still alive and the
+        # per-team headcount so night voters have the same context.
+        from app.services.alive_summary import format_alive_summary
+
+        try:
+            summary = format_alive_summary(state)
+            await bot.send_message(state.group_id, summary, parse_mode="HTML")
+        except Exception as e:
+            logger.warning(f"Failed to send night alive summary: {e}")
         await send_night_prompts(bot, state)
         # Open mafia private chat
         from app.services.mafia_chat import announce_mafia_chat_open

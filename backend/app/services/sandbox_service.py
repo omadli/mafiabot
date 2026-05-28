@@ -283,8 +283,15 @@ async def start_sandbox(session_id: UUID) -> SandboxSession:
     Returns the updated `SandboxSession`. After this call the dashboard
     will start seeing transcript entries flow from the engine: role-reveal
     DMs, first night prompts, atmospheric messages.
+
+    Idempotent on RUNNING — a double-click in the dashboard (stale React
+    Query cache showing the old "created" status) returns the session
+    as-is instead of raising. Terminal states still error so the caller
+    knows the action was a no-op.
     """
     session = await SandboxSession.get(id=session_id).prefetch_related("created_by")
+    if session.status == SandboxStatus.RUNNING:
+        return session
     if session.status != SandboxStatus.CREATED:
         raise SandboxError(f"sandbox {session_id} is already {session.status.value}, cannot start")
 

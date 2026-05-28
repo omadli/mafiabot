@@ -837,8 +837,10 @@ hanging-result-with-role = <b>{ $name }</b> was hanged at the day meeting! They 
 hanging-result = <b>{ $name }</b> was hanged at the day meeting!
 
 hanging-cancelled =
-    <b>Voting closed:</b>
-    The town couldn't agree... No one was hanged today.
+    <b>Voting results:</b>
+    { $yes } 👍 | { $no } 👎
+
+    <i>The town couldn't agree — voting turned into a shouting match, and everyone went home...</i>
 
 hanging-combined =
     <b>Voting results:</b>

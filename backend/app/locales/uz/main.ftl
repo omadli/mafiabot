@@ -832,8 +832,10 @@ hanging-result-with-role = <b>{ $name }</b> O'tkazilgan kunduzgi yig'ilishda osi
 hanging-result = <b>{ $name }</b> O'tkazilgan kunduzgi yig'ilishda osildi!
 
 hanging-cancelled =
-    <b>Ovoz berish yakunlandi:</b>
-    Aholi kelisha olmadi... Kelisha olmaslik oqibatida hech kim osilmadi...
+    <b>Ovoz berish natijalari:</b>
+    { $yes } 👍 | { $no } 👎
+
+    <i>Aholi kelisha olmadi, ovoz berish janjalga aylanib ketdi. Hamma uy-uyiga tarqaldi...</i>
 
 hanging-combined =
     <b>Ovoz berish natijalari:</b>
