@@ -25,7 +25,7 @@ from typing import Any, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from tortoise.expressions import Q as _Q
 from tortoise.functions import Avg, Count
 
@@ -890,6 +890,10 @@ async def sa_ban_user(
         datetime.now(UTC) + _td(hours=payload.duration_hours) if payload.duration_hours else None
     )
     await user.save(update_fields=["is_banned", "ban_reason", "banned_until"])
+
+    from app.services import sa_notifications
+
+    await sa_notifications.notify_banned(user, payload.reason)
     await log_action(
         action="user.ban",
         target_type="user",
@@ -915,6 +919,10 @@ async def sa_unban_user(
     user.banned_until = None
     user.ban_reason = None
     await user.save(update_fields=["is_banned", "banned_until", "ban_reason"])
+
+    from app.services import sa_notifications
+
+    await sa_notifications.notify_unbanned(user)
     await log_action(
         action="user.unban",
         target_type="user",
@@ -951,6 +959,10 @@ async def sa_grant_diamonds(
         status=TransactionStatus.COMPLETED,
         note=f"SA grant: {payload.reason}",
     )
+
+    from app.services import sa_notifications
+
+    await sa_notifications.notify_diamonds_granted(user, payload.amount)
     await log_action(
         action="diamonds.grant",
         target_type="user",
@@ -986,6 +998,10 @@ async def sa_grant_premium(
         user.premium_expires_at = now + _td(days=payload.days)
     user.is_premium = True
     await user.save(update_fields=["is_premium", "premium_expires_at"])
+
+    from app.services import sa_notifications
+
+    await sa_notifications.notify_premium_granted(user, user.premium_expires_at)
     await log_action(
         action="premium.grant",
         target_type="user",
@@ -993,6 +1009,40 @@ async def sa_grant_premium(
         payload={"days": payload.days, "by_tg_id": sa.telegram_id},
     )
     return {"ok": True, "premium_expires_at": user.premium_expires_at.isoformat()}
+
+
+class SaSendMessageRequest(BaseModel):
+    """Free-form admin → user DM payload."""
+
+    text: str = Field(..., min_length=1, max_length=4096)
+
+
+@router.post("/users/{user_id}/send-message")
+async def sa_send_user_message(
+    user_id: int,
+    payload: SaSendMessageRequest,
+    sa: SuperAdminContext = Depends(get_current_super_admin),
+) -> dict:
+    """Deliver a free-form admin message to the user via the bot.
+
+    Mirrors `/api/admin/users/{id}/send-message` for the initData-auth
+    surface. The bot wraps the text in a localised "Super Admin → user"
+    envelope and notes that replies aren't required.
+    """
+    user = await User.get_or_none(id=user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    from app.services import sa_notifications
+
+    await sa_notifications.notify_admin_message(user, payload.text)
+    await log_action(
+        action="user.admin_message",
+        target_type="user",
+        target_id=str(user_id),
+        payload={"length": len(payload.text), "by_tg_id": sa.telegram_id},
+    )
+    return {"ok": True}
 
 
 @router.get("/users/{user_id}/transactions")

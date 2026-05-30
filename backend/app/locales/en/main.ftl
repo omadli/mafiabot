@@ -1538,3 +1538,34 @@ game-end-dm-loss =
     ⭐ XP: +{ $xp }
     📊 ELO: { $elo_delta }
     <e:currency-dollar> Money: { $dollars }$
+
+# ===========================================================
+# SUPER-ADMIN → USER NOTIFICATIONS
+# ===========================================================
+
+sa-notify-diamonds-granted =
+    💎 <b>The Super Admin has gifted you { $amount } diamonds!</b>
+
+    This is an official notification from the Super Admin via the bot.
+
+sa-notify-premium-granted =
+    👑 <b>You've been gifted premium status!</b>
+
+    Valid until: <b>{ $expires }</b>.
+
+sa-notify-banned =
+    🚫 <b>You have been banned.</b>
+
+    Reason: <i>{ $reason }</i>
+
+sa-notify-unbanned =
+    ✅ <b>Your ban has been lifted.</b>
+
+    You can use the bot again.
+
+sa-notify-admin-message =
+    💬 <b>Message from the Super Admin:</b>
+
+    <i>{ $body }</i>
+
+    <i>No reply is needed for this message.</i>

@@ -1540,3 +1540,37 @@ game-end-dm-loss =
     ⭐ XP: +{ $xp }
     📊 ELO: { $elo_delta }
     <e:currency-dollar> Pul: { $dollars }$
+
+# ===========================================================
+# SUPER-ADMIN → USER NOTIFICATIONS
+# ===========================================================
+# Sent by the bot when the super-admin acts on a user (grant
+# diamonds / premium, ban / unban, direct admin message).
+# Each message is one-way — the user can't reply via the bot.
+
+sa-notify-diamonds-granted =
+    💎 <b>Super Admindan sizga { $amount } olmos sovg'a qilindi!</b>
+
+    Bu ushbu bot orqali rasman SuperAdmin tomonidan yuborilgan.
+
+sa-notify-premium-granted =
+    👑 <b>Sizga premium status sovg'a qilindi!</b>
+
+    Amal qilish muddati: <b>{ $expires }</b> gacha.
+
+sa-notify-banned =
+    🚫 <b>Sizga ban berildi.</b>
+
+    Sabab: <i>{ $reason }</i>
+
+sa-notify-unbanned =
+    ✅ <b>Sizdagi ban olib tashlandi.</b>
+
+    Endi botda ishlatish/o'ynashni davom ettira olasiz.
+
+sa-notify-admin-message =
+    💬 <b>Super Admindan sizga xabar:</b>
+
+    <i>{ $body }</i>
+
+    <i>Bu xabarga keladigan javoblar shart emas.</i>

@@ -15,6 +15,8 @@
 
 import { createContext, useContext, type ReactNode } from "react";
 
+import "./styles.css";
+
 export type SaSurface = "admin" | "webapp";
 
 interface SaContextValue {

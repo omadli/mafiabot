@@ -1,0 +1,85 @@
+/* ============================================================
+ * Shared CSS for the unified SuperAdmin module.
+ *
+ * Pages mounted under both `/admin/*` (website) and `/webapp/sa/*`
+ * (Telegram WebApp) pull these styles. Keep the rules surface-agnostic
+ * — colour variables come from whichever shell is active.
+ * ============================================================ */
+
+/* === Modal === */
+
+.sa-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.sa-modal-panel {
+  background: var(--bg, #1a1a2e);
+  color: var(--fg, #e0e0e0);
+  border-radius: 10px;
+  padding: 1.25rem 1.25rem 1rem;
+  max-width: 560px;
+  width: 100%;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5);
+}
+
+.sa-modal-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.05);
+  color: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 0.6rem 0.75rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  resize: vertical;
+  margin-top: 0.5rem;
+  outline: none;
+}
+
+.sa-modal-textarea:focus {
+  border-color: var(--accent, #3b82f6);
+}
+
+.sa-modal-error {
+  color: #e74c3c;
+  font-size: 0.85rem;
+  background: rgba(231, 76, 60, 0.1);
+  padding: 0.4rem 0.6rem;
+  border-radius: 5px;
+}
+
+.sa-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.sa-modal-btn {
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 0.45rem 0.95rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.sa-modal-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sa-modal-btn.primary {
+  background: var(--accent, #3b82f6);
+  border-color: transparent;
+  color: #fff;
+}

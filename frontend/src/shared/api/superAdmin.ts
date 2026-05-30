@@ -168,4 +168,57 @@ export const superAdminApi = {
         p(`/admin/groups/${groupId}/live`, `/sa/groups/${groupId}/live`),
       )
     ).data,
+
+  // === Per-user actions (mutations) ===
+
+  banUser: async (
+    userId: number,
+    reason: string,
+    durationHours?: number,
+  ): Promise<{ ok: boolean }> =>
+    (
+      await api.post(
+        p(`/admin/users/${userId}/ban`, `/sa/users/${userId}/ban`),
+        { reason, duration_hours: durationHours },
+      )
+    ).data,
+
+  unbanUser: async (userId: number): Promise<{ ok: boolean }> =>
+    (await api.post(p(`/admin/users/${userId}/unban`, `/sa/users/${userId}/unban`))).data,
+
+  grantDiamonds: async (
+    userId: number,
+    amount: number,
+    reason = "admin grant",
+  ): Promise<{ ok: boolean; new_balance: number }> =>
+    (
+      await api.post(
+        p(`/admin/users/${userId}/grant-diamonds`, `/sa/users/${userId}/grant-diamonds`),
+        { amount, reason },
+      )
+    ).data,
+
+  grantPremium: async (
+    userId: number,
+    days: number,
+  ): Promise<{ ok: boolean; premium_expires_at: string }> =>
+    (
+      await api.post(
+        p(`/admin/users/${userId}/grant-premium`, `/sa/users/${userId}/grant-premium`),
+        { days },
+      )
+    ).data,
+
+  /** Free-form admin → user DM. Bot delivers it with the localised
+      "Super Admindan sizga xabar" envelope and a no-reply hint. */
+  sendUserMessage: async (
+    userId: number,
+    text: string,
+  ): Promise<{ ok: boolean }> =>
+    (
+      await api.post(
+        p(`/admin/users/${userId}/send-message`, `/sa/users/${userId}/send-message`),
+        { text },
+      )
+    ).data,
 };

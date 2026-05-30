@@ -6,6 +6,8 @@ import { useTranslation } from "react-i18next";
 import { saApi } from "@shared/api/sa";
 import { useI18n } from "@shared/i18n/useI18n";
 
+import { SendMessageDialog } from "../../../sa/components/SendMessageDialog";
+
 type Tab = "overview" | "games" | "achievements" | "transactions";
 
 export function SaUserDetailPage() {
@@ -14,6 +16,7 @@ export function SaUserDetailPage() {
   const { userId } = useParams();
   const uid = parseInt(userId || "0");
   const [tab, setTab] = useState<Tab>("overview");
+  const [sendOpen, setSendOpen] = useState(false);
   const qc = useQueryClient();
 
   const { data: user, isLoading } = useQuery({
@@ -63,12 +66,37 @@ export function SaUserDetailPage() {
       <Link to="/webapp/sa/users" style={{ color: "var(--muted)" }}>
         ← {t("sa.users.title")}
       </Link>
-      <h2 style={{ margin: "0.5rem 0" }}>
-        👤 {user.first_name} {user.is_premium && "👑"} {user.is_banned && "🚫"}
-      </h2>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: "0.5rem",
+          flexWrap: "wrap",
+        }}
+      >
+        <h2 style={{ margin: "0.5rem 0" }}>
+          👤 {user.first_name} {user.is_premium && "👑"} {user.is_banned && "🚫"}
+        </h2>
+        <button
+          type="button"
+          className="sa-chip"
+          onClick={() => setSendOpen(true)}
+          style={{ padding: "0.35rem 0.7rem" }}
+        >
+          📨 {t("sa.send_msg.button", "Send message")}
+        </button>
+      </div>
       <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>
         #{user.id} {user.username && `· @${user.username}`}
       </p>
+
+      <SendMessageDialog
+        userId={user.id}
+        userName={user.first_name}
+        open={sendOpen}
+        onClose={() => setSendOpen(false)}
+      />
 
       <div className="webapp-section" style={{ marginTop: "0.5rem" }}>
         <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>

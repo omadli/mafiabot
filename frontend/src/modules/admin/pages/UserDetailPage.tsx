@@ -5,6 +5,8 @@ import { useTranslation } from "react-i18next";
 
 import { api } from "@shared/api/client";
 
+import { SendMessageDialog } from "../../sa/components/SendMessageDialog";
+
 interface UserDetail {
   id: number;
   username: string | null;
@@ -38,6 +40,7 @@ export function UserDetailPage() {
   const { userId } = useParams();
   const uid = parseInt(userId || "0");
   const [tab, setTab] = useState<Tab>("overview");
+  const [sendOpen, setSendOpen] = useState(false);
 
   const { data: user, isLoading } = useQuery({
     queryKey: ["user", uid],
@@ -55,19 +58,44 @@ export function UserDetailPage() {
           {t("admin.user_detail_extra.back")}
         </Link>
       </div>
-      <h1 className="admin-page-title">
-        👤 {user.first_name} {user.last_name || ""}
-        {user.is_premium && (
-          <span className="badge yellow" style={{ marginLeft: "1rem" }}>
-            {t("admin.user_detail_extra.premium_badge")}
-          </span>
-        )}
-        {user.is_banned && (
-          <span className="badge red" style={{ marginLeft: "0.5rem" }}>
-            {t("admin.user_detail_extra.ban_badge")}
-          </span>
-        )}
-      </h1>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: "0.75rem",
+          flexWrap: "wrap",
+        }}
+      >
+        <h1 className="admin-page-title" style={{ margin: 0 }}>
+          👤 {user.first_name} {user.last_name || ""}
+          {user.is_premium && (
+            <span className="badge yellow" style={{ marginLeft: "1rem" }}>
+              {t("admin.user_detail_extra.premium_badge")}
+            </span>
+          )}
+          {user.is_banned && (
+            <span className="badge red" style={{ marginLeft: "0.5rem" }}>
+              {t("admin.user_detail_extra.ban_badge")}
+            </span>
+          )}
+        </h1>
+        <button
+          type="button"
+          className="admin-btn"
+          onClick={() => setSendOpen(true)}
+          title={t("sa.send_msg.title", "Send message to user")}
+        >
+          📨 {t("sa.send_msg.button", "Send message")}
+        </button>
+      </div>
+
+      <SendMessageDialog
+        userId={user.id}
+        userName={user.first_name + (user.last_name ? " " + user.last_name : "")}
+        open={sendOpen}
+        onClose={() => setSendOpen(false)}
+      />
 
       <div className="webapp-tabs" style={{ marginBottom: "1rem" }}>
         <TabBtn id="overview" current={tab} setTab={setTab}>

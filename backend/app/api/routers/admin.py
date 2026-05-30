@@ -204,6 +204,9 @@ async def ban_user(
     )
     await user.save(update_fields=["is_banned", "ban_reason", "banned_until"])
 
+    from app.services import sa_notifications
+
+    await sa_notifications.notify_banned(user, payload.reason)
     await log_action(
         action="user.ban",
         actor=admin,
@@ -225,6 +228,9 @@ async def unban_user(user_id: int, admin: AdminAccount = Depends(get_current_adm
     user.ban_reason = None
     await user.save(update_fields=["is_banned", "banned_until", "ban_reason"])
 
+    from app.services import sa_notifications
+
+    await sa_notifications.notify_unbanned(user)
     await log_action(
         action="user.unban",
         actor=admin,
@@ -261,6 +267,10 @@ async def grant_diamonds(
         status=TransactionStatus.COMPLETED,
         note=f"Admin grant: {payload.reason}",
     )
+
+    from app.services import sa_notifications
+
+    await sa_notifications.notify_diamonds_granted(user, payload.amount)
     await log_action(
         action="diamonds.grant",
         actor=admin,
@@ -293,6 +303,9 @@ async def grant_premium(
     user.is_premium = True
     await user.save(update_fields=["is_premium", "premium_expires_at"])
 
+    from app.services import sa_notifications
+
+    await sa_notifications.notify_premium_granted(user, user.premium_expires_at)
     await log_action(
         action="premium.grant",
         actor=admin,
@@ -301,6 +314,41 @@ async def grant_premium(
         payload={"days": payload.days},
     )
     return {"ok": True, "premium_expires_at": user.premium_expires_at.isoformat()}
+
+
+class SendUserMessageRequest(BaseModel):
+    """Free-form admin → user DM payload."""
+
+    text: str = Field(..., min_length=1, max_length=4096)
+
+
+@router.post("/admin/users/{user_id}/send-message")
+async def send_user_message(
+    user_id: int,
+    payload: SendUserMessageRequest,
+    admin: AdminAccount = Depends(get_current_admin),
+) -> dict:
+    """Deliver a free-form admin message to the user via the bot.
+
+    The bot wraps the text in the localised "Super Admin → user" envelope
+    so the user can tell it apart from regular bot output. Replies aren't
+    expected (the envelope says so explicitly).
+    """
+    user = await User.get_or_none(id=user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    from app.services import sa_notifications
+
+    await sa_notifications.notify_admin_message(user, payload.text)
+    await log_action(
+        action="user.admin_message",
+        actor=admin,
+        target_type="user",
+        target_id=str(user_id),
+        payload={"length": len(payload.text)},
+    )
+    return {"ok": True}
 
 
 # === Groups ===
