@@ -5,6 +5,8 @@ import { LangPicker } from "@shared/components/LangPicker";
 import { authStore } from "@shared/store/auth";
 import type { Locale } from "@shared/i18n";
 
+import { SaProvider } from "../../sa/context";
+
 import "./AdminLayout.css";
 
 interface NavItem {
@@ -77,7 +79,9 @@ export function AdminLayout() {
         </div>
       </aside>
       <main className="admin-main">
-        <Outlet />
+        <SaProvider basePath="/admin" surface="admin">
+          <Outlet />
+        </SaProvider>
       </main>
     </div>
   );

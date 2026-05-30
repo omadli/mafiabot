@@ -13,7 +13,7 @@ import { GroupDetailPage } from "./pages/GroupDetailPage";
 import { GroupsPage } from "./pages/GroupsPage";
 import { LoginPage } from "./pages/LoginPage";
 import { RoleConfigsPage } from "./pages/RoleConfigsPage";
-import { RoleStatsPage } from "./pages/RoleStatsPage";
+import { RoleStatsPage } from "../sa/pages/RoleStatsPage";
 import { SandboxCreatePage } from "./pages/SandboxCreatePage";
 import { SandboxDetailPage } from "./pages/SandboxDetailPage";
 import { SandboxListPage } from "./pages/SandboxListPage";

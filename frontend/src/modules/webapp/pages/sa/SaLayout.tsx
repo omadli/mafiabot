@@ -5,6 +5,8 @@ import { saApi } from "@shared/api/sa";
 import { LangPicker } from "@shared/components/LangPicker";
 import { useI18n } from "@shared/i18n/useI18n";
 
+import { SaProvider } from "../../../sa/context";
+
 const NAV = [
   { path: "/webapp/sa", label: "📊", labelKey: "sa-nav-dashboard" },
   { path: "/webapp/sa/users", label: "👥", labelKey: "sa-nav-users" },
@@ -82,7 +84,9 @@ export function SaLayout() {
       </nav>
 
       <main className="sa-content">
-        <Outlet />
+        <SaProvider basePath="/webapp/sa" surface="webapp">
+          <Outlet />
+        </SaProvider>
       </main>
     </div>
   );

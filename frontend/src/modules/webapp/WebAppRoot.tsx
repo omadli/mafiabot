@@ -8,7 +8,7 @@ import { LeaderboardPage } from "./pages/LeaderboardPage";
 import { WebAppHome } from "./pages/WebAppHome";
 import { SaLayout } from "./pages/sa/SaLayout";
 import { SaDashboardPage } from "./pages/sa/SaDashboardPage";
-import { SaRolesPage } from "./pages/sa/SaRolesPage";
+import { RoleStatsPage as SaRolesPage } from "../sa/pages/RoleStatsPage";
 import { SaRoleConfigsPage } from "./pages/sa/SaRoleConfigsPage";
 import { SaEmojiConfigsPage } from "./pages/sa/SaEmojiConfigsPage";
 import { SaPlayersPage } from "./pages/sa/SaPlayersPage";
