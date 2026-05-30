@@ -91,7 +91,8 @@
       "top_players": "Top players",
       "system_settings": "System",
       "emoji_configs": "Emojis",
-      "sandbox": "Test sandbox"
+      "sandbox": "Test sandbox",
+      "stars_tx": "Transactions"
     },
     "sandbox": {
       "title": "Test sandbox",
@@ -615,7 +616,8 @@
       "users": "Users",
       "games": "Games",
       "audit": "Audit",
-      "emoji_configs": "Emojis"
+      "emoji_configs": "Emojis",
+      "stars_tx": "Transactions"
     },
     "dashboard": {
       "elo_chart": "ELO distribution",
@@ -872,6 +874,25 @@
       "sending": "Sending…",
       "button": "Send message",
       "error_send_failed": "Send failed"
+    },
+    "stars_tx": {
+      "title": "Telegram Stars payments",
+      "total_tx": "Transactions",
+      "total_stars": "Total Stars",
+      "total_diamonds": "Total diamonds",
+      "filter_user_placeholder": "User ID...",
+      "clear_filter": "Clear",
+      "col_time": "Time",
+      "col_user": "User",
+      "col_charge_id": "Charge ID",
+      "col_note": "Note",
+      "load_failed": "Failed to load.",
+      "retry": "Retry",
+      "empty": "No Stars payments yet",
+      "empty_user": "No transactions for #{{user}}",
+      "prev": "Prev",
+      "next": "Next",
+      "page_x_of_y": "Page {{page}} of {{total}}"
     }
   },
   "role-citizen": "Citizen",
@@ -1047,5 +1068,6 @@
       "draft_discard": "Discard",
       "loading": "Loading…"
     }
-  }
+  },
+  "sa-nav-stars-tx": "Transactions"
 }

@@ -91,7 +91,8 @@
       "top_players": "Топ игроков",
       "system_settings": "Система",
       "emoji_configs": "Эмодзи",
-      "sandbox": "Тест-песочница"
+      "sandbox": "Тест-песочница",
+      "stars_tx": "Транзакции"
     },
     "sandbox": {
       "title": "Тест-песочница",
@@ -615,7 +616,8 @@
       "users": "Пользователи",
       "games": "Игры",
       "audit": "Журнал",
-      "emoji_configs": "Эмодзи"
+      "emoji_configs": "Эмодзи",
+      "stars_tx": "Транзакции"
     },
     "dashboard": {
       "elo_chart": "Распределение ELO",
@@ -872,6 +874,25 @@
       "sending": "Отправка…",
       "button": "Отправить сообщение",
       "error_send_failed": "Ошибка отправки"
+    },
+    "stars_tx": {
+      "title": "Платежи Telegram Stars",
+      "total_tx": "Всего транзакций",
+      "total_stars": "Всего Stars",
+      "total_diamonds": "Всего алмазов",
+      "filter_user_placeholder": "ID пользователя...",
+      "clear_filter": "Очистить",
+      "col_time": "Время",
+      "col_user": "Пользователь",
+      "col_charge_id": "ID платежа",
+      "col_note": "Заметка",
+      "load_failed": "Не удалось загрузить.",
+      "retry": "Повторить",
+      "empty": "Пока нет Stars-платежей",
+      "empty_user": "Транзакции для #{{user}} не найдены",
+      "prev": "Назад",
+      "next": "Вперёд",
+      "page_x_of_y": "Стр. {{page}} / {{total}}"
     }
   },
   "role-citizen": "Мирный житель",
@@ -1047,5 +1068,6 @@
       "draft_discard": "Сбросить",
       "loading": "Загрузка…"
     }
-  }
+  },
+  "sa-nav-stars-tx": "Транзакции"
 }

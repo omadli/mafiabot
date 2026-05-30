@@ -14,6 +14,7 @@ import { GroupsPage } from "./pages/GroupsPage";
 import { LoginPage } from "./pages/LoginPage";
 import { RoleConfigsPage } from "./pages/RoleConfigsPage";
 import { RoleStatsPage } from "../sa/pages/RoleStatsPage";
+import { StarsTransactionsPage } from "../sa/pages/StarsTransactionsPage";
 import { SandboxCreatePage } from "./pages/SandboxCreatePage";
 import { SandboxDetailPage } from "./pages/SandboxDetailPage";
 import { SandboxListPage } from "./pages/SandboxListPage";
@@ -46,6 +47,7 @@ export function AdminApp() {
           <Route path="sandbox/new" element={<SandboxCreatePage />} />
           <Route path="sandbox/:sandboxId" element={<SandboxDetailPage />} />
           <Route path="system-settings" element={<SystemSettingsPage />} />
+          <Route path="stars-transactions" element={<StarsTransactionsPage />} />
           <Route path="audit" element={<AuditPage />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Route>

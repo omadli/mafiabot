@@ -27,6 +27,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/admin/top-players", emoji: "🏆", i18nKey: "admin.nav.top_players" },
   { to: "/admin/sandbox", emoji: "🧪", i18nKey: "admin.nav.sandbox" },
   { to: "/admin/system-settings", emoji: "⚙️", i18nKey: "admin.nav.system_settings" },
+  { to: "/admin/stars-transactions", emoji: "⭐", i18nKey: "admin.nav.stars_tx" },
   { to: "/admin/audit", emoji: "📝", i18nKey: "admin.nav.audit" },
 ];
 

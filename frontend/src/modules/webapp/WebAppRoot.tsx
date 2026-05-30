@@ -9,6 +9,7 @@ import { WebAppHome } from "./pages/WebAppHome";
 import { SaLayout } from "./pages/sa/SaLayout";
 import { SaDashboardPage } from "./pages/sa/SaDashboardPage";
 import { RoleStatsPage as SaRolesPage } from "../sa/pages/RoleStatsPage";
+import { StarsTransactionsPage } from "../sa/pages/StarsTransactionsPage";
 import { SaRoleConfigsPage } from "./pages/sa/SaRoleConfigsPage";
 import { SaEmojiConfigsPage } from "./pages/sa/SaEmojiConfigsPage";
 import { SaPlayersPage } from "./pages/sa/SaPlayersPage";
@@ -67,6 +68,7 @@ export function WebAppRoot() {
           <Route path="groups/:groupId" element={<SaGroupDetailPage />} />
           <Route path="groups/:groupId/live" element={<SaLiveGamePage />} />
           <Route path="system" element={<SaSystemPage />} />
+          <Route path="stars" element={<StarsTransactionsPage />} />
         </Route>
       </Routes>
     </div>

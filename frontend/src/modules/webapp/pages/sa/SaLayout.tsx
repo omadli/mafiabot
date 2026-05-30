@@ -17,6 +17,7 @@ const NAV = [
   { path: "/webapp/sa/emoji-configs", label: "✨", labelKey: "sa-nav-emoji-configs" },
   { path: "/webapp/sa/players", label: "🏆", labelKey: "sa-nav-players" },
   { path: "/webapp/sa/system", label: "⚙️", labelKey: "sa-nav-system" },
+  { path: "/webapp/sa/stars", label: "⭐", labelKey: "sa-nav-stars-tx" },
   { path: "/webapp/sa/audit", label: "📝", labelKey: "sa-nav-audit" },
 ];
 

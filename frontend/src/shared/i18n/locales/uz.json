@@ -91,7 +91,8 @@
       "top_players": "Top o'yinchilar",
       "system_settings": "Tizim",
       "emoji_configs": "Emojilar",
-      "sandbox": "Test sandbox"
+      "sandbox": "Test sandbox",
+      "stars_tx": "Tranzaksiyalar"
     },
     "sandbox": {
       "title": "Test sandbox",
@@ -615,7 +616,8 @@
       "users": "Foydalanuvchilar",
       "games": "O'yinlar",
       "audit": "Audit log",
-      "emoji_configs": "Emojilar"
+      "emoji_configs": "Emojilar",
+      "stars_tx": "Tranzaksiyalar"
     },
     "dashboard": {
       "elo_chart": "ELO taqsimoti",
@@ -872,6 +874,25 @@
       "sending": "Yuborilmoqda…",
       "button": "Xabar yuborish",
       "error_send_failed": "Yuborishda xato"
+    },
+    "stars_tx": {
+      "title": "Telegram Stars to'lovlari",
+      "total_tx": "Jami tranzaksiya",
+      "total_stars": "Jami Stars",
+      "total_diamonds": "Jami olmos",
+      "filter_user_placeholder": "Foydalanuvchi ID si...",
+      "clear_filter": "Tozalash",
+      "col_time": "Vaqt",
+      "col_user": "Foydalanuvchi",
+      "col_charge_id": "To'lov ID",
+      "col_note": "Izoh",
+      "load_failed": "Yuklab bo'lmadi.",
+      "retry": "Qayta urinish",
+      "empty": "Hali Stars to'lovi yo'q",
+      "empty_user": "#{{user}} uchun tranzaksiya topilmadi",
+      "prev": "Oldingi",
+      "next": "Keyingi",
+      "page_x_of_y": "Sahifa {{page}} / {{total}}"
     }
   },
   "role-citizen": "Tinch aholi",
@@ -1047,5 +1068,6 @@
       "draft_discard": "Tashlab yuborish",
       "loading": "Yuklanmoqda…"
     }
-  }
+  },
+  "sa-nav-stars-tx": "Tranzaksiyalar"
 }
