@@ -21,12 +21,15 @@ import { authStore } from "@shared/store/auth";
 import { api } from "./client";
 import type {
   DiamondPackage,
+  EmojiCategory,
+  EmojiConfig,
   GroupGamesResponse,
   GroupLeaderboardResponse,
   GroupSettings,
   GroupsPage,
   RoleConfig,
   RoleStat,
+  RoleTeam,
   SaAuditEntry,
   SaAuditPage,
   SaGameListItem,
@@ -35,17 +38,19 @@ import type {
   SystemSettings,
   TopPlayer,
   TopPlayersSort,
-  EmojiConfig,
 } from "./sa";
 
 export type {
   DiamondPackage,
+  EmojiCategory,
+  EmojiConfig,
   GroupGamesResponse,
   GroupLeaderboardResponse,
   GroupSettings,
   GroupsPage,
   RoleConfig,
   RoleStat,
+  RoleTeam,
   SaAuditEntry,
   SaAuditPage,
   SaGameListItem,
@@ -54,7 +59,6 @@ export type {
   SystemSettings,
   TopPlayer,
   TopPlayersSort,
-  EmojiConfig,
 };
 
 /**

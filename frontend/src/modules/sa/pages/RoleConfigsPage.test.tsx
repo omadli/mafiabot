@@ -4,41 +4,53 @@ import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { RoleConfigsPage } from "./RoleConfigsPage";
+import { SaProvider } from "../context";
 
-vi.mock("@shared/api/admin", () => ({
-  adminApi: {
-    roleConfigs: vi.fn().mockResolvedValue({
-      items: [
-        {
-          role: "citizen", team: "civilians",
-          name_uz: "Tinch aholi", name_ru: "Мирный житель", name_en: "Civilian",
-          static_emoji: "👨🏼", custom_emoji_id: "", order_idx: 10,
-          updated_at: null, updated_by_tg_id: null,
-        },
-        {
-          role: "don", team: "mafia",
-          name_uz: "Don", name_ru: "Дон", name_en: "Don",
-          static_emoji: "🤵🏻", custom_emoji_id: "", order_idx: 110,
-          updated_at: null, updated_by_tg_id: null,
-        },
-        {
-          role: "snitch", team: "singletons",
-          name_uz: "Sotqin", name_ru: "Предатель", name_en: "Snitch",
-          static_emoji: "🤓", custom_emoji_id: "5370856771151730818", order_idx: 270,
-          updated_at: null, updated_by_tg_id: null,
-        },
-      ],
-    }),
-    updateRoleConfig: vi.fn(),
-  },
-}));
+// `superAdminApi.roleConfigs` is the auth-aware client the unified page
+// uses. Mock it directly rather than the legacy `adminApi` — the test
+// doesn't care which backend prefix the dispatcher would pick.
+vi.mock("@shared/api/superAdmin", async () => {
+  const actual = await vi.importActual<object>("@shared/api/superAdmin");
+  return {
+    ...actual,
+    superAdminApi: {
+      roleConfigs: vi.fn().mockResolvedValue({
+        items: [
+          {
+            role: "citizen", team: "civilians",
+            name_uz: "Tinch aholi", name_ru: "Мирный житель", name_en: "Civilian",
+            static_emoji: "👨🏼", custom_emoji_id: "", order_idx: 10,
+            updated_at: null, updated_by_tg_id: null,
+          },
+          {
+            role: "don", team: "mafia",
+            name_uz: "Don", name_ru: "Дон", name_en: "Don",
+            static_emoji: "🤵🏻", custom_emoji_id: "", order_idx: 110,
+            updated_at: null, updated_by_tg_id: null,
+          },
+          {
+            role: "snitch", team: "singletons",
+            name_uz: "Sotqin", name_ru: "Предатель", name_en: "Snitch",
+            static_emoji: "🤓", custom_emoji_id: "5370856771151730818", order_idx: 270,
+            updated_at: null, updated_by_tg_id: null,
+          },
+        ],
+      }),
+      updateRoleConfig: vi.fn(),
+    },
+  };
+});
 
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  // The unified page reads `surface` from `useSa()`; mount under the
+  // admin surface so the test exercises the desktop table layout.
   return render(
     <QueryClientProvider client={qc}>
       <MemoryRouter>
-        <RoleConfigsPage />
+        <SaProvider basePath="/admin" surface="admin">
+          <RoleConfigsPage />
+        </SaProvider>
       </MemoryRouter>
     </QueryClientProvider>,
   );
