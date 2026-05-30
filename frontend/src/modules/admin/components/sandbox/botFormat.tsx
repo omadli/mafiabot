@@ -40,7 +40,10 @@ function safeUrl(raw: string): string | null {
 
 // --- HTML path -------------------------------------------------------------
 
-const ALLOWED_HTML_TAGS: Record<string, "b" | "i" | "code" | "pre" | "s" | "u" | "a" | "br"> = {
+const ALLOWED_HTML_TAGS: Record<
+  string,
+  "b" | "i" | "code" | "pre" | "s" | "u" | "a" | "br" | "mention" | "tg-emoji"
+> = {
   b: "b",
   strong: "b",
   i: "i",
@@ -53,6 +56,11 @@ const ALLOWED_HTML_TAGS: Record<string, "b" | "i" | "code" | "pre" | "s" | "u" |
   u: "u",
   a: "a",
   br: "br",
+  // Bot output uses these Telegram-only HTML extensions:
+  //   <a href="tg://user?id=X">name</a> — user mention (no web URL)
+  //   <tg-emoji emoji-id="X">😀</tg-emoji> — custom emoji w/ unicode fallback
+  // Map them to internal pseudo-tags so renderHtml can style them.
+  "tg-emoji": "tg-emoji",
 };
 
 interface HtmlNode {
@@ -60,6 +68,9 @@ interface HtmlNode {
   text?: string;
   tag?: string;
   href?: string;
+  // For mention nodes: the Telegram user_id parsed out of `tg://user?id=…`.
+  // Surfaced so the bubble can show it on hover for debugging.
+  userId?: string;
   children?: HtmlNode[];
 }
 
@@ -106,9 +117,22 @@ function tokenizeHtml(input: string): HtmlNode[] {
     }
     const el: HtmlNode = { type: "element", tag: mapped, children: [] };
     if (mapped === "a") {
-      const href = /href=["']([^"']+)["']/i.exec(attrs)?.[1];
-      const safe = href ? safeUrl(href) : null;
-      el.href = safe || undefined;
+      const href = /href=["']([^"']+)["']/i.exec(attrs)?.[1] ?? "";
+      // Telegram user mention — `tg://user?id=<digits>`. Surface as a
+      // styled mention rather than a dead link (we have no clickable
+      // Telegram URL from the dashboard).
+      const mention = /^tg:\/\/user\?id=(\d+)/.exec(href);
+      if (mention) {
+        el.tag = "mention";
+        el.userId = mention[1];
+      } else {
+        const safe = href ? safeUrl(href) : null;
+        el.href = safe || undefined;
+      }
+    } else if (mapped === "tg-emoji") {
+      // Custom emoji — we render the inline UTF-8 fallback (the children).
+      // Attributes (emoji-id) are ignored; we never reach the Telegram
+      // custom-emoji CDN from the dashboard.
     }
     stack[stack.length - 1].children!.push(el);
     if (!selfClose) stack.push(el);
@@ -147,6 +171,21 @@ function renderHtml(nodes: HtmlNode[]): ReactNode[] {
             {kids}
           </a>
         );
+      case "mention":
+        // Telegram-style @-mention rendering. Bold accent color, no
+        // navigation — the dashboard can't open Telegram profiles.
+        return (
+          <span
+            key={key}
+            className="sb-mention"
+            title={n.userId ? `tg://user?id=${n.userId}` : undefined}
+          >
+            {kids}
+          </span>
+        );
+      case "tg-emoji":
+        // The children are the Unicode fallback emoji — render verbatim.
+        return <span key={key}>{kids}</span>;
       case "br":
         return <br key={key} />;
       default:

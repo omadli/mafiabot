@@ -27,6 +27,15 @@ const MAX_RENDER = 300;
 interface ChatPanelProps {
   entries: TranscriptEntry[];
   onCallback?: (callbackData: string, messageId: number) => void;
+  /**
+   * Submit a text message as the active fake user. When provided, the
+   * panel renders a Telegram-style input row underneath the transcript.
+   * Caller is responsible for knowing which user/chat the message is
+   * "from" / "to" — this component is stateless about identity.
+   */
+  onSendMessage?: (text: string) => void | Promise<void>;
+  /** Hint placeholder for the text input (e.g. "Type as Bekzod…"). */
+  inputPlaceholder?: string;
   disabled?: boolean;
   compact?: boolean;
   emptyLabel?: string;
@@ -37,6 +46,8 @@ interface ChatPanelProps {
 export function ChatPanel({
   entries,
   onCallback,
+  onSendMessage,
+  inputPlaceholder,
   disabled,
   compact,
   emptyLabel,
@@ -48,6 +59,20 @@ export function ChatPanel({
   const [atBottom, setAtBottom] = useState(true);
   const [unseenCount, setUnseenCount] = useState(0);
   const prevLenRef = useRef(entries.length);
+  const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const submit = async () => {
+    const text = draft.trim();
+    if (!text || !onSendMessage) return;
+    setSending(true);
+    try {
+      await onSendMessage(text);
+      setDraft("");
+    } finally {
+      setSending(false);
+    }
+  };
 
   useLayoutEffect(() => {
     if (scrollRef.current && initialScrollTop != null) {
@@ -121,6 +146,39 @@ export function ChatPanel({
         <button type="button" onClick={jumpToBottom} className="sb-jump-pill">
           ↓ {t("admin.sandbox.detail.n_new", { count: unseenCount, defaultValue: "{{count}} new" })}
         </button>
+      )}
+
+      {onSendMessage && (
+        <form
+          className="sb-input-row"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void submit();
+          }}
+        >
+          <input
+            type="text"
+            className="sb-input"
+            placeholder={
+              inputPlaceholder ??
+              t("admin.sandbox.detail.input_placeholder", {
+                defaultValue: "Type as this player…",
+              })
+            }
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            disabled={disabled || sending}
+            maxLength={4096}
+          />
+          <button
+            type="submit"
+            className="sb-input-send"
+            disabled={disabled || sending || !draft.trim()}
+            aria-label={t("admin.sandbox.detail.send", { defaultValue: "Send" })}
+          >
+            {sending ? "…" : "➤"}
+          </button>
+        </form>
       )}
     </div>
   );

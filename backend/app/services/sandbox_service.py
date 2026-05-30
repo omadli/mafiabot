@@ -365,6 +365,57 @@ def _next_update_id() -> int:
     return 10**9 + _update_seq
 
 
+async def _ensure_runtime(session: SandboxSession) -> SandboxBot:
+    """Rebuild the in-memory runtime (bot, phase loop, auto loop) for a
+    RUNNING sandbox whose memory state was lost — typically after the
+    backend process restarted.
+
+    Without this, every control + callback request would fail with
+    "no live bot instance" after a deploy, even though the Redis state
+    and DB row are intact. Re-registering the SandboxBot and restarting
+    the loops is idempotent and cheap.
+    """
+    bot = SandboxBotRegistry.get(session.fake_group_id)
+    if bot is not None:
+        return bot
+
+    if session.status != SandboxStatus.RUNNING:
+        raise SandboxError(f"sandbox {session.id} is {session.status.value} — start_sandbox first?")
+
+    state = await game_service.load_state(session.fake_group_id)
+    if state is None:
+        # Redis TTL'd while we were down. Mark the session ERRORED so the
+        # dashboard stops trying to drive a corpse.
+        session.status = SandboxStatus.ERRORED
+        await session.save(update_fields=["status"])
+        raise SandboxError(
+            f"sandbox {session.id} lost its Redis state (TTL or eviction); destroy + recreate"
+        )
+
+    bot = SandboxBot(
+        sandbox_id=session.id,
+        fake_group_id=session.fake_group_id,
+        creator_fake_user_id=state.creator_user_id or 0,
+    )
+    SandboxBotRegistry.register(bot)
+
+    # Restart the timer + auto-play loops. PhaseManager.start_for is a
+    # no-op if a task already exists, so calling it again is safe.
+    from app.bot.handlers.group.game import _on_phase_change
+    from app.core.phases.manager import PhaseManager
+
+    async def _hook(s: GameState) -> None:
+        await _on_phase_change(bot, s)
+
+    PhaseManager.start_for(bot=bot, group_id=session.fake_group_id, on_phase_change=_hook)
+    _start_auto_loop_if_enabled(session)
+    logger.info(
+        f"Sandbox {session.id} runtime rebuilt — bot+loops re-registered "
+        f"(likely after backend restart)"
+    )
+    return bot
+
+
 async def inject_callback(
     sandbox_id: UUID,
     fake_user_id: int,
@@ -389,9 +440,7 @@ async def inject_callback(
         raise SandboxError(f"inject_callback rejected: user_id {fake_user_id} is not a sandbox id")
 
     session = await SandboxSession.get(id=sandbox_id)
-    bot = SandboxBotRegistry.get(session.fake_group_id)
-    if bot is None:
-        raise SandboxError(f"sandbox {sandbox_id} has no live bot instance — start_sandbox first?")
+    bot = await _ensure_runtime(session)
 
     fake = await transcript_store.lookup_user(fake_user_id)
     if fake is None:
@@ -438,6 +487,107 @@ async def inject_callback(
     )
 
 
+async def inject_message(
+    sandbox_id: UUID,
+    fake_user_id: int,
+    text: str,
+    chat_id: int | None = None,
+) -> None:
+    """Inject a synthetic text Message as if `fake_user_id` typed it.
+
+    Mirrors `inject_callback` but for plain-text messages — the operator
+    types in the DM panel (or the group panel), and the dispatcher routes
+    the synthetic Update to whichever handler owns it. The two
+    sandbox-relevant downstream cases are:
+
+      * Private + alive mafia at night → `mafia_chat.relay_mafia_message`
+        rebroadcasts to other mafia DMs, exactly like the real bot.
+      * Private + dead within last-words window → `broadcast_last_words`
+        posts to the group transcript.
+
+    `chat_id` defaults to `fake_user_id` (the DM scope). Pass a group_id
+    explicitly only for group-scope messages — most testing happens in DMs.
+    """
+    if not is_sandbox_user_id(fake_user_id):
+        raise SandboxError(f"inject_message rejected: user_id {fake_user_id} is not a sandbox id")
+    if not text or not text.strip():
+        raise SandboxError("inject_message rejected: empty text")
+
+    session = await SandboxSession.get(id=sandbox_id)
+    bot = await _ensure_runtime(session)
+
+    fake = await transcript_store.lookup_user(fake_user_id)
+    if fake is None:
+        raise SandboxError(f"fake user {fake_user_id} missing from sandbox {sandbox_id}")
+
+    from aiogram.types import Chat, Message, Update
+    from aiogram.types import User as AiogramUser
+
+    if chat_id is None:
+        chat_id = fake_user_id
+
+    tg_user = AiogramUser(
+        id=fake_user_id,
+        is_bot=False,
+        first_name=fake.get("first_name") or "Player",
+        username=fake.get("username"),
+        language_code=fake.get("language_code") or "uz",
+    )
+    chat_type = "private" if chat_id == fake_user_id else "supergroup"
+    chat = Chat(id=chat_id, type=chat_type)
+    msg = Message(
+        message_id=await transcript_store.next_message_id(sandbox_id),
+        date=int(time.time()),
+        chat=chat,
+        from_user=tg_user,
+        text=text,
+    )
+    update = Update(update_id=_next_update_id(), message=msg)
+
+    # Also surface the operator's typed message inside the transcript so
+    # they can see what they "said" in the chat panel — otherwise the
+    # only visible output would be the bot's relay/forward.
+    from app.services.transcript_store import TranscriptEntry
+
+    safe_text = text.replace("<", "&lt;").replace(">", "&gt;").replace("&", "&amp;")
+    display_name = fake.get("first_name") or f"#{fake_user_id}"
+    sender_entry = TranscriptEntry(
+        type="send",
+        scope="dm" if chat_type == "private" else "group",
+        chat_id=chat_id,
+        target_user_id=chat_id if chat_type == "private" else None,
+        message_id=msg.message_id,
+        text=f"👤 <b>{display_name}</b>: {safe_text}",
+        parse_mode="HTML",
+        extra={"from_user_id": fake_user_id, "user_authored": True},
+    )
+    await transcript_store.append(sandbox_id, sender_entry)
+    # Mirror the broadcast hook so the dashboard's WS picks it up. The
+    # bot's `_persist` does the same for its own sends; we open-code here
+    # because the user-authored entry doesn't go through SandboxBot.
+    try:
+        from dataclasses import asdict
+
+        from app.services.ws_broker import emit_game_event
+
+        await emit_game_event(
+            "transcript_append",
+            group_id=session.fake_group_id,
+            sandbox_id=str(session.id),
+            entry=asdict(sender_entry),
+        )
+    except Exception as e:  # pragma: no cover — never let WS break the loop
+        logger.debug(f"transcript_append WS emit (user msg) failed: {e}")
+
+    from app.main import dp
+
+    if dp is None:
+        raise SandboxError("dispatcher not initialized — is the bot running?")
+
+    await dp.feed_update(bot=bot, update=update)
+    logger.debug(f"sandbox {sandbox_id}: injected msg from user {fake_user_id} on chat {chat_id}")
+
+
 async def advance_phase(sandbox_id: UUID) -> Phase | None:
     """Manually advance the sandbox by one phase.
 
@@ -445,13 +595,12 @@ async def advance_phase(sandbox_id: UUID) -> Phase | None:
     sandboxes whose timing preset disables the regular timer loop.
     Returns the new phase, or `None` if the game has already finished.
 
-    No-ops gracefully when the sandbox isn't running (registry miss
-    → caller likely racing with destroy).
+    Rebuilds the in-memory runtime if it was lost (typically after a
+    backend restart) so the operator can still drive an existing RUNNING
+    sandbox without recreating it.
     """
     session = await SandboxSession.get(id=sandbox_id)
-    bot = SandboxBotRegistry.get(session.fake_group_id)
-    if bot is None:
-        raise SandboxError(f"sandbox {sandbox_id} has no live bot — start_sandbox first?")
+    bot = await _ensure_runtime(session)
 
     from app.bot.handlers.group.game import _on_phase_change
     from app.core.phases.manager import PhaseManager
@@ -677,8 +826,17 @@ def _now() -> float:
 
 
 async def _submit_auto_actions(state: GameState, mode: str) -> None:
-    """Mutate state with auto-actions for players who haven't acted yet."""
+    """Mutate state with auto-actions for players who haven't acted yet.
+
+    Also surfaces the same atmospheric group messages the real handler
+    chain produces ("🤵🏻 Don navbatdagi o'ljasini tanladi…" etc.) so the
+    sandbox operator can see the AI actually moving instead of looking
+    at a silent group chat until end-of-night resolution.
+    """
     from app.core.roles import get_role
+
+    bot = SandboxBotRegistry.get(state.group_id)
+    submitted: list[tuple[PlayerState, str]] = []
 
     alive_players = state.alive_players()
     if state.phase == Phase.NIGHT:
@@ -691,12 +849,27 @@ async def _submit_auto_actions(state: GameState, mode: str) -> None:
             target = _pick_night_target(role, actor, state, mode)
             if target is None:
                 continue
+            action_kind = _night_action_type_for(actor.role)
             state.current_actions[actor.user_id] = NightAction(
                 actor_id=actor.user_id,
                 role=actor.role,
-                action_type=_night_action_type_for(actor.role),
+                action_type=action_kind,
                 target_id=target.user_id,
             )
+            submitted.append((actor, action_kind))
+
+        # Reuse the handler's atmosphere logic so the auto path and the
+        # interactive path produce the same group-chat output. Imported
+        # lazily because it pulls in aiogram types we don't need until
+        # we actually have a SandboxBot to broadcast through.
+        if bot is not None and submitted:
+            from app.bot.handlers.private.role_actions import _broadcast_role_atmosphere
+
+            for actor, action_kind in submitted:
+                try:
+                    await _broadcast_role_atmosphere(bot, state, actor, action_kind)
+                except Exception as e:  # pragma: no cover — never let UI break the loop
+                    logger.debug(f"auto-play atmosphere broadcast failed for {actor.role}: {e}")
         return
     if state.phase == Phase.VOTING:
         for voter in alive_players:

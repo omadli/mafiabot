@@ -17,13 +17,11 @@ async def track_phase_inactivity(bot: Bot, state: GameState, ended_phase: Phase)
 
     Called from PhaseManager hook after night/voting phases.
     """
-    from app.core.sandbox_ids import is_sandbox_state
-
-    # Sandbox runs apply no AFK penalties — the SA may sit on the dashboard
-    # for minutes reading the transcript and we don't want to bankrupt
-    # fake users with XP penalties they can't ever earn back.
-    if is_sandbox_state(state):
-        return
+    # Sandbox runs DO drive AFK tracking — that's the whole point of the
+    # test harness. The XP / afk_warnings DB write inside `_kick_afk_player`
+    # already no-ops for fake user_ids (no DB row), so kicking a "lazy"
+    # fake player just marks them dead in Redis state and broadcasts the
+    # last-words line — matching what the SA expects to be able to test.
     afk_settings = state.settings.get("afk", {})
     threshold = afk_settings.get("skip_phases_before_kick", 2)
     xp_penalty = afk_settings.get("xp_penalty_on_kick", 50)

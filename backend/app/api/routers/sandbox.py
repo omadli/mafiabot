@@ -69,6 +69,12 @@ class SandboxCallbackRequest(BaseModel):
     chat_id: int | None = None  # default: same as user_id (DM scope)
 
 
+class SandboxMessageRequest(BaseModel):
+    user_id: int  # the fake user we're "typing as"
+    text: str = Field(min_length=1, max_length=4096)
+    chat_id: int | None = None  # default: same as user_id (DM scope)
+
+
 class _PlayerEntry(BaseModel):
     user_id: int
     first_name: str
@@ -197,6 +203,33 @@ async def post_callback(
     except Exception as e:
         logger.exception(f"callback injection failed for sandbox {sandbox_id}: {e}")
         raise HTTPException(status_code=500, detail=f"callback failed: {e}") from e
+    return {"ok": True}
+
+
+@router.post("/games/{sandbox_id}/message")
+async def post_message(
+    sandbox_id: UUID,
+    payload: SandboxMessageRequest,
+    admin: AdminAccount = Depends(_superadmin),
+) -> dict[str, bool]:
+    """Dashboard text-input → synthetic Message → engine handler.
+
+    Lets the operator type as a fake player, exercising mafia-chat
+    relay, last-words capture, and anything else the private-chat
+    text handlers act on.
+    """
+    try:
+        await sandbox_service.inject_message(
+            sandbox_id=sandbox_id,
+            fake_user_id=payload.user_id,
+            text=payload.text,
+            chat_id=payload.chat_id,
+        )
+    except SandboxError as e:
+        raise _wrap_sandbox_error(e) from e
+    except Exception as e:
+        logger.exception(f"message injection failed for sandbox {sandbox_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"message failed: {e}") from e
     return {"ok": True}
 
 

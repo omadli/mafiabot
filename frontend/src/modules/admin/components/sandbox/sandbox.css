@@ -479,6 +479,63 @@
   color: var(--sb-accent);
 }
 
+/* Telegram @-mention — bold accent text, no link affordance.
+   `tg://user?id=…` URLs aren't web-clickable from the dashboard. */
+.sb-bubble-text .sb-mention {
+  color: var(--sb-accent);
+  font-weight: 600;
+  cursor: default;
+}
+
+/* Compose row at the bottom of a chat panel — operator types as the
+   active fake user. Layout mirrors Telegram's mobile input: a wide
+   text field + send arrow button. */
+.sb-input-row {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.sb-input {
+  flex: 1;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.sb-input:focus {
+  border-color: var(--sb-accent);
+}
+
+.sb-input:disabled {
+  opacity: 0.6;
+}
+
+.sb-input-send {
+  border: none;
+  background: var(--sb-accent);
+  color: #fff;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 1rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sb-input-send:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .sb-bubble-text code {
   background: rgba(255, 255, 255, 0.07);
   padding: 0.05em 0.3em;

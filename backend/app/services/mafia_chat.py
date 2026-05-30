@@ -30,17 +30,32 @@ async def relay_mafia_message(bot: Bot, sender_user_id: int, text: str) -> bool:
     if sender_user_id is None:
         return False
 
+    from app.core.sandbox_ids import is_sandbox_user_id
     from app.db.models import Game, User
 
-    user = await User.get_or_none(id=sender_user_id)
-    if user is None or user.active_game_id is None:
-        return False
+    # Sandbox users live in Redis only — bypass the DB lookup and read
+    # the reverse-index transcript store to find their session, then
+    # load the matching game state directly.
+    state = None
+    if is_sandbox_user_id(sender_user_id):
+        from app.services import transcript_store
 
-    db_game = await Game.get_or_none(id=user.active_game_id)
-    if db_game is None:
-        return False
-
-    state = await game_service.load_state(db_game.group_id)  # type: ignore[attr-defined,var-annotated,arg-type]
+        reverse = await transcript_store.lookup_user(sender_user_id)
+        if reverse is None:
+            return False
+        meta = await transcript_store.get_meta(reverse["sandbox_id"])
+        fake_group_id = meta.get("fake_group_id") if meta else None
+        if fake_group_id is None:
+            return False
+        state = await game_service.load_state(fake_group_id)
+    else:
+        user = await User.get_or_none(id=sender_user_id)
+        if user is None or user.active_game_id is None:
+            return False
+        db_game = await Game.get_or_none(id=user.active_game_id)
+        if db_game is None:
+            return False
+        state = await game_service.load_state(db_game.group_id)  # type: ignore[attr-defined,var-annotated,arg-type]
     if state is None or state.phase != Phase.NIGHT:
         return False
 

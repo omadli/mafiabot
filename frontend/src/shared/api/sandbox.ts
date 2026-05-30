@@ -186,6 +186,14 @@ export const sandboxApi = {
   ): Promise<{ ok: boolean }> =>
     (await api.post(`${BASE}/${sandboxId}/callback`, payload)).data,
 
+  /** Dashboard text input → synthetic Message → engine handler. Used
+      to type as a fake user for mafia-chat / last-words testing. */
+  message: async (
+    sandboxId: string,
+    payload: { user_id: number; text: string; chat_id?: number },
+  ): Promise<{ ok: boolean }> =>
+    (await api.post(`${BASE}/${sandboxId}/message`, payload)).data,
+
   /** Live GameState shape (same schema as `/admin/groups/{gid}/live`). */
   state: async (sandboxId: string): Promise<LiveGameState> =>
     (await api.get(`${BASE}/${sandboxId}/state`)).data,

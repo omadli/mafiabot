@@ -147,6 +147,23 @@ export function SandboxDetailPage() {
     });
   };
 
+  // Operator types as the active player. DM channel uses the user's own
+  // chat_id (private scope). Group channel uses fake_group_id so the
+  // dispatcher routes it through the group handlers (currently unused
+  // by the engine but handy for future testing).
+  const onGroupSend = async (text: string) => {
+    if (activeUserId == null || !sandboxId || !detail) return;
+    await sandboxApi.message(sandboxId, {
+      user_id: activeUserId,
+      text,
+      chat_id: detail.fake_group_id,
+    });
+  };
+  const onDmSend = async (text: string) => {
+    if (activeUserId == null || !sandboxId) return;
+    await sandboxApi.message(sandboxId, { user_id: activeUserId, text });
+  };
+
   const activePlayer: LivePlayer | undefined = state?.players.find(
     (p) => p.user_id === activeUserId,
   );
@@ -225,6 +242,15 @@ export function SandboxDetailPage() {
             <ChatPanel
               entries={groupEntries}
               onCallback={onGroupClick}
+              onSendMessage={chatTab === "group" ? onGroupSend : undefined}
+              inputPlaceholder={
+                activePlayer
+                  ? t("admin.sandbox.detail.input_placeholder_named", {
+                      name: activePlayer.first_name,
+                      defaultValue: `Type as ${activePlayer.first_name}…`,
+                    })
+                  : undefined
+              }
               disabled={callback.pending}
               emptyLabel={t("admin.sandbox.detail.group_empty")}
             />
@@ -249,6 +275,15 @@ export function SandboxDetailPage() {
             <ChatPanel
               entries={dmEntries}
               onCallback={onDmClick}
+              onSendMessage={activeUserId != null ? onDmSend : undefined}
+              inputPlaceholder={
+                activePlayer
+                  ? t("admin.sandbox.detail.input_placeholder_dm", {
+                      name: activePlayer.first_name,
+                      defaultValue: `Type as ${activePlayer.first_name}…`,
+                    })
+                  : undefined
+              }
               disabled={callback.pending}
               compact
               emptyLabel={t("admin.sandbox.detail.dm_empty")}

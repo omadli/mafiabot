@@ -46,10 +46,20 @@ def sandbox_setup(monkeypatch):
             [FakeUser(user_id=fake_user, first_name="Asad", language_code="ru")],
         )
 
-    # Stub SandboxSession.get so we don't need a DB connection.
+    # Stub SandboxSession.get so we don't need a DB connection. `status`
+    # is included so the runtime-rebuild path can classify the session
+    # without touching the DB; `save` is mocked so the ERRORED-status
+    # write attempt in `_ensure_runtime` doesn't try to talk to Tortoise.
+    from app.db.models import SandboxStatus
+
     class _Stub:
         id = sandbox_id
         fake_group_id = fake_group
+        status = SandboxStatus.RUNNING
+        auto_play_mode = "paused"  # don't actually spawn a loop in tests
+
+        async def save(self, **_kw):
+            return None
 
     class _Query:
         @staticmethod
@@ -131,12 +141,22 @@ async def test_inject_callback_rejects_real_user_id(sandbox_setup, dispatcher_st
 
 
 @pytest.mark.asyncio
-async def test_inject_callback_rejects_when_bot_not_in_registry(sandbox_setup, dispatcher_stub):
+async def test_inject_callback_rebuilds_runtime_when_bot_missing(sandbox_setup, dispatcher_stub):
+    """After a backend restart the SandboxBotRegistry is empty even though
+    the session is still RUNNING. `inject_callback` should rebuild the
+    runtime so the operator can keep driving the existing sandbox without
+    losing its transcript.
+
+    Here we exercise the failure-to-rebuild case: the Redis GameState was
+    also lost (TTL or eviction), so the rebuild can't proceed — we
+    expect a clear "destroy + recreate" error rather than the cryptic
+    "no live bot" surface the old code produced.
+    """
     sandbox_id, fake_group, fake_user, _, setup = sandbox_setup
     await setup()
     SandboxBotRegistry.unregister(fake_group)
 
-    with pytest.raises(SandboxError, match="no live bot"):
+    with pytest.raises(SandboxError, match="lost its Redis state"):
         await sandbox_service.inject_callback(
             sandbox_id=sandbox_id,
             fake_user_id=fake_user,
