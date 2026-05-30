@@ -20,12 +20,14 @@ import { authStore } from "@shared/store/auth";
 
 import { api } from "./client";
 import type {
+  DiamondPackage,
   GroupGamesResponse,
   GroupLeaderboardResponse,
   GroupSettings,
   GroupsPage,
   RoleConfig,
   RoleStat,
+  StarsTransactionsPage,
   SystemSettings,
   TopPlayer,
   TopPlayersSort,
@@ -33,12 +35,14 @@ import type {
 } from "./sa";
 
 export type {
+  DiamondPackage,
   GroupGamesResponse,
   GroupLeaderboardResponse,
   GroupSettings,
   GroupsPage,
   RoleConfig,
   RoleStat,
+  StarsTransactionsPage,
   SystemSettings,
   TopPlayer,
   TopPlayersSort,
@@ -120,6 +124,33 @@ export const superAdminApi = {
         section,
         key,
         value,
+      })
+    ).data,
+
+  /** Replace the whole diamond-purchase tier list. Backend rejects
+   *  duplicate codes — frontend should also validate before submit. */
+  setDiamondPackages: async (
+    packages: DiamondPackage[],
+  ): Promise<{ ok: boolean; packages: DiamondPackage[] }> =>
+    (
+      await api.post(
+        p(
+          "/admin/system-settings/diamond-packages",
+          "/sa/system-settings/diamond-packages",
+        ),
+        { packages },
+      )
+    ).data,
+
+  /** Paginated Stars-purchase audit feed. */
+  starsTransactions: async (
+    page = 1,
+    pageSize = 50,
+    userId?: number,
+  ): Promise<StarsTransactionsPage> =>
+    (
+      await api.get(p("/admin/stars-transactions", "/sa/stars-transactions"), {
+        params: { page, page_size: pageSize, user_id: userId },
       })
     ).data,
 

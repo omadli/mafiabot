@@ -506,11 +506,44 @@ export interface EmojiConfig {
   updated_by_tg_id: number | null;
 }
 
+export interface DiamondPackage {
+  code: string;
+  diamonds: number;
+  bonus_diamonds: number;
+  stars_price: number;
+  display_order: number;
+  enabled: boolean;
+}
+
 export interface SystemSettings {
   item_prices: Record<string, { dollars: number; diamonds: number }>;
   rewards: Record<string, number>;
   exchange: Record<string, number | boolean>;
   premium: Record<string, number>;
+  /** Stars-purchase tiers — editable from the system-settings page. */
+  diamond_packages: DiamondPackage[];
   updated_at: string | null;
   updated_by_tg_id: number | null;
+}
+
+export interface StarsTransactionItem {
+  id: string;
+  created_at: string | null;
+  user_id: number | null;
+  first_name: string | null;
+  username: string | null;
+  stars_amount: number | null;
+  diamonds_amount: number | null;
+  telegram_payment_charge_id: string | null;
+  status: string;
+  note: string | null;
+}
+
+export interface StarsTransactionsPage {
+  items: StarsTransactionItem[];
+  page: number;
+  page_size: number;
+  total: number;
+  agg_total_stars: number;
+  agg_total_diamonds: number;
 }

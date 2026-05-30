@@ -3,6 +3,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
 import { adminApi } from "@shared/api/admin";
+import type { DiamondPackage } from "@shared/api/superAdmin";
+
+import { DiamondPackagesEditor } from "../../sa/components/DiamondPackagesEditor";
 
 type Section = "item_prices" | "rewards" | "exchange" | "premium";
 
@@ -99,6 +102,13 @@ export function SystemSettingsPage() {
         section="premium"
         prefix="premium"
         mutate={(k, v) => mutation.mutate({ section: "premium", key: k, value: v })}
+      />
+
+      <DiamondPackagesEditor
+        initial={
+          ((data as unknown as { diamond_packages?: DiamondPackage[] })
+            .diamond_packages ?? []) as DiamondPackage[]
+        }
       />
 
       {data.updated_at && (

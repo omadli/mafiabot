@@ -1558,7 +1558,7 @@ game-end-dm-loss =
 sa-notify-diamonds-granted =
     💎 <b>The Super Admin has gifted you { $amount } diamonds!</b>
 
-    This is an official notification from the Super Admin via the bot.
+    <i>Enjoy! :)</i>
 
 sa-notify-premium-granted =
     👑 <b>You've been gifted premium status!</b>

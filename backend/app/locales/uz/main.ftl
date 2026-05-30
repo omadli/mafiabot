@@ -1567,7 +1567,7 @@ game-end-dm-loss =
 sa-notify-diamonds-granted =
     💎 <b>Super Admindan sizga { $amount } olmos sovg'a qilindi!</b>
 
-    Bu ushbu bot orqali rasman SuperAdmin tomonidan yuborilgan.
+    <i>Yaxshi kunlarizda ishlating :)</i>
 
 sa-notify-premium-granted =
     👑 <b>Sizga premium status sovg'a qilindi!</b>

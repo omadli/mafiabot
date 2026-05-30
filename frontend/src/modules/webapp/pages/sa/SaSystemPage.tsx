@@ -3,7 +3,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
 import { saApi } from "@shared/api/sa";
+import type { DiamondPackage } from "@shared/api/superAdmin";
 import { useI18n } from "@shared/i18n/useI18n";
+
+import { DiamondPackagesEditor } from "../../../sa/components/DiamondPackagesEditor";
 
 export function SaSystemPage() {
   const { t: tFlat } = useI18n();
@@ -123,6 +126,14 @@ export function SaSystemPage() {
           />
         ))}
       </div>
+
+      {/* Diamond packages (Stars purchase tiers) */}
+      <DiamondPackagesEditor
+        initial={
+          ((data as unknown as { diamond_packages?: DiamondPackage[] })
+            .diamond_packages ?? []) as DiamondPackage[]
+        }
+      />
 
       {data.updated_at && (
         <p style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
