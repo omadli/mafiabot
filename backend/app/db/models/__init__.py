@@ -7,6 +7,11 @@ from app.db.models.audit import (
     OneTimeToken,
     UserAchievement,
 )
+from app.db.models.broadcast import (
+    BroadcastMethod,
+    BroadcastRun,
+    BroadcastStatus,
+)
 from app.db.models.emoji_config import EmojiConfig
 from app.db.models.game import Game, GameStatus, WinnerTeam
 from app.db.models.group import Group, GroupSettings
@@ -42,6 +47,9 @@ __all__ = [
     "Achievement",
     "AdminAccount",
     "AuditLog",
+    "BroadcastMethod",
+    "BroadcastRun",
+    "BroadcastStatus",
     "EmojiConfig",
     "Game",
     "GameResult",

@@ -1113,6 +1113,22 @@ mafia-chat-opened =
     Ayrim a'zolaringiz bilan suhbatlasha olasiz:
     { $members }
 
+# Sent ONCE at game start to every alive mafia member.
+# `role` already includes the emoji + role name. `description` may be
+# empty when the locale has no per-role description.
+mafia-team-intro =
+    🤵🏻 <b>Mafiya jamoasiga xush kelibsiz!</b>
+
+    Siz <b>{ $role }</b>siz.
+    { $description }
+
+    🕵 <b>Sheriklaringizni eslab qoling:</b>
+    { $roster }
+
+    💬 Endi har tunda botga yozib sheriklaringiz bilan
+    rejalashtirishingiz mumkin — yozgan xabaringiz
+    barcha mafiya azolariga yetib boradi.
+
     <e:scene-last-words> Bu yerga yozgan har qanday matningiz boshqa mafiyalarga yetkaziladi.
 
 

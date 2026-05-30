@@ -12,8 +12,6 @@ Called on the first NIGHT phase transition (round_num == 1):
 
 from __future__ import annotations
 
-import asyncio
-
 from aiogram import Bot
 from aiogram.exceptions import TelegramForbiddenError
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
@@ -94,7 +92,24 @@ async def announce_game_started(bot: Bot, state: GameState) -> None:
         except Exception as e:
             logger.debug(f"Role DM to {player_id} failed: {e}")
 
-    await asyncio.gather(
-        *[_send_dm(p.user_id, p.role) for p in state.players if p.role],
-        return_exceptions=True,
+    # Pace the role reveals — with 30 players the bot would otherwise
+    # burst all DMs into Telegram's 30 msg/s bucket in the same tick.
+    from app.services.safe_messaging import paced_each
+
+    players_with_roles = [p for p in state.players if p.role]
+    await paced_each(
+        players_with_roles,
+        lambda p: _send_dm(p.user_id, p.role),  # type: ignore[arg-type]
+        user_id_of=lambda p: p.user_id,
+        delay=0.05,
     )
+
+    # One-time mafia team intro — replaces the per-night
+    # "Mafiya tunini ochildi" line. Sent after the role DMs so the
+    # member already knows their own role when the roster lands.
+    from app.services.mafia_chat import announce_mafia_team_intro
+
+    try:
+        await announce_mafia_team_intro(bot, state)
+    except Exception as e:
+        logger.debug(f"mafia team intro failed: {e}")

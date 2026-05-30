@@ -22,7 +22,12 @@ from datetime import UTC, datetime, timedelta
 
 from aiogram import Bot, F, Router
 from aiogram.filters import Command, CommandObject
-from aiogram.types import Message
+from aiogram.types import (
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Message,
+)
 from loguru import logger
 
 from app.bot.filters.super_admin import IsSuperAdmin
@@ -659,6 +664,180 @@ async def sa_setrate(message: Message, command: CommandObject) -> None:
         payload={"rate": rate, "actor_tg_id": message.from_user.id},
     )
     await message.answer(f"✅ Yangi kurs: <b>1💎 = {rate}💵</b>", parse_mode="HTML")
+
+
+# ===========================================================
+# Forwarded-message broadcast prompt
+# ===========================================================
+#
+# When a super-admin forwards / sends any non-command, non-empty
+# message to the bot in private chat, we offer two ways to fan it
+# out across every active user:
+#
+#   📋 Copy    — `copyMessage`, recipients see the bot as the sender
+#                (no "Forwarded from …" header). Best for system
+#                announcements.
+#   ↗ Forward  — `forwardMessage`, preserves the original author's
+#                name. Best for sharing news posts / channel content.
+#
+# Tapping a button creates a `BroadcastRun` row and detaches the
+# worker. The SA receives an immediate ack here and a full report
+# DM when the worker finishes.
+#
+# Routing notes: the `super_admin` router is included BEFORE
+# `last_words` in `dispatcher.setup_routers`, so a SA's forward
+# never falls through to the mafia-chat / last-words handler. The
+# filter also requires text/caption to avoid offering broadcast on
+# bare stickers (which neither copyMessage nor a meaningful summary
+# can carry well — admins can always re-send through the dialog if
+# they really want).
+
+
+def _build_broadcast_prompt_kb(message_id: int) -> InlineKeyboardMarkup:
+    """Two-button keyboard wired to the broadcast worker.
+
+    Callback data shape: `sa:bcast:<method>:<source_message_id>`.
+    `source_chat_id` isn't packed — the worker reads it from the
+    callback query's chat (always the SA's private chat with the
+    bot, which is where the prompt was issued).
+    """
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="📋 Copy",
+                    callback_data=f"sa:bcast:copy:{message_id}",
+                ),
+                InlineKeyboardButton(
+                    text="↗ Forward",
+                    callback_data=f"sa:bcast:forward:{message_id}",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="❌ Bekor qilish",
+                    callback_data="sa:bcast:cancel",
+                ),
+            ],
+        ]
+    )
+
+
+@router.message(F.text & ~F.text.startswith("/"))
+async def sa_broadcast_prompt_text(message: Message) -> None:
+    """Catch a plain text SA → bot DM and offer the broadcast dialog."""
+    if message.from_user is None or message.text is None:
+        return
+    # Skip empty / whitespace-only payloads — nothing to broadcast.
+    if not message.text.strip():
+        return
+    await message.answer(
+        "📨 <b>Bu xabarni barcha foydalanuvchilarga qanday yuboraman?</b>\n\n"
+        "📋 <b>Copy</b> — xabar bot tomonidan yuborilgandek ko'rinadi\n"
+        "↗ <b>Forward</b> — asl muallifning ismi bilan forward qilinadi",
+        parse_mode="HTML",
+        reply_markup=_build_broadcast_prompt_kb(message.message_id),
+    )
+
+
+@router.message(F.forward_origin)
+async def sa_broadcast_prompt_forward(message: Message) -> None:
+    """Catch a forwarded message (any media type) — same dialog as text."""
+    if message.from_user is None:
+        return
+    await message.answer(
+        "📨 <b>Forward qilingan xabarni qanday tarqatay?</b>\n\n"
+        "📋 <b>Copy</b> — bot yuborgandek ko'rinadi\n"
+        "↗ <b>Forward</b> — asl manba (kanal/foydalanuvchi) ko'rsatiladi",
+        parse_mode="HTML",
+        reply_markup=_build_broadcast_prompt_kb(message.message_id),
+    )
+
+
+@router.message(F.caption & (F.photo | F.video | F.animation | F.document))
+async def sa_broadcast_prompt_media(message: Message) -> None:
+    """Catch a media + caption SA → bot DM (e.g. a photo with text)."""
+    if message.from_user is None:
+        return
+    await message.answer(
+        "📨 <b>Media xabarni barchaga qanday yuboraman?</b>",
+        parse_mode="HTML",
+        reply_markup=_build_broadcast_prompt_kb(message.message_id),
+    )
+
+
+@router.callback_query(F.data == "sa:bcast:cancel")
+async def cb_broadcast_cancel(query: CallbackQuery) -> None:
+    import contextlib
+
+    await query.answer("Bekor qilindi", show_alert=False)
+    if query.message is not None:
+        with contextlib.suppress(Exception):
+            await query.message.edit_text("❌ Broadcast bekor qilindi.")
+
+
+@router.callback_query(F.data.startswith("sa:bcast:"))
+async def cb_broadcast_choose_method(query: CallbackQuery) -> None:
+    """Dispatch to `broadcast_service.schedule_broadcast`.
+
+    Callback data: `sa:bcast:<copy|forward>:<source_message_id>`.
+    """
+    if query.data is None or query.from_user is None:
+        await query.answer()
+        return
+    parts = query.data.split(":")
+    if len(parts) != 4 or parts[2] not in ("copy", "forward"):
+        await query.answer("Yaroqsiz so'rov", show_alert=True)
+        return
+    method_str = parts[2]
+    try:
+        source_message_id = int(parts[3])
+    except ValueError:
+        await query.answer("Yaroqsiz xabar id", show_alert=True)
+        return
+
+    if query.message is None:
+        await query.answer()
+        return
+
+    # The prompt was posted in the SA's private chat with the bot —
+    # the original-message chat is the same chat.
+    source_chat_id = query.from_user.id
+
+    from app.db.models import BroadcastMethod
+    from app.services import broadcast_service
+
+    method = BroadcastMethod.COPY if method_str == "copy" else BroadcastMethod.FORWARD
+    run = await broadcast_service.schedule_broadcast(
+        initiator_tg_id=query.from_user.id,
+        method=method,
+        source_chat_id=source_chat_id,
+        source_message_id=source_message_id,
+    )
+
+    import contextlib
+
+    await query.answer("🚀 Broadcast boshlandi", show_alert=False)
+    with contextlib.suppress(Exception):
+        await query.message.edit_text(
+            f"🚀 <b>Broadcast boshlandi</b>\n\n"
+            f"Usul: <code>{method.value}</code>\n"
+            f"Run ID: <code>{run.id}</code>\n\n"
+            f"Yakuniy hisobot xabar orqali keladi.",
+            parse_mode="HTML",
+        )
+
+    await log_action(
+        action="sa.broadcast.start",
+        target_type="broadcast",
+        target_id=str(run.id),
+        payload={
+            "method": method.value,
+            "source_chat_id": source_chat_id,
+            "source_message_id": source_message_id,
+            "actor_tg_id": query.from_user.id,
+        },
+    )
 
 
 logger.info("Super admin handlers loaded")

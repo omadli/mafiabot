@@ -34,6 +34,15 @@ class User(Model):
     # AFK tracking
     afk_warnings = fields.IntField(default=0)
 
+    # Bot reachability — flipped to False when a broadcast / role-DM /
+    # any other send fails with TelegramForbiddenError (user blocked the
+    # bot, deleted their account, or hit "Stop"). The broadcast service
+    # skips inactive users on subsequent runs; nothing else relies on it,
+    # so a stale True is harmless.
+    is_active = fields.BooleanField(default=True)
+    inactive_reason = fields.CharField(max_length=128, null=True)
+    inactive_at = fields.DatetimeField(null=True)
+
     # 1 user = 1 game (active)
     # FK emas — User ↔ Game cycle (Game.bounty_initiator → User)
     # ni sindirish uchun. Manual lookup: Game.get_or_none(id=user.active_game_id)

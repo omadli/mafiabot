@@ -567,10 +567,9 @@ async def _on_phase_change(bot: Bot, state) -> None:
         except Exception as e:
             logger.warning(f"Failed to send night alive summary: {e}")
         await send_night_prompts(bot, state)
-        # Open mafia private chat
-        from app.services.mafia_chat import announce_mafia_chat_open
-
-        await announce_mafia_chat_open(bot, state)
+        # The mafia teammate intro fires once at game start (right after
+        # roles are revealed in `announce_game_started`); nothing nightly
+        # is needed — every subsequent night just reuses the same chat.
     elif state.phase == Phase.DAY:
         await _broadcast_results_from_log(bot, state)
         await broadcast_phase_change(bot, state)

@@ -73,9 +73,21 @@ async def relay_mafia_message(bot: Bot, sender_user_id: int, text: str) -> bool:
     # Format with sender's role + name
     role_emoji = _role_emoji(sender.role)
     safe_text = text.replace("<", "&lt;").replace(">", "&gt;").replace("&", "&amp;")
-    formatted = f"{role_emoji} <b>{sender.first_name}</b>: {safe_text}"
+    # Format requested by ops: `<Role> <Name>:\n<i>text</i>` so the
+    # role label leads (helps readers scan a busy mafia chat) and the
+    # message body stands out in italic.
+    from app.services.i18n_service import get_translator
 
-    # Broadcast
+    locale = state.settings.get("language", "uz")
+    role_label_full = get_translator(locale)(f"role-{sender.role}")  # "🤵🏻 Don"
+    # `role-*` keys are "{emoji} {name}"; split off the emoji prefix so
+    # we render "Don Olim:" instead of "🤵🏻 Don Olim:".
+    role_name = role_label_full.split(" ", 1)[-1] if " " in role_label_full else role_label_full
+    formatted = f"{role_emoji} <b>{role_name} {sender.first_name}:</b>\n<i>{safe_text}</i>"
+
+    # Broadcast — sender is NOT in `recipients`, so they don't receive
+    # a confirmation echo of their own line. This matches what humans
+    # expect from a chat: you typed it, you saw it leave.
     coros = []
     for recipient in recipients:
         coros.append(_safe_dm(bot, recipient.user_id, formatted))
@@ -104,21 +116,59 @@ async def _safe_dm(bot: Bot, user_id: int, text: str) -> None:
         logger.warning(f"Mafia chat DM error for {user_id}: {e}")
 
 
-async def announce_mafia_chat_open(bot: Bot, state: GameState) -> None:
-    """At start of night, notify mafia members they can chat now."""
+async def announce_mafia_team_intro(bot: Bot, state: GameState) -> None:
+    """One-shot intro DM at game start — list teammates + private-chat hint.
+
+    Replaces the previous per-night `announce_mafia_chat_open` which
+    spammed the same "Mafiya tunini ochildi" line every night even
+    though nothing about the chat changed between rounds.
+
+    Each surviving mafia member receives a personalised DM:
+      "Siz <Role>siz. <short description>.
+       Sheriklaringizni eslab qoling:
+         A — Don
+         B — Mafiya
+         C — Advokat
+       Botga yozib sheriklaringiz bilan rejalashtirishingiz mumkin."
+
+    Don solo (no teammates) gets nothing — there's no chat to open.
+    """
     from app.services.i18n_service import get_translator
 
     locale = state.settings.get("language", "uz")
-    _ = get_translator(locale)
+    t = get_translator(locale)
 
     mafia_members = [p for p in state.alive_players() if p.team == Team.MAFIA]
     if len(mafia_members) < 2:
-        return  # solo Don — no chat needed
+        return  # solo Don — no chat to introduce
 
-    members_list = "\n".join(
-        f"  • {_role_emoji(p.role)} <b>{p.first_name}</b>" for p in mafia_members
-    )
-    text = _("mafia-chat-opened", members=members_list)
+    # Build the teammate roster line once; each member sees the same list.
+    roster_lines = []
+    for p in mafia_members:
+        role_label = t(f"role-{p.role}")
+        roster_lines.append(f"  • {role_label} — <b>{p.first_name}</b>")
+    roster = "\n".join(roster_lines)
 
-    coros = [_safe_dm(bot, p.user_id, text) for p in mafia_members]
+    coros = []
+    for member in mafia_members:
+        role_label = t(f"role-{member.role}")
+        role_desc = t(f"role-desc-{member.role}")
+        # Fluent falls back to the key when missing; bail to a one-line
+        # description in that case so the DM never reads as a broken
+        # template.
+        if role_desc == f"role-desc-{member.role}":
+            role_desc = ""
+        body = t(
+            "mafia-team-intro",
+            role=role_label,
+            description=role_desc,
+            roster=roster,
+        )
+        coros.append(_safe_dm(bot, member.user_id, body))
     await asyncio.gather(*coros, return_exceptions=True)
+
+
+# Backwards-compatible re-export — call sites updated, but keep the
+# old name pointing at the new function so any stale import surfaces
+# the deprecation with a clear behaviour change instead of a NameError.
+announce_mafia_chat_open = announce_mafia_team_intro

@@ -18,7 +18,6 @@ no-ops.
 
 from __future__ import annotations
 
-import asyncio
 import contextlib
 
 from aiogram import Bot, F, Router
@@ -361,7 +360,17 @@ async def announce_voting(bot: Bot, state: GameState) -> None:
         except Exception as e:
             logger.debug(f"Voting DM to {player.user_id} failed: {e}")
 
-    await asyncio.gather(*(_dm(p) for p in state.alive_players()), return_exceptions=True)
+    # Pace the per-player DMs — 30 alive players, each one instant DM,
+    # would punch through Telegram's 30 msg/s bot-wide cap if another
+    # game is mid-voting in parallel.
+    from app.services.safe_messaging import paced_each
+
+    await paced_each(
+        state.alive_players(),
+        _dm,
+        user_id_of=lambda p: p.user_id,
+        delay=0.05,
+    )
 
 
 async def announce_hanging_confirm(bot: Bot, state: GameState, target_id: int) -> None:

@@ -9,7 +9,6 @@ back to the group chat.
 
 from __future__ import annotations
 
-import asyncio
 import contextlib
 
 from aiogram import Bot
@@ -60,5 +59,15 @@ async def send_per_player_game_end_dm(bot: Bot, state: GameState) -> None:
         except Exception as e:
             logger.debug(f"Game-end DM to {result.user_id} failed: {e}")  # type: ignore[attr-defined,var-annotated,arg-type]
 
+    # Pace the end-game DMs — up to 30 players' role+reward summary
+    # would otherwise burst against Telegram's 30 msg/s cap exactly
+    # when several games finish in the same minute.
+    from app.services.safe_messaging import paced_each
+
     with contextlib.suppress(Exception):
-        await asyncio.gather(*(_send(r) for r in results), return_exceptions=True)
+        await paced_each(
+            results,
+            _send,
+            user_id_of=lambda r: getattr(r, "user_id", None),
+            delay=0.05,
+        )

@@ -248,6 +248,16 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     start_scheduler()
 
+    # Heal any broadcast rows the previous backend left in RUNNING — the
+    # task is gone now, so the row would sit there forever without help.
+    # The SA can manually re-run from the dashboard if needed.
+    try:
+        from app.services.broadcast_service import recover_interrupted_runs
+
+        await recover_interrupted_runs()
+    except Exception as e:  # pragma: no cover — never block startup on cleanup
+        logger.warning(f"recover_interrupted_runs failed: {e}")
+
     logger.info(f"Application startup complete (mode={settings.bot_mode})")
     yield
 

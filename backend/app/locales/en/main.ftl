@@ -1114,6 +1114,18 @@ mafia-chat-opened =
     You can chat with your teammates:
     { $members }
 
+mafia-team-intro =
+    🤵🏻 <b>Welcome to the Mafia team!</b>
+
+    You are <b>{ $role }</b>.
+    { $description }
+
+    🕵 <b>Remember your accomplices:</b>
+    { $roster }
+
+    💬 You can now DM the bot each night to coordinate —
+    your message will reach every Mafia teammate.
+
     <e:scene-last-words> Any text you send here is relayed to other mafia members.
 
 

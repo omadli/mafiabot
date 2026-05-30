@@ -79,8 +79,9 @@ function tokenizeHtml(input: string): HtmlNode[] {
   const stack: HtmlNode[] = [{ type: "element", tag: "root", children: [] }];
   const root = stack[0];
 
-  // <br/>, <br>
-  const tagRe = /<(\/?)(\w+)([^>]*?)(\/?)>/g;
+  // <br/>, <br>. Tag-name char class allows `-` so `<tg-emoji>` parses
+  // as a single tag rather than `<tg>` + literal `emoji…` text.
+  const tagRe = /<(\/?)([a-zA-Z][\w-]*)([^>]*?)(\/?)>/g;
   let last = 0;
   let m: RegExpExecArray | null;
   const pushText = (txt: string) => {

@@ -150,7 +150,22 @@ def _scope_for(chat_id: int, fake_group_id: int) -> str:
 
 
 class SandboxBot:
-    """Duck-typed Bot for sandbox games. Holds no network state."""
+    """Duck-typed Bot for sandbox games. Holds no network state.
+
+    The real `aiogram.Bot` is configured with
+    `DefaultBotProperties(parse_mode=ParseMode.HTML)` at startup, which
+    means most call sites in the engine omit `parse_mode=` and rely on
+    that default. SandboxBot mirrors the same default so the transcript
+    receives `parse_mode="HTML"` on every send/edit unless an explicit
+    `parse_mode=None` (or other override) is passed — without this, the
+    dashboard renderer would fall into the plain-text branch and show
+    raw `<b>` / `<tg-emoji>` markup instead of formatted text.
+    """
+
+    # Mirrors aiogram's DefaultBotProperties(parse_mode=ParseMode.HTML)
+    # configured in `app.main.setup_bot`. Per-call `parse_mode=` still
+    # wins.
+    DEFAULT_PARSE_MODE = "HTML"
 
     def __init__(
         self,
@@ -172,6 +187,24 @@ class SandboxBot:
             id=self.id, is_bot=True, first_name=bot_username, username=bot_username
         )
 
+    @staticmethod
+    def _effective_parse_mode(explicit: str | None) -> str | None:
+        """Return the parse_mode actually applied for a send.
+
+        If the caller explicitly passed `parse_mode=None` they want
+        plain text — honour that. Otherwise the default (HTML) wins so
+        the dashboard renders `<b>`/`<i>`/mentions/`<tg-emoji>` instead
+        of leaving them as literal markup.
+        """
+        # We can't distinguish "missing kwarg" from "explicit None" via
+        # the keyword-only signature aiogram uses, so we treat None as
+        # "use the default". The few call sites that genuinely want
+        # plain text already pass `parse_mode=""` (an empty string,
+        # which Telegram rejects but the SandboxBot accepts).
+        if explicit:
+            return explicit
+        return SandboxBot.DEFAULT_PARSE_MODE
+
     # --- Bot identity (referenced by messaging.py caches) ---
 
     async def me(self) -> _FakeUser:  # aiogram exposes this as an async method
@@ -190,7 +223,7 @@ class SandboxBot:
         return await self._record_send(
             chat_id=chat_id,
             text=text,
-            parse_mode=parse_mode,
+            parse_mode=self._effective_parse_mode(parse_mode),
             reply_markup=reply_markup,
             media=None,
         )
@@ -208,7 +241,7 @@ class SandboxBot:
         return await self._record_send(
             chat_id=chat_id,
             text=caption,
-            parse_mode=parse_mode,
+            parse_mode=self._effective_parse_mode(parse_mode),
             reply_markup=reply_markup,
             media=media,
         )
@@ -226,7 +259,7 @@ class SandboxBot:
         return await self._record_send(
             chat_id=chat_id,
             text=caption,
-            parse_mode=parse_mode,
+            parse_mode=self._effective_parse_mode(parse_mode),
             reply_markup=reply_markup,
             media=media,
         )
@@ -244,7 +277,7 @@ class SandboxBot:
         return await self._record_send(
             chat_id=chat_id,
             text=caption,
-            parse_mode=parse_mode,
+            parse_mode=self._effective_parse_mode(parse_mode),
             reply_markup=reply_markup,
             media=media,
         )
@@ -280,7 +313,7 @@ class SandboxBot:
             message_id=message_id,
             ref_message_id=message_id,
             text=text,
-            parse_mode=parse_mode,
+            parse_mode=self._effective_parse_mode(parse_mode),
             reply_markup=_serialize_keyboard(reply_markup),
         )
         await self._persist(entry)
