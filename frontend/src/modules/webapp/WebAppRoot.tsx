@@ -12,14 +12,14 @@ import { RoleStatsPage as SaRolesPage } from "../sa/pages/RoleStatsPage";
 import { StarsTransactionsPage } from "../sa/pages/StarsTransactionsPage";
 import { SaRoleConfigsPage } from "./pages/sa/SaRoleConfigsPage";
 import { SaEmojiConfigsPage } from "./pages/sa/SaEmojiConfigsPage";
-import { SaPlayersPage } from "./pages/sa/SaPlayersPage";
-import { SaGroupsPage } from "./pages/sa/SaGroupsPage";
+import { TopPlayersPage as SaPlayersPage } from "../sa/pages/TopPlayersPage";
+import { GroupsPage as SaGroupsPage } from "../sa/pages/GroupsPage";
 import { SaGroupDetailPage } from "./pages/sa/SaGroupDetailPage";
 import { SaLiveGamePage } from "./pages/sa/SaLiveGamePage";
 import { SaSystemPage } from "./pages/sa/SaSystemPage";
 import { SaUsersPage } from "./pages/sa/SaUsersPage";
 import { SaUserDetailPage } from "./pages/sa/SaUserDetailPage";
-import { SaGamesPage } from "./pages/sa/SaGamesPage";
+import { GamesPage as SaGamesPage } from "../sa/pages/GamesPage";
 import { SaGameReplayPage } from "./pages/sa/SaGameReplayPage";
 import { AuditPage as SaAuditPage } from "../sa/pages/AuditPage";
 

@@ -29,6 +29,8 @@ import type {
   RoleStat,
   SaAuditEntry,
   SaAuditPage,
+  SaGameListItem,
+  SaGamesPage,
   StarsTransactionsPage,
   SystemSettings,
   TopPlayer,
@@ -46,6 +48,8 @@ export type {
   RoleStat,
   SaAuditEntry,
   SaAuditPage,
+  SaGameListItem,
+  SaGamesPage,
   StarsTransactionsPage,
   SystemSettings,
   TopPlayer,
@@ -146,6 +150,24 @@ export const superAdminApi = {
       )
     ).data,
 
+  /** Paginated games list. Backend filters: `status`, `group_id`,
+   *  page / page_size + admin-only `sort_by` / `sort_dir`. */
+  games: async (
+    params: {
+      status?: string;
+      group_id?: number;
+      page?: number;
+      page_size?: number;
+      sort_by?: string;
+      sort_dir?: "asc" | "desc";
+    } = {},
+  ): Promise<SaGamesPage> =>
+    (
+      await api.get(p("/admin/games", "/sa/games"), {
+        params,
+      })
+    ).data,
+
   /** Paginated audit log. Backend filters: `action` (substring),
    *  `actor_id`, page / page_size. */
   audit: async (
@@ -171,11 +193,40 @@ export const superAdminApi = {
 
   // === Groups browser ===
 
-  groups: async (page = 1, pageSize = 50): Promise<GroupsPage> =>
+  groups: async (
+    params: {
+      search?: string;
+      is_blocked?: boolean;
+      sort_by?: string;
+      sort_dir?: "asc" | "desc";
+      page?: number;
+      page_size?: number;
+    } = {},
+  ): Promise<GroupsPage> =>
     (
       await api.get(p("/admin/groups", "/sa/groups"), {
-        params: { page, page_size: pageSize },
+        params: {
+          ...params,
+          page_size: params.page_size ?? 50,
+          page: params.page ?? 1,
+        },
       })
+    ).data,
+
+  /** Block a group (auto-cancels any live game, hides /game from members). */
+  blockGroup: async (groupId: number, reason: string): Promise<{ ok: boolean }> =>
+    (
+      await api.post(
+        p(`/admin/groups/${groupId}/block`, `/sa/groups/${groupId}/block`),
+        { reason },
+      )
+    ).data,
+
+  unblockGroup: async (groupId: number): Promise<{ ok: boolean }> =>
+    (
+      await api.post(
+        p(`/admin/groups/${groupId}/unblock`, `/sa/groups/${groupId}/unblock`),
+      )
     ).data,
 
   groupGames: async (
