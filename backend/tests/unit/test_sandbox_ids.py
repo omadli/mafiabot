@@ -111,6 +111,60 @@ def test_zero_is_not_sandbox():
     assert not is_sandbox_group_id(0)
 
 
+# === JavaScript-safe integer invariant ===
+#
+# Sandbox IDs are serialised to JSON and consumed by the React dashboard,
+# which deserialises numbers as IEEE 754 doubles. Outside ±(2**53 - 1)
+# integer precision is lost — multiple fake players would collapse to
+# the same JS Number and the dashboard couldn't tell them apart. We
+# guard the ranges here so a future "let's bump these for more headroom"
+# refactor fails loudly instead of silently aliasing players.
+
+JS_MAX_SAFE_INTEGER = 2**53 - 1
+
+
+def test_ranges_fit_inside_js_safe_integer():
+    assert -JS_MAX_SAFE_INTEGER <= USER_RANGE_START
+    assert USER_RANGE_END <= JS_MAX_SAFE_INTEGER
+    assert -JS_MAX_SAFE_INTEGER <= GROUP_RANGE_START
+    assert GROUP_RANGE_END <= JS_MAX_SAFE_INTEGER
+
+
+def test_consecutive_player_ids_are_distinct_in_js_doubles():
+    """Adjacent fake user IDs must NOT round to the same JavaScript Number.
+
+    Regression: the original ±2**62 ranges collapsed every fake player in
+    session 0 to the same Number because IEEE 754 doubles have a 1024-wide
+    gap at that magnitude.
+    """
+    seen_as_double: set[float] = set()
+    for player_idx in range(30):  # max sandbox roster
+        uid = alloc_user_id(session_seq=0, player_idx=player_idx)
+        # Round-trip through Python's float (same precision as JS Number).
+        as_double = float(uid)
+        # 1. The cast itself must be exact.
+        assert (
+            int(as_double) == uid
+        ), f"player {player_idx} id {uid} not exactly representable as float"
+        # 2. No two players may collide on the same double.
+        assert as_double not in seen_as_double, f"player {player_idx} aliases {uid} as double"
+        seen_as_double.add(as_double)
+
+
+def test_legacy_sandbox_ids_still_classified():
+    """Pre-migration IDs in the ±2**60..62 ranges must still pass the
+    `is_sandbox_*` guards so post-mortem rows in the DB don't become
+    invisible to the middleware path."""
+    legacy_user = -(2**62)  # legacy USER_RANGE_START
+    legacy_group = -(2**61)  # legacy GROUP_RANGE_START
+    assert is_sandbox_id(legacy_user)
+    assert is_sandbox_user_id(legacy_user)
+    assert not is_sandbox_group_id(legacy_user)
+    assert is_sandbox_id(legacy_group)
+    assert is_sandbox_group_id(legacy_group)
+    assert not is_sandbox_user_id(legacy_group)
+
+
 def test_is_sandbox_state_via_group_id():
     """GameState carries the sandbox marker via group_id range — no flag."""
     from app.core.sandbox_ids import is_sandbox_state
