@@ -84,7 +84,7 @@ export function SaUserDetailPage() {
           onClick={() => setSendOpen(true)}
           style={{ padding: "0.35rem 0.7rem" }}
         >
-          📨 {t("sa.send_msg.button", "Send message")}
+          📨 {t("sa.send_msg.button")}
         </button>
       </div>
       <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>

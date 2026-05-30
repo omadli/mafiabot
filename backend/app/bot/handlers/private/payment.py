@@ -20,7 +20,11 @@ async def callback_buy_diamonds(query: CallbackQuery, user: User, _: Translator,
         await query.answer()
         return
     code = query.data.split(":")[2]
-    pkg = payment_service.get_package(code)
+    # Use the LIVE package list so SA-edited / renamed / freshly-added
+    # tiers (stored in SystemSettings.diamond_packages) resolve here.
+    # The previous sync `get_package` only knew about the hard-coded
+    # fallbacks, so any custom code raised "Invalid package".
+    pkg = await payment_service.get_package_async(code)
     if pkg is None:
         await query.answer("Invalid package", show_alert=True)
         return

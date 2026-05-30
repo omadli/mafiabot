@@ -104,6 +104,7 @@ async def notify_stars_purchase(
     name is rendered as a Telegram mention so the SA can tap through to
     the user's profile.
 
+    Each SA receives the message in their own language (from their User row).
     Failures are swallowed by the outer `_safe_send`; this function
     must never block the actual purchase being credited.
     """
@@ -127,16 +128,19 @@ async def notify_stars_purchase(
     )
     mention = f'<a href="tg://user?id={user.id}">{display}</a>'
 
-    text = (
-        "💎 <b>Yangi Telegram Stars to'lov</b>\n\n"
-        f"👤 Foydalanuvchi: {mention} (<code>#{user.id}</code>)\n"
-        f"📦 Paket: <code>{package_code}</code>\n"
-        f"⭐ To'langan: <b>{stars_paid}</b> Stars\n"
-        f"💎 Berildi: <b>{diamonds_credited}</b> olmos"
-    )
-
     for sa_id in sa_ids:
         try:
+            sa_user = await User.get_or_none(id=int(sa_id))
+            locale = _safe_locale(sa_user) if sa_user is not None else "uz"
+            t = get_translator(locale)
+            text = t(
+                "sa-notify-stars-purchase",
+                mention=mention,
+                user_id=user.id,
+                package_code=package_code,
+                stars_paid=stars_paid,
+                diamonds_credited=diamonds_credited,
+            )
             await _safe_send(bot, int(sa_id), text)
         except Exception as e:  # pragma: no cover — never block on a single SA
             logger.debug(f"SA Stars notification to {sa_id} failed: {e}")

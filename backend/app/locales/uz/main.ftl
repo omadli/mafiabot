@@ -1590,3 +1590,67 @@ sa-notify-admin-message =
     <i>{ $body }</i>
 
     <i>Bu xabarga keladigan javoblar shart emas.</i>
+
+
+# ===========================================================
+# SA → SA BILDIRISHNOMALAR (SA harakatlari haqida Super Adminlarga)
+# ===========================================================
+
+sa-notify-stars-purchase =
+    💎 <b>Yangi Telegram Stars to'lov</b>
+
+    👤 Foydalanuvchi: { $mention } (<code>#{ $user_id }</code>)
+    📦 Paket: <code>{ $package_code }</code>
+    ⭐ To'langan: <b>{ $stars_paid }</b> Stars
+    💎 Berildi: <b>{ $diamonds_credited }</b> olmos
+
+
+# ===========================================================
+# BROADCAST — SUPER ADMIN DIALOGLAR VA HISOBOTLAR
+# ===========================================================
+
+sa-broadcast-prompt-text =
+    📨 <b>Bu xabarni barcha foydalanuvchilarga qanday yuboraman?</b>
+
+    📋 <b>Copy</b> — xabar bot tomonidan yuborilgandek ko'rinadi
+    ↗ <b>Forward</b> — asl muallifning ismi bilan forward qilinadi
+
+sa-broadcast-prompt-forward =
+    📨 <b>Forward qilingan xabarni qanday tarqatay?</b>
+
+    📋 <b>Copy</b> — bot yuborgandek ko'rinadi
+    ↗ <b>Forward</b> — asl manba (kanal/foydalanuvchi) ko'rsatiladi
+
+sa-broadcast-prompt-media = 📨 <b>Media xabarni barchaga qanday yuboraman?</b>
+
+btn-broadcast-copy = 📋 Copy
+btn-broadcast-forward = ↗ Forward
+btn-broadcast-cancel = ❌ Bekor qilish
+
+sa-broadcast-toast-started = 🚀 Broadcast boshlandi
+sa-broadcast-toast-cancelled = Bekor qilindi
+sa-broadcast-toast-invalid-request = Yaroqsiz so'rov
+sa-broadcast-toast-invalid-message-id = Yaroqsiz xabar id
+
+sa-broadcast-started-msg =
+    🚀 <b>Broadcast boshlandi</b>
+
+    Usul: <code>{ $method }</code>
+    Run ID: <code>{ $run_id }</code>
+
+    Yakuniy hisobot xabar orqali keladi.
+
+sa-broadcast-cancelled-msg = ❌ Broadcast bekor qilindi.
+
+sa-broadcast-report =
+    📊 <b>Broadcast yakunlandi</b>
+
+    Usul: <code>{ $method }</code>
+    Jami: <b>{ $total }</b>
+    ✅ Yetkazildi: <b>{ $success }</b>
+    ❌ Xato: <b>{ $fail }</b>
+    📦 Bazada deaktiv qilindi: <b>{ $deactivated }</b>
+    ⏱ Davomiyligi: <code>{ $duration }s</code>
+
+    <b>Xato sabablari:</b>
+    { $summary }

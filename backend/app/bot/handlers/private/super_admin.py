@@ -40,8 +40,26 @@ from app.db.models import (
     User,
 )
 from app.services.audit_service import log_action
+from app.services.i18n_service import get_translator
 
 router = Router(name="private_super_admin")
+
+
+def _sa_locale(user_id: int | None = None) -> str:
+    """Return the SA's locale from their User row, falling back to 'uz'."""
+    # Sync helper — callers must fetch the User row themselves if needed.
+    # Used in async handlers via `await _get_sa_locale(user_id)`.
+    return "uz"
+
+
+async def _get_sa_locale(user_id: int) -> str:
+    """Async: fetch SA's locale from DB, default 'uz'."""
+    sa_user = await User.get_or_none(id=user_id)
+    if sa_user and hasattr(sa_user, "language_code") and sa_user.language_code:
+        return sa_user.language_code
+    return "uz"
+
+
 router.message.filter(F.chat.type == "private", IsSuperAdmin())
 
 
@@ -731,10 +749,10 @@ async def sa_broadcast_prompt_text(message: Message) -> None:
     # Skip empty / whitespace-only payloads — nothing to broadcast.
     if not message.text.strip():
         return
+    locale = await _get_sa_locale(message.from_user.id)
+    t = get_translator(locale)
     await message.answer(
-        "📨 <b>Bu xabarni barcha foydalanuvchilarga qanday yuboraman?</b>\n\n"
-        "📋 <b>Copy</b> — xabar bot tomonidan yuborilgandek ko'rinadi\n"
-        "↗ <b>Forward</b> — asl muallifning ismi bilan forward qilinadi",
+        t("sa-broadcast-prompt-text"),
         parse_mode="HTML",
         reply_markup=_build_broadcast_prompt_kb(message.message_id),
     )
@@ -745,10 +763,10 @@ async def sa_broadcast_prompt_forward(message: Message) -> None:
     """Catch a forwarded message (any media type) — same dialog as text."""
     if message.from_user is None:
         return
+    locale = await _get_sa_locale(message.from_user.id)
+    t = get_translator(locale)
     await message.answer(
-        "📨 <b>Forward qilingan xabarni qanday tarqatay?</b>\n\n"
-        "📋 <b>Copy</b> — bot yuborgandek ko'rinadi\n"
-        "↗ <b>Forward</b> — asl manba (kanal/foydalanuvchi) ko'rsatiladi",
+        t("sa-broadcast-prompt-forward"),
         parse_mode="HTML",
         reply_markup=_build_broadcast_prompt_kb(message.message_id),
     )
@@ -759,8 +777,10 @@ async def sa_broadcast_prompt_media(message: Message) -> None:
     """Catch a media + caption SA → bot DM (e.g. a photo with text)."""
     if message.from_user is None:
         return
+    locale = await _get_sa_locale(message.from_user.id)
+    t = get_translator(locale)
     await message.answer(
-        "📨 <b>Media xabarni barchaga qanday yuboraman?</b>",
+        t("sa-broadcast-prompt-media"),
         parse_mode="HTML",
         reply_markup=_build_broadcast_prompt_kb(message.message_id),
     )
@@ -770,10 +790,12 @@ async def sa_broadcast_prompt_media(message: Message) -> None:
 async def cb_broadcast_cancel(query: CallbackQuery) -> None:
     import contextlib
 
-    await query.answer("Bekor qilindi", show_alert=False)
+    locale = await _get_sa_locale(query.from_user.id if query.from_user else 0)
+    t = get_translator(locale)
+    await query.answer(t("sa-broadcast-toast-cancelled"), show_alert=False)
     if query.message is not None:
         with contextlib.suppress(Exception):
-            await query.message.edit_text("❌ Broadcast bekor qilindi.")
+            await query.message.edit_text(t("sa-broadcast-cancelled-msg"))
 
 
 @router.callback_query(F.data.startswith("sa:bcast:"))
@@ -786,14 +808,16 @@ async def cb_broadcast_choose_method(query: CallbackQuery) -> None:
         await query.answer()
         return
     parts = query.data.split(":")
+    locale = await _get_sa_locale(query.from_user.id)
+    t = get_translator(locale)
     if len(parts) != 4 or parts[2] not in ("copy", "forward"):
-        await query.answer("Yaroqsiz so'rov", show_alert=True)
+        await query.answer(t("sa-broadcast-toast-invalid-request"), show_alert=True)
         return
     method_str = parts[2]
     try:
         source_message_id = int(parts[3])
     except ValueError:
-        await query.answer("Yaroqsiz xabar id", show_alert=True)
+        await query.answer(t("sa-broadcast-toast-invalid-message-id"), show_alert=True)
         return
 
     if query.message is None:
@@ -817,13 +841,10 @@ async def cb_broadcast_choose_method(query: CallbackQuery) -> None:
 
     import contextlib
 
-    await query.answer("🚀 Broadcast boshlandi", show_alert=False)
+    await query.answer(t("sa-broadcast-toast-started"), show_alert=False)
     with contextlib.suppress(Exception):
         await query.message.edit_text(
-            f"🚀 <b>Broadcast boshlandi</b>\n\n"
-            f"Usul: <code>{method.value}</code>\n"
-            f"Run ID: <code>{run.id}</code>\n\n"
-            f"Yakuniy hisobot xabar orqali keladi.",
+            t("sa-broadcast-started-msg", method=method.value, run_id=str(run.id)),
             parse_mode="HTML",
         )
 

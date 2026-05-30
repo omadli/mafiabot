@@ -84,9 +84,9 @@ export function UserDetailPage() {
           type="button"
           className="admin-btn"
           onClick={() => setSendOpen(true)}
-          title={t("sa.send_msg.title", "Send message to user")}
+          title={t("sa.send_msg.title")}
         >
-          📨 {t("sa.send_msg.button", "Send message")}
+          📨 {t("sa.send_msg.button")}
         </button>
       </div>
 

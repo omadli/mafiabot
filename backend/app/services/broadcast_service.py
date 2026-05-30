@@ -293,15 +293,24 @@ async def _report_to_initiator(run: BroadcastRun) -> None:
     ]
     summary_block = "\n".join(summary_lines) if summary_lines else "—"
 
-    text = (
-        f"📊 <b>Broadcast yakunlandi</b>\n\n"
-        f"Usul: <code>{run.method.value}</code>\n"
-        f"Jami: <b>{run.total_users}</b>\n"
-        f"✅ Yetkazildi: <b>{run.success_count}</b>\n"
-        f"❌ Xato: <b>{run.fail_count}</b>\n"
-        f"📦 Bazada deaktiv qilindi: <b>{run.deactivated_count}</b>\n"
-        f"⏱ Davomiyligi: <code>{int(duration)}s</code>\n\n"
-        f"<b>Xato sabablari:</b>\n{summary_block}"
+    # Resolve SA's language from their User row; fall back to "uz".
+    from app.db.models import User
+    from app.services.i18n_service import get_translator
+
+    sa_user = await User.get_or_none(id=run.initiator_tg_id)
+    locale = (
+        (sa_user.language_code or "uz") if sa_user and hasattr(sa_user, "language_code") else "uz"
+    )
+    t = get_translator(locale)
+    text = t(
+        "sa-broadcast-report",
+        method=run.method.value,
+        total=run.total_users,
+        success=run.success_count,
+        fail=run.fail_count,
+        deactivated=run.deactivated_count,
+        duration=int(duration),
+        summary=summary_block,
     )
 
     try:

@@ -247,7 +247,6 @@ export function SandboxDetailPage() {
                 activePlayer
                   ? t("admin.sandbox.detail.input_placeholder_named", {
                       name: activePlayer.first_name,
-                      defaultValue: `Type as ${activePlayer.first_name}…`,
                     })
                   : undefined
               }
@@ -280,7 +279,6 @@ export function SandboxDetailPage() {
                 activePlayer
                   ? t("admin.sandbox.detail.input_placeholder_dm", {
                       name: activePlayer.first_name,
-                      defaultValue: `Type as ${activePlayer.first_name}…`,
                     })
                   : undefined
               }

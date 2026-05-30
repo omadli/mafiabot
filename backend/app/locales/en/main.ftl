@@ -1581,3 +1581,67 @@ sa-notify-admin-message =
     <i>{ $body }</i>
 
     <i>No reply is needed for this message.</i>
+
+
+# ===========================================================
+# SA → SA NOTIFICATIONS (about super-admin actions)
+# ===========================================================
+
+sa-notify-stars-purchase =
+    💎 <b>New Telegram Stars payment</b>
+
+    👤 User: { $mention } (<code>#{ $user_id }</code>)
+    📦 Package: <code>{ $package_code }</code>
+    ⭐ Paid: <b>{ $stars_paid }</b> Stars
+    💎 Credited: <b>{ $diamonds_credited }</b> diamonds
+
+
+# ===========================================================
+# BROADCAST — SUPER ADMIN DIALOGS AND REPORTS
+# ===========================================================
+
+sa-broadcast-prompt-text =
+    📨 <b>How should I send this message to all users?</b>
+
+    📋 <b>Copy</b> — the message appears as if sent by the bot
+    ↗ <b>Forward</b> — forwarded with the original author's name
+
+sa-broadcast-prompt-forward =
+    📨 <b>How should I distribute this forwarded message?</b>
+
+    📋 <b>Copy</b> — appears as sent by the bot
+    ↗ <b>Forward</b> — shows the original source (channel/user)
+
+sa-broadcast-prompt-media = 📨 <b>How should I send this media message to everyone?</b>
+
+btn-broadcast-copy = 📋 Copy
+btn-broadcast-forward = ↗ Forward
+btn-broadcast-cancel = ❌ Cancel
+
+sa-broadcast-toast-started = 🚀 Broadcast started
+sa-broadcast-toast-cancelled = Cancelled
+sa-broadcast-toast-invalid-request = Invalid request
+sa-broadcast-toast-invalid-message-id = Invalid message ID
+
+sa-broadcast-started-msg =
+    🚀 <b>Broadcast started</b>
+
+    Method: <code>{ $method }</code>
+    Run ID: <code>{ $run_id }</code>
+
+    The final report will arrive as a separate message.
+
+sa-broadcast-cancelled-msg = ❌ Broadcast cancelled.
+
+sa-broadcast-report =
+    📊 <b>Broadcast completed</b>
+
+    Method: <code>{ $method }</code>
+    Total: <b>{ $total }</b>
+    ✅ Delivered: <b>{ $success }</b>
+    ❌ Failed: <b>{ $fail }</b>
+    📦 Deactivated in DB: <b>{ $deactivated }</b>
+    ⏱ Duration: <code>{ $duration }s</code>
+
+    <b>Failure reasons:</b>
+    { $summary }

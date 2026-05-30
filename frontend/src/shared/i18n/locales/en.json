@@ -196,7 +196,11 @@
         "chat_empty": "(no messages)",
         "showing_last_n_of_x": "… showing last {{shown}} of {{total}} messages",
         "n_new": "{{count}} new",
-        "placeholder": "Full interactive dashboard coming in next iterations."
+        "placeholder": "Full interactive dashboard coming in next iterations.",
+        "input_placeholder": "Type as this player…",
+        "input_placeholder_named": "Type as {{name}}…",
+        "input_placeholder_dm": "Type as {{name}}…",
+        "send": "Send"
       },
       "controls": {
         "pause": "Pause",
@@ -837,6 +841,37 @@
     "audit": {
       "title": "Audit log",
       "filter_action": "Search by action..."
+    },
+    "diamond_packages": {
+      "title": "Diamond packages",
+      "hint": "Configure the diamond tiers available for purchase with Telegram Stars.",
+      "col_code": "Code",
+      "col_base": "Base",
+      "col_bonus": "Bonus",
+      "col_stars": "Stars",
+      "col_total": "Total 💎",
+      "col_enabled": "Enabled",
+      "move_up": "Move up",
+      "move_down": "Move down",
+      "remove": "Remove",
+      "add_row": "Add tier",
+      "save_all": "Save all",
+      "saving": "Saving…",
+      "unsaved": "Unsaved changes",
+      "duplicate_codes": "Duplicate codes",
+      "blank_codes": "Empty code field",
+      "save_failed": "Save failed"
+    },
+    "send_msg": {
+      "title": "Send message to user",
+      "subtitle": "Recipient",
+      "placeholder": "Your message…",
+      "envelope_hint": "Bot wraps your text with a no-reply notice.",
+      "cancel": "Cancel",
+      "send": "Send",
+      "sending": "Sending…",
+      "button": "Send message",
+      "error_send_failed": "Send failed"
     }
   },
   "role-citizen": "Citizen",

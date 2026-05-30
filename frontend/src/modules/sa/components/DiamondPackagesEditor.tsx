@@ -99,7 +99,7 @@ export function DiamondPackagesEditor({ initial }: DiamondPackagesEditorProps) {
       qc.invalidateQueries({ queryKey: ["admin-system-settings"] });
     },
     onError: (e: Error) =>
-      setError(e.message || t("sa.diamond_packages.save_failed", "Save failed")),
+      setError(e.message || t("sa.diamond_packages.save_failed")),
   });
 
   const update = (idx: number, patch: Partial<DiamondPackage>) =>
@@ -135,34 +135,31 @@ export function DiamondPackagesEditor({ initial }: DiamondPackagesEditorProps) {
   return (
     <section className="admin-card" style={{ marginBottom: "1.25rem" }}>
       <h2 className="admin-section-title">
-        💎 {t("sa.diamond_packages.title", "Diamond packages")}
+        💎 {t("sa.diamond_packages.title")}
       </h2>
       <p style={{ color: "var(--muted)", marginTop: 0, fontSize: "0.85rem" }}>
-        {t(
-          "sa.diamond_packages.hint",
-          "Each tier becomes a 💎 N 🎁+M — ⭐ price button in the bot's shop. Save to apply.",
-        )}
+        {t("sa.diamond_packages.hint")}
       </p>
 
       <table className="admin-table">
         <thead>
           <tr>
             <th style={{ width: 32 }}>#</th>
-            <th>{t("sa.diamond_packages.col_code", "Code")}</th>
+            <th>{t("sa.diamond_packages.col_code")}</th>
             <th style={{ textAlign: "right" }}>
-              💎 {t("sa.diamond_packages.col_base", "Base")}
+              💎 {t("sa.diamond_packages.col_base")}
             </th>
             <th style={{ textAlign: "right" }}>
-              🎁 {t("sa.diamond_packages.col_bonus", "Bonus")}
+              🎁 {t("sa.diamond_packages.col_bonus")}
             </th>
             <th style={{ textAlign: "right" }}>
-              ⭐ {t("sa.diamond_packages.col_stars", "Stars")}
+              ⭐ {t("sa.diamond_packages.col_stars")}
             </th>
             <th style={{ textAlign: "right" }}>
-              {t("sa.diamond_packages.col_total", "Total 💎")}
+              {t("sa.diamond_packages.col_total")}
             </th>
             <th style={{ textAlign: "center" }}>
-              {t("sa.diamond_packages.col_enabled", "Enabled")}
+              {t("sa.diamond_packages.col_enabled")}
             </th>
             <th style={{ width: 110 }} />
           </tr>
@@ -242,7 +239,7 @@ export function DiamondPackagesEditor({ initial }: DiamondPackagesEditorProps) {
                     className="admin-btn"
                     onClick={() => moveRow(idx, -1)}
                     disabled={idx === 0}
-                    title={t("sa.diamond_packages.move_up", "Move up")}
+                    title={t("sa.diamond_packages.move_up")}
                     style={{ padding: "2px 8px" }}
                   >
                     ↑
@@ -252,7 +249,7 @@ export function DiamondPackagesEditor({ initial }: DiamondPackagesEditorProps) {
                     className="admin-btn"
                     onClick={() => moveRow(idx, +1)}
                     disabled={idx === rows.length - 1}
-                    title={t("sa.diamond_packages.move_down", "Move down")}
+                    title={t("sa.diamond_packages.move_down")}
                     style={{ padding: "2px 8px" }}
                   >
                     ↓
@@ -261,7 +258,7 @@ export function DiamondPackagesEditor({ initial }: DiamondPackagesEditorProps) {
                     type="button"
                     className="admin-btn admin-btn-danger"
                     onClick={() => remove(idx)}
-                    title={t("sa.diamond_packages.remove", "Remove")}
+                    title={t("sa.diamond_packages.remove")}
                     style={{ padding: "2px 8px" }}
                   >
                     🗑
@@ -283,7 +280,7 @@ export function DiamondPackagesEditor({ initial }: DiamondPackagesEditorProps) {
         }}
       >
         <button type="button" className="admin-btn" onClick={addRow}>
-          ➕ {t("sa.diamond_packages.add_row", "Add tier")}
+          ➕ {t("sa.diamond_packages.add_row")}
         </button>
         <button
           type="button"
@@ -292,23 +289,23 @@ export function DiamondPackagesEditor({ initial }: DiamondPackagesEditorProps) {
           disabled={!canSave}
         >
           {mutation.isPending
-            ? "⏳ " + t("sa.diamond_packages.saving", "Saving…")
-            : "💾 " + t("sa.diamond_packages.save_all", "Save all")}
+            ? "⏳ " + t("sa.diamond_packages.saving")
+            : "💾 " + t("sa.diamond_packages.save_all")}
         </button>
         {dirty && (
           <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>
-            {t("sa.diamond_packages.unsaved", "Unsaved changes")}
+            {t("sa.diamond_packages.unsaved")}
           </span>
         )}
         {dupCodes.size > 0 && (
           <span style={{ color: "#e74c3c", fontSize: "0.85rem" }}>
-            ⚠️ {t("sa.diamond_packages.duplicate_codes", "Duplicate codes")}:{" "}
+            ⚠️ {t("sa.diamond_packages.duplicate_codes")}:{" "}
             <code>{Array.from(dupCodes).join(", ")}</code>
           </span>
         )}
         {blankCodes && (
           <span style={{ color: "#e74c3c", fontSize: "0.85rem" }}>
-            ⚠️ {t("sa.diamond_packages.blank_codes", "Empty code field")}
+            ⚠️ {t("sa.diamond_packages.blank_codes")}
           </span>
         )}
         {error && (

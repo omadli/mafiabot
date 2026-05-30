@@ -161,9 +161,7 @@ export function ChatPanel({
             className="sb-input"
             placeholder={
               inputPlaceholder ??
-              t("admin.sandbox.detail.input_placeholder", {
-                defaultValue: "Type as this player…",
-              })
+              t("admin.sandbox.detail.input_placeholder")
             }
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
@@ -174,7 +172,7 @@ export function ChatPanel({
             type="submit"
             className="sb-input-send"
             disabled={disabled || sending || !draft.trim()}
-            aria-label={t("admin.sandbox.detail.send", { defaultValue: "Send" })}
+            aria-label={t("admin.sandbox.detail.send")}
           >
             {sending ? "…" : "➤"}
           </button>

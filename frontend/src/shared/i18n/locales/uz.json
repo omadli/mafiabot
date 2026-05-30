@@ -196,7 +196,11 @@
         "chat_empty": "(xabar yo'q)",
         "showing_last_n_of_x": "… so'nggi {{shown}} / {{total}} xabar ko'rsatilmoqda",
         "n_new": "{{count}} yangi",
-        "placeholder": "To'liq interaktiv dashboard keyingi iteratsiyalarda keladi."
+        "placeholder": "To'liq interaktiv dashboard keyingi iteratsiyalarda keladi.",
+        "input_placeholder": "Bu o'yinchi nomidan yozing…",
+        "input_placeholder_named": "{{name}} nomidan yozing…",
+        "input_placeholder_dm": "{{name}} nomidan yozing…",
+        "send": "Yuborish"
       },
       "controls": {
         "pause": "Pauza",
@@ -837,6 +841,37 @@
     "audit": {
       "title": "Audit log",
       "filter_action": "Action bo'yicha qidiruv..."
+    },
+    "diamond_packages": {
+      "title": "Olmos paketlari",
+      "hint": "Telegram Stars bilan sotib olinadigan olmos darajalarini sozlang.",
+      "col_code": "Kod",
+      "col_base": "Asosiy",
+      "col_bonus": "Bonus",
+      "col_stars": "Stars",
+      "col_total": "Jami 💎",
+      "col_enabled": "Yoqilgan",
+      "move_up": "Yuqoriga",
+      "move_down": "Pastga",
+      "remove": "O'chirish",
+      "add_row": "Yangi qator",
+      "save_all": "Hammasini saqlash",
+      "saving": "Saqlanmoqda…",
+      "unsaved": "Saqlanmagan o'zgarishlar",
+      "duplicate_codes": "Takroriy kodlar",
+      "blank_codes": "Kod maydoni bo'sh",
+      "save_failed": "Saqlashda xato"
+    },
+    "send_msg": {
+      "title": "Foydalanuvchiga xabar yuborish",
+      "subtitle": "Qabul qiluvchi",
+      "placeholder": "Xabaringiz…",
+      "envelope_hint": "Bot matnni javob shart emas degan qoplamaga o'rab yuboradi.",
+      "cancel": "Bekor qilish",
+      "send": "Yuborish",
+      "sending": "Yuborilmoqda…",
+      "button": "Xabar yuborish",
+      "error_send_failed": "Yuborishda xato"
     }
   },
   "role-citizen": "Tinch aholi",

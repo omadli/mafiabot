@@ -49,7 +49,7 @@ export function SendMessageDialog({
       onSent?.();
       onClose();
     } catch (e) {
-      setError((e as Error).message || t("sa.send_msg.error_send_failed", "Send failed"));
+      setError((e as Error).message || t("sa.send_msg.error_send_failed"));
     } finally {
       setBusy(false);
     }
@@ -67,10 +67,10 @@ export function SendMessageDialog({
     >
       <div className="sa-modal-panel">
         <h3 style={{ margin: "0 0 0.25rem" }}>
-          💬 {t("sa.send_msg.title", "Send message to user")}
+          💬 {t("sa.send_msg.title")}
         </h3>
         <p style={{ color: "var(--muted)", fontSize: "0.85rem", marginTop: 0 }}>
-          {t("sa.send_msg.subtitle", "Recipient")}: <strong>{userName}</strong> (#{userId})
+          {t("sa.send_msg.subtitle")}: <strong>{userName}</strong> (#{userId})
         </p>
 
         <textarea
@@ -78,10 +78,7 @@ export function SendMessageDialog({
           rows={5}
           maxLength={4096}
           autoFocus
-          placeholder={t(
-            "sa.send_msg.placeholder",
-            "Your message — delivered as Super Admin DM…",
-          )}
+          placeholder={t("sa.send_msg.placeholder")}
           value={text}
           onChange={(e) => setText(e.target.value)}
           disabled={busy}
@@ -95,7 +92,7 @@ export function SendMessageDialog({
             marginTop: "0.25rem",
           }}
         >
-          <span>{t("sa.send_msg.envelope_hint", "Bot wraps your text with a no-reply notice.")}</span>
+          <span>{t("sa.send_msg.envelope_hint")}</span>
           <span>{text.length} / 4096</span>
         </div>
 
@@ -107,7 +104,7 @@ export function SendMessageDialog({
 
         <div className="sa-modal-actions">
           <button type="button" className="sa-modal-btn" onClick={onClose} disabled={busy}>
-            {t("sa.send_msg.cancel", "Cancel")}
+            {t("sa.send_msg.cancel")}
           </button>
           <button
             type="button"
@@ -115,7 +112,7 @@ export function SendMessageDialog({
             onClick={submit}
             disabled={busy || !text.trim()}
           >
-            {busy ? `⏳ ${t("sa.send_msg.sending", "Sending…")}` : `📨 ${t("sa.send_msg.send", "Send")}`}
+            {busy ? `⏳ ${t("sa.send_msg.sending")}` : `📨 ${t("sa.send_msg.send")}`}
           </button>
         </div>
       </div>

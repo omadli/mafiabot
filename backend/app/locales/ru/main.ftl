@@ -1580,3 +1580,67 @@ sa-notify-admin-message =
     <i>{ $body }</i>
 
     <i>Ответ на это сообщение не требуется.</i>
+
+
+# ===========================================================
+# SA → SA УВЕДОМЛЕНИЯ (о действиях суперадмина)
+# ===========================================================
+
+sa-notify-stars-purchase =
+    💎 <b>Новая оплата Telegram Stars</b>
+
+    👤 Пользователь: { $mention } (<code>#{ $user_id }</code>)
+    📦 Пакет: <code>{ $package_code }</code>
+    ⭐ Оплачено: <b>{ $stars_paid }</b> Stars
+    💎 Начислено: <b>{ $diamonds_credited }</b> алмазов
+
+
+# ===========================================================
+# BROADCAST — ДИАЛОГИ И ОТЧЁТЫ СУПЕРАДМИНА
+# ===========================================================
+
+sa-broadcast-prompt-text =
+    📨 <b>Как разослать это сообщение всем пользователям?</b>
+
+    📋 <b>Copy</b> — сообщение выглядит как отправленное ботом
+    ↗ <b>Forward</b> — пересылается с именем оригинального автора
+
+sa-broadcast-prompt-forward =
+    📨 <b>Как разослать пересланное сообщение?</b>
+
+    📋 <b>Copy</b> — выглядит как отправленное ботом
+    ↗ <b>Forward</b> — отображается оригинальный источник (канал/пользователь)
+
+sa-broadcast-prompt-media = 📨 <b>Как разослать медиа-сообщение всем?</b>
+
+btn-broadcast-copy = 📋 Copy
+btn-broadcast-forward = ↗ Forward
+btn-broadcast-cancel = ❌ Отмена
+
+sa-broadcast-toast-started = 🚀 Рассылка начата
+sa-broadcast-toast-cancelled = Отменено
+sa-broadcast-toast-invalid-request = Некорректный запрос
+sa-broadcast-toast-invalid-message-id = Некорректный ID сообщения
+
+sa-broadcast-started-msg =
+    🚀 <b>Рассылка начата</b>
+
+    Метод: <code>{ $method }</code>
+    Run ID: <code>{ $run_id }</code>
+
+    Итоговый отчёт придёт отдельным сообщением.
+
+sa-broadcast-cancelled-msg = ❌ Рассылка отменена.
+
+sa-broadcast-report =
+    📊 <b>Рассылка завершена</b>
+
+    Метод: <code>{ $method }</code>
+    Всего: <b>{ $total }</b>
+    ✅ Доставлено: <b>{ $success }</b>
+    ❌ Ошибок: <b>{ $fail }</b>
+    📦 Деактивировано в базе: <b>{ $deactivated }</b>
+    ⏱ Длительность: <code>{ $duration }s</code>
+
+    <b>Причины ошибок:</b>
+    { $summary }
