@@ -169,6 +169,10 @@ night-result-killed-single =
 
 night-result-no-deaths = 🌅 Невероятно, но этой ночью никто не погиб...
 
+night-result-mafia-no-consensus =
+    🤵🏻 Мафия не смогла договориться —
+    этой ночью никто не погиб от их рук.
+
 night-result-shield-used = <e:status-spark> Кто-то воспользовался защитой!
 
 feedback-shield-used =
@@ -514,6 +518,10 @@ feedback-hooker-confirm = 💃 Вы усыпили { $target }.
 feedback-hooker-target = Вот <e:action-heal> таблетка подействовала — теперь ты поспишь целый день...
 
 mafia-kill-broadcast = 🤵🏼 Во время голосования мафии { $mention } был безжалостно убит 🩸
+
+mafia-no-consensus-dm =
+    🤵🏻 Мафия не смогла договориться.
+    В эту ночь команда никого не убила.
 
 
 # ===========================================================

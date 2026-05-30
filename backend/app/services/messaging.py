@@ -178,6 +178,13 @@ async def broadcast_night_results(bot: Bot, state: GameState, outcome: NightOutc
     else:
         await _safe_send(bot, state.chat_id, _("night-result-no-deaths"))
 
+    # Mafia team couldn't agree on a target — surface it to the group so
+    # players don't assume "nobody acted". Sent after the no-deaths line
+    # to add narrative colour: the silence had a reason.
+    if outcome.mafia_no_consensus:
+        await asyncio.sleep(1.2)
+        await _safe_send(bot, state.chat_id, _("night-result-mafia-no-consensus"))
+
     # Doctor saves → "shield used" (anonymous)
     if any(r.saved for r in outcome.doctor_results):
         await asyncio.sleep(1.5)
@@ -198,11 +205,19 @@ def _killer_role_label(state: GameState, outcome: NightOutcome, target_id: int, 
 
     Detective/Don/Killer with `used_item == "rifle"` are still labeled by their
     actor role (e.g. Detective with rifle → killer_role = "Komissar katani").
+
+    When Don + Mafia colluded on the same target, prefer "Don" — that's
+    who the team takes its orders from in narration.
     """
-    for action in state.current_round().night_actions:
-        if action.action_type in ("kill", "final_night") and action.target_id == target_id:
-            return role_emoji_name(action.role, locale)
-    return "?"
+    candidates = [
+        action
+        for action in state.current_round().night_actions
+        if action.action_type in ("kill", "final_night") and action.target_id == target_id
+    ]
+    if not candidates:
+        return "?"
+    candidates.sort(key=lambda a: 0 if a.role == "don" else 1)
+    return role_emoji_name(candidates[0].role, locale)
 
 
 def _is_arsonist_self_kill(state: GameState, target) -> bool:

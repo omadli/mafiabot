@@ -137,6 +137,11 @@ class NightOutcome:
     # killer_shield, or doctor heal). A "Ha, ot" pressed against an
     # undefended target kills without burning the rifle slot.
     rifles_consumed: list[int] = field(default_factory=list)
+    # True when the mafia team (Don + Mafia members) submitted kill picks
+    # this night but the weighted tally ended in a tie — nobody dies by
+    # mafia hands. Don = 2.5 weight, each Mafia = 1.0. Messaging layer
+    # uses this to surface "Mafialar o'zaro kelisha olmadi".
+    mafia_no_consensus: bool = False
 
 
 # === Resolver ===
@@ -238,10 +243,52 @@ class ActionResolver:
         state.current_round().extra["lawyer_protected"] = list(lawyer_protected)
 
         # 6. Build kill targets
+        #
+        # Mafia collusion: Don + Mafia members share a single team kill.
+        # Each member votes by submitting their kill action; weights are
+        # Don = 2.5, Mafia = 1.0. The highest-weighted target dies. If
+        # the tally ends in a tie (e.g. Don abstains and two Mafia split
+        # 1:1), no mafia kill lands and `mafia_no_consensus` is set so
+        # the messaging layer can announce it.
+        #
+        # Killer (Ninza) and Maniac are NOT part of this — they kill
+        # independently as singletons / separate priority.
         kill_targets: dict[int, list[tuple[str, int, NightAction]]] = {}
-        for a in active_actions:
-            if a.action_type == "kill" and a.target_id is not None:
-                kill_targets.setdefault(a.target_id, []).append((a.role, a.actor_id, a))
+        team_kill_actions = [
+            a
+            for a in active_actions
+            if a.action_type == "kill" and a.target_id is not None and a.role in ("don", "mafia")
+        ]
+        non_team_kill_actions = [
+            a
+            for a in active_actions
+            if a.action_type == "kill"
+            and a.target_id is not None
+            and a.role not in ("don", "mafia")
+        ]
+
+        if team_kill_actions:
+            tally: dict[int, float] = {}
+            for a in team_kill_actions:
+                weight = 2.5 if a.role == "don" else 1.0
+                tally[a.target_id] = tally.get(a.target_id, 0.0) + weight  # type: ignore[arg-type]
+
+            max_weight = max(tally.values())
+            leaders = [tid for tid, w in tally.items() if w == max_weight]
+            if len(leaders) == 1:
+                winner = leaders[0]
+                # Attribute the team's kill to every mafia voter who picked
+                # the winning target. Don is placed first so killer-role
+                # attribution (used for night-result narration and rifle
+                # consumption) prefers "don" when Don voted for the winner.
+                winning_attackers = [a for a in team_kill_actions if a.target_id == winner]
+                winning_attackers.sort(key=lambda x: 0 if x.role == "don" else 1)
+                kill_targets[winner] = [(a.role, a.actor_id, a) for a in winning_attackers]
+            else:
+                outcome.mafia_no_consensus = True
+
+        for a in non_team_kill_actions:
+            kill_targets.setdefault(a.target_id, []).append((a.role, a.actor_id, a))  # type: ignore[arg-type]
 
         # 7. Heal targets
         heal_targets: dict[int, int] = {}

@@ -169,6 +169,10 @@ night-result-killed-single =
 
 night-result-no-deaths = 🌅 Ishonish qiyin, lekin bu tunda hech kim o'lmadi...
 
+night-result-mafia-no-consensus =
+    🤵🏻 Mafiyalar o'zaro kelisha olmadi —
+    bu tunda hech kim ularning qo'lidan o'lmadi.
+
 night-result-shield-used = <e:status-spark> Kimdir himoyasini ishlatdi!
 
 feedback-shield-used =
@@ -513,6 +517,10 @@ feedback-hooker-confirm = 💃 Siz { $target } ni uxlatdingiz.
 feedback-hooker-target = Ana <e:action-heal> dori ta'sir qila boshladi endi sen bir kun uxlaysan...
 
 mafia-kill-broadcast = 🤵🏼 Mafianing ovoz berish jarayonida { $mention } shavqatsizlarcha o'ldirildi 🩸
+
+mafia-no-consensus-dm =
+    🤵🏻 Mafiyalar o'zaro kelisha olmadi.
+    Bu tunda jamoa hech kimni o'ldirmadi.
 
 
 # ===========================================================

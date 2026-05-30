@@ -116,6 +116,29 @@ async def send_role_feedback(bot: Bot, state: GameState, outcome: NightOutcome) 
     # members get a DM celebrating it — keeps the team in sync.
     await _broadcast_mafia_kill(bot, state, outcome, locale)
 
+    # Mafia team picked targets but couldn't reach consensus — DM every
+    # alive mafia member so they understand why nobody died by their hands.
+    if outcome.mafia_no_consensus:
+        await _broadcast_mafia_no_consensus(bot, state, locale)
+
+
+async def _broadcast_mafia_no_consensus(bot: Bot, state: GameState, locale: str) -> None:
+    t = get_translator(locale)
+    alive_mafia_ids = [p.user_id for p in state.alive_players() if p.team == Team.MAFIA]
+    if not alive_mafia_ids:
+        return
+    text = t("mafia-no-consensus-dm")
+
+    async def _dm(uid: int) -> None:
+        try:
+            await bot.send_message(uid, text, parse_mode="HTML")
+        except TelegramForbiddenError:
+            pass
+        except Exception as e:
+            logger.debug(f"Mafia no-consensus DM to {uid} failed: {e}")
+
+    await asyncio.gather(*(_dm(uid) for uid in alive_mafia_ids), return_exceptions=True)
+
 
 async def _broadcast_mafia_kill(
     bot: Bot, state: GameState, outcome: NightOutcome, locale: str

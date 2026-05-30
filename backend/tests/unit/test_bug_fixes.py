@@ -431,3 +431,192 @@ def test_shield_save_dataclass_fields():
     assert s.target_id == 1
     assert s.item == "shield"
     assert s.attacker_role == "don"
+
+
+# === Mafia collusion (Don + Mafia share one weighted kill) ===
+
+
+def _civ(uid: int, name: str = "Civ", **extra) -> PlayerState:
+    return PlayerState(
+        user_id=uid,
+        first_name=name,
+        join_order=uid,
+        role="citizen",
+        team=Team.CITIZENS,
+        **extra,
+    )
+
+
+def _don(uid: int) -> PlayerState:
+    return PlayerState(user_id=uid, first_name="Don", join_order=uid, role="don", team=Team.MAFIA)
+
+
+def _mafia(uid: int, name: str = "Maf") -> PlayerState:
+    return PlayerState(user_id=uid, first_name=name, join_order=uid, role="mafia", team=Team.MAFIA)
+
+
+def test_don_alone_kill_lands_on_picked_target():
+    target = _civ(10)
+    don = _don(20)
+    actions = [NightAction(actor_id=20, role="don", action_type="kill", target_id=10)]
+    state = _state_with([target, don], actions)
+
+    outcome = ActionResolver().resolve(state)
+
+    assert outcome.deaths == [10]
+    assert outcome.mafia_no_consensus is False
+
+
+def test_don_pick_outweighs_two_mafia():
+    """Don picks B (2.5), 2 Mafia pick A (2.0) → B dies."""
+    a = _civ(10, "A")
+    b = _civ(11, "B")
+    don = _don(20)
+    m1 = _mafia(21, "M1")
+    m2 = _mafia(22, "M2")
+    actions = [
+        NightAction(actor_id=20, role="don", action_type="kill", target_id=11),
+        NightAction(actor_id=21, role="mafia", action_type="kill", target_id=10),
+        NightAction(actor_id=22, role="mafia", action_type="kill", target_id=10),
+    ]
+    state = _state_with([a, b, don, m1, m2], actions)
+
+    outcome = ActionResolver().resolve(state)
+
+    assert outcome.deaths == [11]
+    assert outcome.mafia_no_consensus is False
+
+
+def test_three_mafia_outweigh_don():
+    """3 Mafia pick A (3.0), Don picks B (2.5) → A dies."""
+    a = _civ(10, "A")
+    b = _civ(11, "B")
+    don = _don(20)
+    m1 = _mafia(21, "M1")
+    m2 = _mafia(22, "M2")
+    m3 = _mafia(23, "M3")
+    actions = [
+        NightAction(actor_id=20, role="don", action_type="kill", target_id=11),
+        NightAction(actor_id=21, role="mafia", action_type="kill", target_id=10),
+        NightAction(actor_id=22, role="mafia", action_type="kill", target_id=10),
+        NightAction(actor_id=23, role="mafia", action_type="kill", target_id=10),
+    ]
+    state = _state_with([a, b, don, m1, m2, m3], actions)
+
+    outcome = ActionResolver().resolve(state)
+
+    assert outcome.deaths == [10]
+    assert outcome.mafia_no_consensus is False
+
+
+def test_mafia_split_1_1_no_consensus_when_don_abstains():
+    """Don submits no action; 2 Mafia split 1:1 → tie, nobody dies."""
+    a = _civ(10, "A")
+    b = _civ(11, "B")
+    don = _don(20)
+    m1 = _mafia(21, "M1")
+    m2 = _mafia(22, "M2")
+    actions = [
+        NightAction(actor_id=21, role="mafia", action_type="kill", target_id=10),
+        NightAction(actor_id=22, role="mafia", action_type="kill", target_id=11),
+    ]
+    state = _state_with([a, b, don, m1, m2], actions)
+
+    outcome = ActionResolver().resolve(state)
+
+    assert outcome.deaths == []
+    assert outcome.mafia_no_consensus is True
+
+
+def test_mafia_split_2_2_no_consensus_when_don_abstains():
+    """Don submits no action; 2+2 Mafia split → tie, nobody dies."""
+    a = _civ(10, "A")
+    b = _civ(11, "B")
+    don = _don(20)
+    m1 = _mafia(21, "M1")
+    m2 = _mafia(22, "M2")
+    m3 = _mafia(23, "M3")
+    m4 = _mafia(24, "M4")
+    actions = [
+        NightAction(actor_id=21, role="mafia", action_type="kill", target_id=10),
+        NightAction(actor_id=22, role="mafia", action_type="kill", target_id=10),
+        NightAction(actor_id=23, role="mafia", action_type="kill", target_id=11),
+        NightAction(actor_id=24, role="mafia", action_type="kill", target_id=11),
+    ]
+    state = _state_with([a, b, don, m1, m2, m3, m4], actions)
+
+    outcome = ActionResolver().resolve(state)
+
+    assert outcome.deaths == []
+    assert outcome.mafia_no_consensus is True
+
+
+def test_don_breaks_tie_when_he_picks_one_side():
+    """Tie between Mafia votes broken by Don joining one side."""
+    a = _civ(10, "A")
+    b = _civ(11, "B")
+    don = _don(20)
+    m1 = _mafia(21, "M1")
+    m2 = _mafia(22, "M2")
+    actions = [
+        NightAction(actor_id=20, role="don", action_type="kill", target_id=10),
+        NightAction(actor_id=21, role="mafia", action_type="kill", target_id=10),
+        NightAction(actor_id=22, role="mafia", action_type="kill", target_id=11),
+    ]
+    state = _state_with([a, b, don, m1, m2], actions)
+
+    outcome = ActionResolver().resolve(state)
+
+    # A: 2.5 (don) + 1 (m1) = 3.5; B: 1 (m2). A dies.
+    assert outcome.deaths == [10]
+    assert outcome.mafia_no_consensus is False
+
+
+def test_killer_kill_independent_of_mafia_consensus():
+    """Killer (Ninza) kills alongside mafia, on his own target, even when
+    mafia ties — he is NOT part of the team vote."""
+    a = _civ(10, "A")
+    b = _civ(11, "B")
+    c = _civ(12, "C")
+    don = _don(20)
+    m1 = _mafia(21, "M1")
+    m2 = _mafia(22, "M2")
+    killer = PlayerState(
+        user_id=30, first_name="Ninza", join_order=30, role="killer", team=Team.MAFIA
+    )
+    actions = [
+        NightAction(actor_id=21, role="mafia", action_type="kill", target_id=10),
+        NightAction(actor_id=22, role="mafia", action_type="kill", target_id=11),
+        NightAction(actor_id=30, role="killer", action_type="kill", target_id=12),
+    ]
+    state = _state_with([a, b, c, don, m1, m2, killer], actions)
+
+    outcome = ActionResolver().resolve(state)
+
+    # Mafia tie → no mafia kill. Killer kills C independently.
+    assert outcome.deaths == [12]
+    assert outcome.mafia_no_consensus is True
+
+
+def test_don_rifle_only_consumed_if_his_target_wins():
+    """Don votes for B with rifle, but 3 Mafia outvote on A → team kills A,
+    Don's rifle was not fired and must NOT be consumed."""
+    a = _civ(10, "A")
+    b = _civ(11, "B")
+    don = _don(20)
+    m1 = _mafia(21, "M1")
+    m2 = _mafia(22, "M2")
+    m3 = _mafia(23, "M3")
+    actions = [
+        NightAction(actor_id=20, role="don", action_type="kill", target_id=11, used_item="rifle"),
+        NightAction(actor_id=21, role="mafia", action_type="kill", target_id=10),
+        NightAction(actor_id=22, role="mafia", action_type="kill", target_id=10),
+        NightAction(actor_id=23, role="mafia", action_type="kill", target_id=10),
+    ]
+    state = _state_with([a, b, don, m1, m2, m3], actions)
+
+    outcome = ActionResolver().resolve(state)
+
+    assert outcome.deaths == [10]
+    # Don's rifle is attached to B (loser), so no rifle consumption.
+    assert outcome.rifles_consumed == []
