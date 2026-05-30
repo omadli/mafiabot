@@ -912,6 +912,7 @@ async def admin_get_system_settings(
         "rewards": s.rewards,
         "exchange": s.exchange,
         "premium": s.premium,
+        "diamond_packages": s.diamond_packages,
         "updated_at": s.updated_at.isoformat() if s.updated_at else None,
         "updated_by_tg_id": s.updated_by_tg_id,
     }
@@ -944,6 +945,127 @@ async def admin_update_system_settings(
         payload={"key": payload.key, "value": payload.value},
     )
     return {"ok": True, "section": payload.section, "key": payload.key, "value": payload.value}
+
+
+# --- Diamond packages (Stars purchase tiers) ----------------------
+
+
+class DiamondPackagePayload(BaseModel):
+    """Shape mirrors `SystemSettings.diamond_packages` entries."""
+
+    code: str = Field(..., min_length=1, max_length=64)
+    diamonds: int = Field(..., ge=0)
+    bonus_diamonds: int = Field(0, ge=0)
+    stars_price: int = Field(..., gt=0)
+    display_order: int = Field(0, ge=0)
+    enabled: bool = True
+
+
+class AdminSetDiamondPackagesRequest(BaseModel):
+    packages: list[DiamondPackagePayload]
+
+
+@router.post("/admin/system-settings/diamond-packages")
+async def admin_set_diamond_packages(
+    payload: AdminSetDiamondPackagesRequest,
+    admin: AdminAccount = Depends(get_current_admin),
+) -> dict:
+    """Replace the whole Stars-purchase tier list.
+
+    Packages are stored as one JSONB column on the singleton
+    `system_settings` row so SA edits land everywhere on the next
+    cached-settings refresh (60 s) — the shop UI, the
+    `handle_pre_checkout` validator, and the credit logic all read
+    through `payment_service.list_diamond_packages`.
+
+    Duplicate `code` values are rejected up-front since the invoice
+    payload routes by code and two tiers with the same code would
+    make the post-purchase credit ambiguous.
+    """
+    codes = [p.code for p in payload.packages]
+    if len(codes) != len(set(codes)):
+        raise HTTPException(status_code=400, detail="Duplicate package codes")
+
+    from app.db.models import SystemSettings
+
+    s = await SystemSettings.get_or_none(id=1)
+    if s is None:
+        raise HTTPException(status_code=404, detail="System settings not seeded")
+    s.diamond_packages = [p.model_dump() for p in payload.packages]
+    s.updated_by_tg_id = admin.telegram_id
+    await s.save(update_fields=["diamond_packages", "updated_at", "updated_by_tg_id"])
+
+    from app.services import pricing_service as _ps
+
+    _ps.invalidate_cache()
+    await log_action(
+        action="system.diamond_packages.update",
+        actor=admin,
+        target_type="system",
+        target_id="diamond_packages",
+        payload={"n_packages": len(payload.packages)},
+    )
+    return {"ok": True, "packages": s.diamond_packages}
+
+
+# --- Stars transactions browser (revenue audit) ------------------
+
+
+@router.get("/admin/stars-transactions")
+async def admin_stars_transactions(
+    admin: AdminAccount = Depends(get_current_admin),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+    user_id: int | None = Query(None, description="Filter by buyer user id"),
+) -> dict:
+    """Paginated list of Telegram Stars diamond purchases.
+
+    Drives the SA dashboard's revenue tab. Mirrors the shape of the
+    per-user `/admin/users/{id}/transactions` endpoint so the same
+    React table component can render either source.
+    """
+    from app.db.models import Transaction, TransactionType
+
+    qs = Transaction.filter(type=TransactionType.BUY_DIAMONDS)
+    if user_id is not None:
+        qs = qs.filter(user_id=user_id)
+    total = await qs.count()
+    rows = (
+        await qs.offset((page - 1) * page_size)
+        .limit(page_size)
+        .order_by("-created_at")
+        .prefetch_related("user")
+    )
+
+    # Aggregate totals across the whole filter, not just this page —
+    # helps the dashboard render a "this month: N Stars" headline.
+    agg = await Transaction.filter(type=TransactionType.BUY_DIAMONDS).all()
+    total_stars = sum((t.stars_amount or 0) for t in agg)
+    total_diamonds = sum((t.diamonds_amount or 0) for t in agg)
+
+    items = [
+        {
+            "id": str(t.id),
+            "created_at": t.created_at.isoformat() if t.created_at else None,
+            "user_id": t.user.id if t.user else None,
+            "first_name": t.user.first_name if t.user else None,
+            "username": t.user.username if t.user else None,
+            "stars_amount": t.stars_amount,
+            "diamonds_amount": t.diamonds_amount,
+            "telegram_payment_charge_id": t.telegram_payment_charge_id,
+            "status": t.status,
+            "note": t.note,
+        }
+        for t in rows
+    ]
+    return {
+        "items": items,
+        "page": page,
+        "page_size": page_size,
+        "total": total,
+        "agg_total_stars": total_stars,
+        "agg_total_diamonds": total_diamonds,
+    }
 
 
 # --- Per-group detail (games / leaderboard / settings) -------------

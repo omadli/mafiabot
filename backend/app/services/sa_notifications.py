@@ -89,6 +89,59 @@ async def notify_unbanned(user: User) -> None:
     await _safe_send(bot, user.id, text)  # type: ignore[arg-type]
 
 
+async def notify_stars_purchase(
+    *,
+    user: User,
+    diamonds_credited: int,
+    stars_paid: int,
+    package_code: str,
+) -> None:
+    """Push a DM to every super-admin when a user pays Stars for diamonds.
+
+    Each SA configured in `settings.super_admin_ids` receives a single
+    line mentioning the buyer + the amounts so revenue is visible in
+    real time without anyone needing to poll the dashboard. The buyer
+    name is rendered as a Telegram mention so the SA can tap through to
+    the user's profile.
+
+    Failures are swallowed by the outer `_safe_send`; this function
+    must never block the actual purchase being credited.
+    """
+    bot = _bot()
+    if bot is None:
+        return
+    from app.config import settings as app_settings
+
+    sa_ids = list(getattr(app_settings, "super_admin_ids", []) or [])
+    if not sa_ids:
+        return
+
+    # Buyer-side fields. `display_name` falls back to "#id" when the user
+    # has nothing usable so the message never reads as "<a …>None</a>".
+    display = (
+        (user.first_name or user.username or f"#{user.id}")
+        .replace("<", "&lt;")
+        .replace(  # type: ignore[attr-defined]
+            ">", "&gt;"
+        )
+    )
+    mention = f'<a href="tg://user?id={user.id}">{display}</a>'
+
+    text = (
+        "💎 <b>Yangi Telegram Stars to'lov</b>\n\n"
+        f"👤 Foydalanuvchi: {mention} (<code>#{user.id}</code>)\n"
+        f"📦 Paket: <code>{package_code}</code>\n"
+        f"⭐ To'langan: <b>{stars_paid}</b> Stars\n"
+        f"💎 Berildi: <b>{diamonds_credited}</b> olmos"
+    )
+
+    for sa_id in sa_ids:
+        try:
+            await _safe_send(bot, int(sa_id), text)
+        except Exception as e:  # pragma: no cover — never block on a single SA
+            logger.debug(f"SA Stars notification to {sa_id} failed: {e}")
+
+
 async def notify_admin_message(user: User, text: str) -> None:
     """Deliver a free-form admin → user message via the bot.
 

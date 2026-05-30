@@ -430,14 +430,21 @@ async def callback_clear_role(
 async def callback_shop_diamonds(
     query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
 ) -> None:
+    # Load the live package list — SystemSettings.diamond_packages
+    # overrides the hard-coded defaults when SA has tweaked them.
+    packages = await payment_service.list_diamond_packages()
     rows = []
-    for pkg in payment_service.DIAMOND_PACKAGES:
-        total = pkg.diamonds + pkg.bonus_diamonds
+    for pkg in packages:
+        # Display the BASE diamonds + optional bonus separately so the
+        # arithmetic is clear: "💎 150 🎁+15 — ⭐ 125" reads as
+        # 150 base + 15 bonus = 165 total at 125 stars. The previous
+        # "{base+bonus} 🎁+{bonus}" form misled buyers into thinking
+        # the bonus was added on top of an already-bonused amount.
         bonus_label = f" 🎁+{pkg.bonus_diamonds}" if pkg.bonus_diamonds else ""
         rows.append(
             [
                 InlineKeyboardButton(
-                    text=f"💎 {total}{bonus_label} — ⭐ {pkg.stars_price}",
+                    text=f"💎 {pkg.diamonds}{bonus_label} — ⭐ {pkg.stars_price}",
                     callback_data=f"buy:diamonds:{pkg.code}",
                 )
             ]

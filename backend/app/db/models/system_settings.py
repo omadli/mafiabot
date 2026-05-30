@@ -55,6 +55,54 @@ DEFAULT_PREMIUM: dict = {
     "group_reward_multiplier": 2.0,
 }
 
+# === Diamond packages (Telegram Stars purchase tiers) ===
+#
+# Each tier: `code` (stable identifier referenced by the Stars invoice
+# payload), `diamonds` (BASE amount), `stars_price` (XTR cost),
+# `bonus_diamonds` (extra granted on top of base — used as the "🎁+N"
+# label in the shop). Total credited = diamonds + bonus_diamonds.
+#
+# The shop UI displays "{diamonds} 🎁+{bonus} — ⭐ {price}" so the
+# buyer reads "150 base + 15 bonus for 125 stars" rather than the old
+# (buggy) "{base+bonus} 🎁+{bonus}" form which double-counted the
+# bonus in the lead number.
+#
+# `display_order` controls top-to-bottom listing — lower first.
+DEFAULT_DIAMOND_PACKAGES: list[dict] = [
+    {
+        "code": "pack_50",
+        "diamonds": 50,
+        "bonus_diamonds": 0,
+        "stars_price": 50,
+        "display_order": 10,
+        "enabled": True,
+    },
+    {
+        "code": "pack_150",
+        "diamonds": 150,
+        "bonus_diamonds": 15,
+        "stars_price": 125,
+        "display_order": 20,
+        "enabled": True,
+    },
+    {
+        "code": "pack_500",
+        "diamonds": 500,
+        "bonus_diamonds": 100,
+        "stars_price": 400,
+        "display_order": 30,
+        "enabled": True,
+    },
+    {
+        "code": "pack_1000",
+        "diamonds": 1000,
+        "bonus_diamonds": 250,
+        "stars_price": 750,
+        "display_order": 40,
+        "enabled": True,
+    },
+]
+
 
 class SystemSettings(Model):
     """Single-row table storing tunable parameters.
@@ -67,6 +115,10 @@ class SystemSettings(Model):
     rewards: dict = fields.JSONField(default=dict)
     exchange: dict = fields.JSONField(default=dict)
     premium: dict = fields.JSONField(default=dict)
+    # Stars diamond-purchase tiers — see DEFAULT_DIAMOND_PACKAGES above
+    # for shape. List (ordered) of {code, diamonds, bonus_diamonds,
+    # stars_price, display_order, enabled} dicts.
+    diamond_packages: list = fields.JSONField(default=list)
     updated_at = fields.DatetimeField(auto_now=True)
     updated_by_tg_id = fields.BigIntField(null=True)  # who last changed
 
@@ -79,4 +131,5 @@ class SystemSettings(Model):
         "rewards": DEFAULT_REWARDS,
         "exchange": DEFAULT_EXCHANGE,
         "premium": DEFAULT_PREMIUM,
+        "diamond_packages": DEFAULT_DIAMOND_PACKAGES,
     }

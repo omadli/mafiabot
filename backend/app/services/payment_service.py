@@ -29,12 +29,54 @@ class DiamondPackage:
 
 
 # === Diamond packages ===
+# These are the FALLBACK tiers used until SystemSettings.diamond_packages
+# is populated (fresh DB, first deploy, missing row). At runtime always
+# call `list_diamond_packages()` so SA edits via the admin panel take
+# effect without a redeploy.
 DIAMOND_PACKAGES: list[DiamondPackage] = [
     DiamondPackage(code="pack_50", diamonds=50, stars_price=50),
     DiamondPackage(code="pack_150", diamonds=150, stars_price=125, bonus_diamonds=15),
     DiamondPackage(code="pack_500", diamonds=500, stars_price=400, bonus_diamonds=100),
     DiamondPackage(code="pack_1000", diamonds=1000, stars_price=750, bonus_diamonds=250),
 ]
+
+
+async def list_diamond_packages() -> list[DiamondPackage]:
+    """Return the live, sorted, enabled-only set of diamond tiers.
+
+    Source of truth: `SystemSettings.diamond_packages` (set by SA via
+    the admin panel). When the row is empty / missing we fall back to
+    the in-code DEFAULTS so a fresh install never renders an empty
+    shop. Sorted by `display_order` so SA-provided ordering wins.
+    """
+    from app.services import pricing_service
+
+    s = await pricing_service.get_settings()
+    raw = list(s.diamond_packages or [])
+    if not raw:
+        return list(DIAMOND_PACKAGES)
+    enabled = [p for p in raw if p.get("enabled", True)]
+    enabled.sort(key=lambda p: p.get("display_order", 0))
+    return [
+        DiamondPackage(
+            code=str(p["code"]),
+            diamonds=int(p.get("diamonds", 0)),
+            stars_price=int(p.get("stars_price", 0)),
+            bonus_diamonds=int(p.get("bonus_diamonds", 0)),
+        )
+        for p in enabled
+        if "code" in p
+    ]
+
+
+async def get_package_async(code: str) -> DiamondPackage | None:
+    """Async-aware package lookup. Used by `handle_pre_checkout` /
+    `handle_successful_payment` so SA-edited prices reach Telegram
+    Stars validation without a process restart."""
+    for pkg in await list_diamond_packages():
+        if pkg.code == code:
+            return pkg
+    return None
 
 
 @dataclass
@@ -93,21 +135,29 @@ async def handle_pre_checkout(bot: Bot, query) -> None:
         await bot.answer_pre_checkout_query(query.id, ok=False, error_message="Invalid invoice")
         return
     code = payload.split(":", 1)[1]
-    if get_package(code) is None:
+    # Use the LIVE package list so a tier the SA disabled mid-checkout
+    # is rejected before the user is charged.
+    if await get_package_async(code) is None:
         await bot.answer_pre_checkout_query(query.id, ok=False, error_message="Unknown package")
         return
     await bot.answer_pre_checkout_query(query.id, ok=True)
 
 
 async def handle_successful_payment(user: User, payment_info) -> int:
-    """Credit diamonds + record transaction. Returns total diamonds added."""
+    """Credit diamonds + record transaction. Returns total diamonds added.
+
+    Also fires a best-effort SuperAdmin DM mentioning the buyer so the
+    SA can see Stars revenue land in real time — handled by
+    `sa_notifications.notify_stars_purchase` after the DB commit so a
+    push failure can't roll back the credit.
+    """
     payload = payment_info.invoice_payload
     if not payload.startswith("diamonds:"):
         logger.warning(f"Unknown payment payload: {payload}")
         return 0
 
     code = payload.split(":", 1)[1]
-    pkg = get_package(code)
+    pkg = await get_package_async(code)
     if pkg is None:
         return 0
 
@@ -128,6 +178,22 @@ async def handle_successful_payment(user: User, payment_info) -> int:
         )
 
     logger.info(f"User {user.id} bought {total} diamonds for {pkg.stars_price} stars")
+
+    # Notify the SA after the credit lands so a failed push doesn't
+    # mask the actual purchase. Best-effort — the audit log is the
+    # durable record.
+    try:
+        from app.services.sa_notifications import notify_stars_purchase
+
+        await notify_stars_purchase(
+            user=user,
+            diamonds_credited=total,
+            stars_paid=pkg.stars_price,
+            package_code=code,
+        )
+    except Exception as e:  # pragma: no cover — never block a paid purchase
+        logger.debug(f"SA Stars notification failed for tx by user {user.id}: {e}")
+
     return total
 
 
