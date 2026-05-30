@@ -433,6 +433,100 @@ def test_shield_save_dataclass_fields():
     assert s.attacker_role == "don"
 
 
+# === Shield "consume on use" (not on game start) ===
+#
+# Regression: shields used to be decremented from `UserInventory` the
+# moment a game started, regardless of whether they ever triggered.
+# The fix moved DB debits to the actual save event — the engine now
+# records `outcome.inventory_consumed` so the phase manager can debit
+# the row once per round.
+
+
+def test_consumed_shield_logged_for_db_decrement():
+    """Non-premium shield save → entry in `outcome.inventory_consumed`
+    so the phase manager debits the player's `UserInventory.shield`."""
+    target = PlayerState(
+        user_id=10,
+        first_name="Civ",
+        join_order=1,
+        role="citizen",
+        team=Team.CITIZENS,
+        items_active=["shield"],
+    )
+    don = PlayerState(user_id=20, first_name="Don", join_order=2, role="don", team=Team.MAFIA)
+    state = _state_with(
+        [target, don],
+        [NightAction(actor_id=20, role="don", action_type="kill", target_id=10)],
+    )
+
+    outcome = ActionResolver().resolve(state)
+
+    assert outcome.deaths == []
+    assert (10, "shield") in outcome.inventory_consumed
+
+
+def test_premium_bonus_save_does_not_log_consumption():
+    """Premium first-time save burns the bonus charge but NOT the slot,
+    so `inventory_consumed` must stay empty — the player keeps the item
+    for a second save before the DB stock drops."""
+    target = PlayerState(
+        user_id=10,
+        first_name="VIP",
+        join_order=1,
+        role="citizen",
+        team=Team.CITIZENS,
+        items_active=["shield"],
+        extra={
+            "is_premium": True,
+            "shield_uses_left": {"shield": 1, "killer_shield": 1, "vote_shield": 1},
+        },
+    )
+    don = PlayerState(user_id=20, first_name="Don", join_order=2, role="don", team=Team.MAFIA)
+    state = _state_with(
+        [target, don],
+        [NightAction(actor_id=20, role="don", action_type="kill", target_id=10)],
+    )
+
+    outcome = ActionResolver().resolve(state)
+
+    assert outcome.deaths == []
+    # Slot preserved → no inventory debit yet.
+    assert (10, "shield") not in outcome.inventory_consumed
+    # ...but in-memory premium bonus was spent.
+    assert target.extra["shield_uses_left"]["shield"] == 0
+
+
+def test_no_attack_no_inventory_consumption():
+    """A player with shields who isn't attacked must NOT have any
+    inventory entries recorded — the headline regression the operator
+    reported ("himoyalar kuyib ketmoqda")."""
+    target = PlayerState(
+        user_id=10,
+        first_name="Civ",
+        join_order=1,
+        role="citizen",
+        team=Team.CITIZENS,
+        items_active=["shield", "killer_shield", "vote_shield"],
+    )
+    don = PlayerState(user_id=20, first_name="Don", join_order=2, role="don", team=Team.MAFIA)
+    other = PlayerState(
+        user_id=30, first_name="Cit2", join_order=3, role="citizen", team=Team.CITIZENS
+    )
+    # Don kills somebody else, not the shielded player.
+    state = _state_with(
+        [target, don, other],
+        [NightAction(actor_id=20, role="don", action_type="kill", target_id=30)],
+    )
+
+    outcome = ActionResolver().resolve(state)
+
+    assert outcome.inventory_consumed == []
+    # All shields still in items_active.
+    assert "shield" in state.get_player(10).items_active
+    assert "killer_shield" in state.get_player(10).items_active
+    assert "vote_shield" in state.get_player(10).items_active
+
+
 # === Mafia collusion (Don + Mafia share one weighted kill) ===
 
 

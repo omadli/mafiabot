@@ -479,7 +479,16 @@ async def _is_user_premium(user_id: int) -> bool:
 async def _resolve_active_items(user_id: int, items_allowed: dict) -> list[str]:
     """Determine which items the user has + activated + group allows.
 
-    Decrements inventory counters for items that go into the game (one-shot consumables).
+    Pure read-only: the item is moved into `items_active` for the game,
+    but the DB inventory stock is NOT decremented here. The earlier
+    behaviour (decrementing on game start) penalised buyers whose
+    shields never got triggered — the operator's report
+    "himoyalar ishlamasida kuyib ketmoqda" was exactly this. Stock is
+    now debited only when the engine actually consumes the slot
+    (`actions.py:_consume_shield`, `phase_manager._consume_vote_shield`,
+    `actions.py rifle pierce path`), surfaced through
+    `NightOutcome.inventory_consumed` so the phase manager can persist
+    one update at the end of each phase resolution.
     """
     from app.db.models import UserInventory
 
@@ -499,7 +508,6 @@ async def _resolve_active_items(user_id: int, items_allowed: dict) -> list[str]:
         "fake_document",
     ]
 
-    decremented: dict[str, int] = {}
     for field in item_fields:
         # Group must allow it
         if not items_allowed.get(field, True):
@@ -512,17 +520,7 @@ async def _resolve_active_items(user_id: int, items_allowed: dict) -> list[str]:
         item_settings = settings.get(field, {})
         if not item_settings.get("enabled", False):
             continue
-        # Activate + decrement
         active.append(field)
-        new_qty = qty - 1
-        setattr(inv, field, new_qty)
-        decremented[field] = new_qty
-
-    if decremented:
-        # Workaround: UserInventory.user is OneToOneField(pk=True), so
-        # `inv.save()` hits the same Tortoise 0.21 bug as GroupSettings.
-        # Use filter().update() with explicit column kwargs.
-        await UserInventory.filter(user_id=user_id).update(**decremented)
 
     return active
 
@@ -577,15 +575,17 @@ async def sync_inventory_into_active_game(user_id: int, item_code: str) -> None:
     in_game = item_code in player.items_active
     stock = getattr(inv, item_code, 0)
 
+    # New "consume-on-use" contract: only flip the in-game flag here;
+    # the DB stock is debited later (in the action resolver / phase
+    # manager) only when the item is actually triggered by an attack /
+    # hanging confirm. Toggling mid-game therefore costs nothing.
     if enabled and not in_game and stock > 0:
         player.items_active.append(item_code)
-        await UserInventory.filter(user_id=user_id).update(**{item_code: stock - 1})
         await save_state(state)
         return
 
     if not enabled and in_game:
         player.items_active.remove(item_code)
-        await UserInventory.filter(user_id=user_id).update(**{item_code: stock + 1})
         await save_state(state)
         return
 

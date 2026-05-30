@@ -137,6 +137,13 @@ class NightOutcome:
     # killer_shield, or doctor heal). A "Ha, ot" pressed against an
     # undefended target kills without burning the rifle slot.
     rifles_consumed: list[int] = field(default_factory=list)
+    # `(user_id, item)` tuples for shields whose FINAL slot was burned
+    # this round — i.e. the item came off `items_active`, not just a
+    # premium bonus charge. The phase manager batches these into one
+    # `UserInventory` update per phase so a player's stock only drops
+    # when their shield actually triggered. Items: shield,
+    # killer_shield, fake_document.
+    inventory_consumed: list[tuple[int, str]] = field(default_factory=list)
     # True when the mafia team (Don + Mafia members) submitted kill picks
     # this night but the weighted tally ended in a tie — nobody dies by
     # mafia hands. Don = 2.5 weight, each Mafia = 1.0. Messaging layer
@@ -363,10 +370,12 @@ class ActionResolver:
                     # surface a ShieldSave entry (no "Kimdir himoyasini
                     # ishlatdi" group line) because the target died
                     # anyway — the shield was destroyed, not "used".
-                    if saved_by_killer_shield_base:
-                        self._consume_shield(target, "killer_shield")
-                    elif saved_by_shield_base:
-                        self._consume_shield(target, "shield")
+                    if saved_by_killer_shield_base and self._consume_shield(
+                        target, "killer_shield"
+                    ):
+                        outcome.inventory_consumed.append((target.user_id, "killer_shield"))
+                    elif saved_by_shield_base and self._consume_shield(target, "shield"):
+                        outcome.inventory_consumed.append((target.user_id, "shield"))
                     # Doctor heal isn't an inventory slot — nothing to
                     # decrement, but the doctor's "saved" feedback is
                     # suppressed so they don't think they succeeded.
@@ -385,7 +394,8 @@ class ActionResolver:
                     )
                     continue
                 if saved_by_killer_shield_base:
-                    self._consume_shield(target, "killer_shield")
+                    if self._consume_shield(target, "killer_shield"):
+                        outcome.inventory_consumed.append((target.user_id, "killer_shield"))
                     outcome.shield_saves.append(
                         ShieldSave(
                             target_id=target_id,
@@ -396,7 +406,8 @@ class ActionResolver:
                     logger.debug(f"Player {target_id} saved by killer_shield")
                     continue
                 if saved_by_shield_base:
-                    self._consume_shield(target, "shield")
+                    if self._consume_shield(target, "shield"):
+                        outcome.inventory_consumed.append((target.user_id, "shield"))
                     outcome.shield_saves.append(
                         ShieldSave(
                             target_id=target_id,
@@ -600,27 +611,33 @@ class ActionResolver:
 
     # === Helpers ===
 
-    def _consume_shield(self, target: PlayerState, item: str) -> None:
-        """Consume one charge of a shield. Premium players get a second
-        use of each shield in a single game — `extra["shield_uses_left"]`
-        tracks the remaining premium-bonus uses per item.
+    def _consume_shield(self, target: PlayerState, item: str) -> bool:
+        """Consume one charge of a shield. Returns True iff the final
+        slot was burned (i.e. the item came off `items_active`); False
+        when a premium-bonus charge absorbed the hit and the slot is
+        preserved.
 
-        Without premium (or once the bonus is spent) the item is removed
-        from `items_active` immediately, matching the old behaviour.
+        The caller uses the True case to schedule a `UserInventory`
+        decrement after the resolver finishes; the in-memory state
+        update is unconditional so the player can't double-spend the
+        same slot in the same round.
         """
         if not target.extra.get("is_premium"):
             if item in target.items_active:
                 target.items_active.remove(item)
-            return
+                return True
+            return False
 
         uses_left: dict = target.extra.setdefault("shield_uses_left", {})
         remaining = uses_left.get(item, 1)
         if remaining > 0:
             uses_left[item] = remaining - 1
-            return
+            return False  # bonus charge spent; slot preserved
         # Bonus spent — finally consume the item slot.
         if item in target.items_active:
             target.items_active.remove(item)
+            return True
+        return False
 
     def _priority(self, a: NightAction) -> int:
         order = {

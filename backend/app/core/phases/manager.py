@@ -281,6 +281,30 @@ class PhaseManager:
                         continue
                     await UserInventory.filter(user_id=uid).update(rifle=max(0, inv.rifle - 1))
 
+            # Burn one DB inventory slot per shield that actually came off
+            # `items_active` this night — i.e. the player wasn't premium,
+            # or their premium bonus charge had already been spent. The
+            # resolver only appends here when the *final* slot was used;
+            # bonus charges leave the entry off this list so the stock is
+            # preserved exactly like the in-memory items_active is.
+            if outcome.inventory_consumed:
+                from app.db.models import UserInventory
+
+                # Aggregate same-user/same-item entries (e.g. theoretical
+                # multi-attacker shield burns) into a single per-pair
+                # decrement so we don't emit N updates for one round.
+                tally: dict[tuple[int, str], int] = {}
+                for uid, item in outcome.inventory_consumed:
+                    tally[(uid, item)] = tally.get((uid, item), 0) + 1
+                for (uid, item), n in tally.items():
+                    inv = await UserInventory.get_or_none(user_id=uid)
+                    if inv is None:
+                        continue
+                    cur = getattr(inv, item, 0)
+                    if cur < 1:
+                        continue
+                    await UserInventory.filter(user_id=uid).update(**{item: max(0, cur - n)})
+
             # Send role feedback DMs (Detective check result, Doctor visitors, Hooker)
             from app.services.role_feedback import send_role_feedback
 
@@ -352,22 +376,46 @@ class PhaseManager:
             return
 
     @classmethod
-    def _consume_vote_shield(cls, target) -> None:  # type: ignore[no-untyped-def]
+    async def _decrement_inventory_item(cls, user_id: int, item: str) -> None:
+        """Debit a single inventory slot. Used by the vote-shield path
+        when the SLOT was actually burned (not just a premium bonus).
+        Mirrors the night-phase batch update in tick_once but for the
+        single per-hanging case the day-phase only ever produces."""
+        from app.db.models import UserInventory
+
+        inv = await UserInventory.get_or_none(user_id=user_id)
+        if inv is None:
+            return
+        cur = getattr(inv, item, 0)
+        if cur < 1:
+            return
+        await UserInventory.filter(user_id=user_id).update(**{item: max(0, cur - 1)})
+
+    @classmethod
+    def _consume_vote_shield(cls, target) -> bool:  # type: ignore[no-untyped-def]
         """Same premium-bonus contract as ActionResolver._consume_shield —
         premium players get a second save off a single vote_shield slot
-        before the item is finally stripped."""
+        before the item is finally stripped.
+
+        Returns True when the final slot was burned so the caller can
+        debit the DB inventory by 1; False when a premium-bonus charge
+        absorbed the save and the slot is preserved.
+        """
         item = "vote_shield"
         if not target.extra.get("is_premium"):
             if item in target.items_active:
                 target.items_active.remove(item)
-            return
+                return True
+            return False
         uses_left: dict = target.extra.setdefault("shield_uses_left", {})
         remaining = uses_left.get(item, 1)
         if remaining > 0:
             uses_left[item] = remaining - 1
-            return
+            return False
         if item in target.items_active:
             target.items_active.remove(item)
+            return True
+        return False
 
     @classmethod
     def _find_vote_leader(cls, state: GameState) -> int | None:
@@ -428,7 +476,9 @@ class PhaseManager:
 
         # Vote shield
         if "vote_shield" in target.items_active:
-            cls._consume_vote_shield(target)
+            slot_burned = cls._consume_vote_shield(target)
+            if slot_burned:
+                await cls._decrement_inventory_item(target.user_id, "vote_shield")
             # Flag the broadcast so _on_phase_change can announce
             # "{mention} osilishga qarshi himoyasidan foydalandi".
             state.current_round().extra["vote_shield_user"] = {
@@ -512,7 +562,9 @@ class PhaseManager:
 
         # Vote shield (passive item)
         if "vote_shield" in target.items_active:
-            cls._consume_vote_shield(target)
+            slot_burned = cls._consume_vote_shield(target)
+            if slot_burned:
+                await cls._decrement_inventory_item(target.user_id, "vote_shield")
             state.current_round().extra["vote_shield_user"] = {
                 "user_id": target.user_id,
                 "name": target.first_name,

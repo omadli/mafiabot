@@ -41,9 +41,14 @@ def _premium_status(user: User) -> tuple[bool, datetime | None]:
 
 
 def _format_premium_date(expires_at: datetime | None) -> str:
+    """Render the expiry as `dd.mm.yyyy` — the format the operator's
+    region expects on receipts and screenshots. Time component is
+    dropped intentionally (premium tiers count in whole days) so the
+    string fits the inventory header alongside the 👑 chip without
+    line-wrapping on Telegram's mobile layout."""
     if expires_at is None:
         return "—"
-    return expires_at.strftime("%Y-%m-%d")
+    return expires_at.strftime("%d.%m.%Y")
 
 
 router = Router(name="private_inventory")
