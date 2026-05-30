@@ -21,7 +21,7 @@ import { SaUsersPage } from "./pages/sa/SaUsersPage";
 import { SaUserDetailPage } from "./pages/sa/SaUserDetailPage";
 import { SaGamesPage } from "./pages/sa/SaGamesPage";
 import { SaGameReplayPage } from "./pages/sa/SaGameReplayPage";
-import { SaAuditPage } from "./pages/sa/SaAuditPage";
+import { AuditPage as SaAuditPage } from "../sa/pages/AuditPage";
 
 import "./WebAppStyles.css";
 

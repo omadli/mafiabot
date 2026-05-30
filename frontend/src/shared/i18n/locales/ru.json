@@ -842,7 +842,8 @@
     },
     "audit": {
       "title": "Журнал действий",
-      "filter_action": "Поиск по действию..."
+      "filter_action": "Поиск по действию...",
+      "row_count": "Всего: {{total}}"
     },
     "diamond_packages": {
       "title": "Пакеты алмазов",

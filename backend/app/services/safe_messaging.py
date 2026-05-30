@@ -1,3 +1,12 @@
+# ruff: noqa: UP047
+#
+# The three fan-out helpers below (`safe_send`, `paced_each`,
+# `paced_gather`) are generic over T. Ruff's UP047 wants the PEP 695
+# `async def fn[T](...)` form, but mypy 1.x doesn't support PEP 695
+# generics outside its experimental flag (see CI logs). Until mypy
+# catches up, keep the legacy `TypeVar` shape and silence the rule
+# at the file level.
+
 """Telegram-friendly wrappers around the bot's send methods.
 
 Why this file exists
@@ -52,6 +61,10 @@ from loguru import logger
 
 from app.db.models import User
 
+# Generic type parameter used by the three fan-out helpers below. Kept
+# as `TypeVar` rather than the PEP 695 `[T]` syntax because mypy 1.x
+# doesn't support the new syntax outside its experimental flag; ruff's
+# UP047 hint is silenced per-function with `noqa`.
 T = TypeVar("T")
 
 # Default pacing between sends in a fan-out batch. Picked so a single
@@ -76,7 +89,7 @@ class SendResult:
     can match `result.ok` instead of magic strings.
     """
 
-    __slots__ = ("ok", "reason", "exc", "value")
+    __slots__ = ("exc", "ok", "reason", "value")
 
     def __init__(
         self,

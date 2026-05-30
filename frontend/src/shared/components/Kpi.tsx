@@ -16,11 +16,22 @@ interface KpiProps {
   /** Smaller value font (1.5rem) — for dense dashboards. Default false → uses the
    *  CSS-defined `.kpi-value` size. */
   compact?: boolean;
+  /** When true, render `value` verbatim — no thousand separators. Use
+   *  for IDs (Telegram user_id, group_id, charge_id) where digit grouping
+   *  is wrong; leave off for amounts (diamonds, dollars, elo) where the
+   *  locale formatter helps readability. */
+  raw?: boolean;
 }
 
-export function Kpi({ label, value, sub, compact = false }: KpiProps): React.ReactElement {
+export function Kpi({
+  label,
+  value,
+  sub,
+  compact = false,
+  raw = false,
+}: KpiProps): React.ReactElement {
   const formatted =
-    typeof value === "number" ? value.toLocaleString() : value;
+    raw || typeof value !== "number" ? String(value) : value.toLocaleString();
   return (
     <div className="admin-card">
       <div className="kpi-label">{label}</div>

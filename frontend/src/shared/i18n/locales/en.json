@@ -842,7 +842,8 @@
     },
     "audit": {
       "title": "Audit log",
-      "filter_action": "Search by action..."
+      "filter_action": "Search by action...",
+      "row_count": "Total: {{total}}"
     },
     "diamond_packages": {
       "title": "Diamond packages",

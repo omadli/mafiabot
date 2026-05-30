@@ -146,7 +146,9 @@ function Overview({ user }: { user: UserDetail }) {
   return (
     <>
       <div className="admin-grid" style={{ marginBottom: "1.5rem" }}>
-        <KPI label={t("admin.user_detail_extra.id")} value={user.id} />
+        {/* `String(user.id)` keeps the digits tight — Telegram IDs are
+            identifiers, not amounts, so no `1 234 567` separators. */}
+        <KPI label={t("admin.user_detail_extra.id")} value={String(user.id)} />
         <KPI
           label={t("admin.user_detail_extra.username")}
           value={user.username ? `@${user.username}` : "—"}

@@ -842,7 +842,8 @@
     },
     "audit": {
       "title": "Audit log",
-      "filter_action": "Action bo'yicha qidiruv..."
+      "filter_action": "Action bo'yicha qidiruv...",
+      "row_count": "Jami: {{total}}"
     },
     "diamond_packages": {
       "title": "Olmos paketlari",

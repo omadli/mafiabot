@@ -116,7 +116,8 @@ export function GameReplayPage() {
       <div className="admin-grid" style={{ marginBottom: "1.5rem" }}>
         <KPI label={t("admin.game_replay_extra.status")} value={game.status} />
         <KPI label={t("admin.game_replay_extra.winner")} value={game.winner_team || "—"} />
-        <KPI label={t("admin.game_replay_extra.group")} value={game.group_id} />
+        {/* Telegram group IDs are identifiers — no thousand separators. */}
+        <KPI label={t("admin.game_replay_extra.group")} value={String(game.group_id)} />
         <KPI
           label={t("admin.game_replay_extra.duration")}
           value={

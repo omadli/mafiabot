@@ -133,10 +133,15 @@ async def notify_stars_purchase(
             sa_user = await User.get_or_none(id=int(sa_id))
             locale = _safe_locale(sa_user) if sa_user is not None else "uz"
             t = get_translator(locale)
+            # `user_id` is passed as a STRING so Fluent's locale-aware
+            # number formatter doesn't insert thousand separators
+            # (uz/ru/en all do "123 456 789" for ints). Telegram user
+            # IDs are identifiers, not amounts — they should always
+            # render as a tight digit run.
             text = t(
                 "sa-notify-stars-purchase",
                 mention=mention,
-                user_id=user.id,
+                user_id=str(user.id),
                 package_code=package_code,
                 stars_paid=stars_paid,
                 diamonds_credited=diamonds_credited,

@@ -27,6 +27,8 @@ import type {
   GroupsPage,
   RoleConfig,
   RoleStat,
+  SaAuditEntry,
+  SaAuditPage,
   StarsTransactionsPage,
   SystemSettings,
   TopPlayer,
@@ -42,6 +44,8 @@ export type {
   GroupsPage,
   RoleConfig,
   RoleStat,
+  SaAuditEntry,
+  SaAuditPage,
   StarsTransactionsPage,
   SystemSettings,
   TopPlayer,
@@ -140,6 +144,17 @@ export const superAdminApi = {
         ),
         { packages },
       )
+    ).data,
+
+  /** Paginated audit log. Backend filters: `action` (substring),
+   *  `actor_id`, page / page_size. */
+  audit: async (
+    params: { action?: string; actor_id?: number; page?: number; page_size?: number } = {},
+  ): Promise<SaAuditPage> =>
+    (
+      await api.get(p("/admin/audit", "/sa/audit"), {
+        params,
+      })
     ).data,
 
   /** Paginated Stars-purchase audit feed. */
