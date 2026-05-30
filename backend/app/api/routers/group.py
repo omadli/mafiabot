@@ -317,7 +317,9 @@ async def group_history(
             duration_sec = int((g.finished_at - g.started_at).total_seconds())
         history = g.history or {}
         players_list = history.get("players") or []
-        final_alive = history.get("final_alive") or []
+        # `to_history_dict()` doesn't emit a `final_alive` array; survivors
+        # are flagged in-place via `alive=True` on each player snapshot.
+        alive_count = sum(1 for p in players_list if p.get("alive"))
         items.append(
             {
                 "id": str(g.id),
@@ -326,7 +328,7 @@ async def group_history(
                 "finished_at": g.finished_at.isoformat() if g.finished_at else None,
                 "duration_seconds": duration_sec,
                 "player_count": len(players_list),
-                "alive_at_end": len(final_alive),
+                "alive_at_end": alive_count,
                 "bounty_per_winner": g.bounty_per_winner,
             }
         )
