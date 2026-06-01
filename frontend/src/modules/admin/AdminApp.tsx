@@ -9,7 +9,7 @@ import { DashboardPage as Dashboard } from "../sa/pages/DashboardPage";
 import { GameReplayPage } from "./pages/GameReplayPage";
 import { GamesPage } from "../sa/pages/GamesPage";
 import { EmojiConfigsPage } from "../sa/pages/EmojiConfigsPage";
-import { GroupDetailPage } from "./pages/GroupDetailPage";
+import { GroupDetailPage } from "../sa/pages/GroupDetailPage";
 import { GroupsPage } from "../sa/pages/GroupsPage";
 import { LoginPage } from "./pages/LoginPage";
 import { RoleConfigsPage } from "../sa/pages/RoleConfigsPage";

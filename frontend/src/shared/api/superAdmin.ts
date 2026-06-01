@@ -281,6 +281,21 @@ export const superAdminApi = {
       )
     ).data,
 
+  /** Patch a single GroupSettings JSON section (e.g. `roles`,
+   *  `timings`, `items_allowed`). Backend validates the section
+   *  name against an allow-list; unknown sections 400. */
+  updateGroupSettings: async (
+    groupId: number,
+    section: string,
+    value: unknown,
+  ): Promise<{ ok: boolean }> =>
+    (
+      await api.post(
+        p(`/admin/groups/${groupId}/settings`, `/sa/groups/${groupId}/settings`),
+        { section, value },
+      )
+    ).data,
+
   groupLive: async (groupId: number): Promise<unknown> =>
     (
       await api.get(
