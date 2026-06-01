@@ -1,3 +1,13 @@
+/**
+ * Admin live event stream (WebSocket).
+ *
+ * Same wire format as the JWT-protected /ws/admin endpoint. The hook is
+ * imported by the unified DashboardPage; the WebApp shell passes
+ * `enabled=false` because it has no persisted JWT to authenticate the
+ * WebSocket with — Telegram WebApps authenticate per-request via
+ * initData and the WS endpoint doesn't accept that yet.
+ */
+
 import { useEffect, useState } from "react";
 
 import { authStore } from "@shared/store/auth";
@@ -8,19 +18,17 @@ export interface LiveEvent {
   receivedAt: number;
 }
 
-/**
- * Subscribe to admin live event stream over WebSocket.
- * Returns the latest events (capped at 50) and connection status.
- */
-export function useAdminLive() {
+export function useAdminLive(enabled: boolean) {
   const [events, setEvents] = useState<LiveEvent[]>([]);
   const [connected, setConnected] = useState(false);
   const token = authStore((s) => s.token);
 
   useEffect(() => {
-    if (!token) return;
+    if (!enabled || !token) return;
     const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
-    const url = `${wsScheme}://${window.location.host}/ws/admin?token=${encodeURIComponent(token)}`;
+    const url = `${wsScheme}://${window.location.host}/ws/admin?token=${encodeURIComponent(
+      token,
+    )}`;
     const ws = new WebSocket(url);
 
     ws.onopen = () => setConnected(true);
@@ -37,7 +45,6 @@ export function useAdminLive() {
       }
     };
 
-    // Heartbeat (Telegram-friendly: keep connection open)
     const heartbeat = setInterval(() => {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send("ping");
@@ -48,7 +55,7 @@ export function useAdminLive() {
       clearInterval(heartbeat);
       ws.close();
     };
-  }, [token]);
+  }, [enabled, token]);
 
   return { events, connected };
 }

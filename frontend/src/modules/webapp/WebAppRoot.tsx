@@ -7,7 +7,7 @@ import { HistoryPage } from "./pages/HistoryPage";
 import { LeaderboardPage } from "./pages/LeaderboardPage";
 import { WebAppHome } from "./pages/WebAppHome";
 import { SaLayout } from "./pages/sa/SaLayout";
-import { SaDashboardPage } from "./pages/sa/SaDashboardPage";
+import { DashboardPage as SaDashboardPage } from "../sa/pages/DashboardPage";
 import { RoleStatsPage as SaRolesPage } from "../sa/pages/RoleStatsPage";
 import { StarsTransactionsPage } from "../sa/pages/StarsTransactionsPage";
 import { RoleConfigsPage as SaRoleConfigsPage } from "../sa/pages/RoleConfigsPage";

@@ -20,9 +20,11 @@ import { authStore } from "@shared/store/auth";
 
 import { api } from "./client";
 import type {
+  CohortChart,
   DiamondPackage,
   EmojiCategory,
   EmojiConfig,
+  GlobalStats,
   GroupGamesResponse,
   GroupLeaderboardResponse,
   GroupSettings,
@@ -30,6 +32,7 @@ import type {
   RoleConfig,
   RoleStat,
   RoleTeam,
+  RoleWinrate,
   SaAuditEntry,
   SaAuditPage,
   SaGameListItem,
@@ -43,9 +46,11 @@ import type {
 } from "./sa";
 
 export type {
+  CohortChart,
   DiamondPackage,
   EmojiCategory,
   EmojiConfig,
+  GlobalStats,
   GroupGamesResponse,
   GroupLeaderboardResponse,
   GroupSettings,
@@ -53,6 +58,7 @@ export type {
   RoleConfig,
   RoleStat,
   RoleTeam,
+  RoleWinrate,
   SaAuditEntry,
   SaAuditPage,
   SaGameListItem,
@@ -346,6 +352,79 @@ export const superAdminApi = {
       await api.post(
         p(`/admin/users/${userId}/send-message`, `/sa/users/${userId}/send-message`),
         { text },
+      )
+    ).data,
+
+  // === Dashboard / charts ===
+
+  /** All KPIs in one call — drives the SuperAdmin dashboard.
+   *  Web (JWT) and WebApp (initData) both hit a richer "global-stats"
+   *  shape so the dashboard reads from a single endpoint. */
+  globalStats: async (): Promise<GlobalStats> =>
+    (await api.get(p("/admin/global-stats", "/sa/global-stats"))).data,
+
+  chartElo: async (): Promise<{ bins: { label: string; count: number }[] }> =>
+    (await api.get(p("/admin/charts/elo", "/sa/charts/elo"))).data,
+
+  chartCohort: async (): Promise<CohortChart> =>
+    (await api.get(p("/admin/charts/cohort", "/sa/charts/cohort"))).data,
+
+  chartGamesPerDay: async (
+    days = 30,
+  ): Promise<{ series: { date: string; count: number }[] }> =>
+    (
+      await api.get(p("/admin/charts/games-per-day", "/sa/charts/games-per-day"), {
+        params: { days },
+      })
+    ).data,
+
+  chartRoleWinrates: async (): Promise<{ items: RoleWinrate[] }> =>
+    (await api.get(p("/admin/charts/role-winrates", "/sa/charts/role-winrates"))).data,
+
+  chartNewUsersPerDay: async (
+    days = 30,
+  ): Promise<{ series: { date: string; count: number }[] }> =>
+    (
+      await api.get(
+        p("/admin/charts/new-users-per-day", "/sa/charts/new-users-per-day"),
+        { params: { days } },
+      )
+    ).data,
+
+  chartNewGroupsPerDay: async (
+    days = 30,
+  ): Promise<{ series: { date: string; count: number }[] }> =>
+    (
+      await api.get(
+        p("/admin/charts/new-groups-per-day", "/sa/charts/new-groups-per-day"),
+        { params: { days } },
+      )
+    ).data,
+
+  chartGamesByHour: async (
+    days = 30,
+  ): Promise<{
+    bins: { hour: number; count: number }[];
+    days: number;
+    total: number;
+  }> =>
+    (
+      await api.get(p("/admin/charts/games-by-hour", "/sa/charts/games-by-hour"), {
+        params: { days },
+      })
+    ).data,
+
+  chartGamesByWeekday: async (
+    days = 30,
+  ): Promise<{
+    bins: { weekday: number; count: number }[];
+    days: number;
+    total: number;
+  }> =>
+    (
+      await api.get(
+        p("/admin/charts/games-by-weekday", "/sa/charts/games-by-weekday"),
+        { params: { days } },
       )
     ).data,
 };

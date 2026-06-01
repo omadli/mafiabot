@@ -68,6 +68,91 @@ async def dashboard(admin: AdminAccount = Depends(get_current_admin)) -> dict:
     }
 
 
+@router.get("/admin/global-stats")
+async def admin_global_stats(admin: AdminAccount = Depends(get_current_admin)) -> dict:
+    """Mirror of `/api/sa/global-stats` for JWT auth.
+
+    The shared SuperAdmin dashboard front-end now reads from a single
+    `superAdminApi.globalStats()` call that dispatches to whichever
+    backend prefix matches the auth header it found. This route lets
+    the JWT-authenticated website surface the same richer KPI shape
+    (users / groups / games + winrates breakdown by team) the WebApp
+    has had since `/sa/global-stats` shipped, without forcing the
+    front-end to maintain two parallel shapes.
+
+    Implementation is intentionally a thin in-line copy of the SA
+    handler — the underlying queries are cheap and the two routes
+    live in different auth contexts, so sharing a service function
+    would only obscure the call graph.
+    """
+    from app.db.models import GameResult
+
+    now = datetime.now(UTC)
+    day_ago = now - timedelta(days=1)
+    week_ago = now - timedelta(days=7)
+    month_ago = now - timedelta(days=30)
+
+    users_total = await User.all().count()
+    users_premium = await User.filter(is_premium=True).count()
+    users_banned = await User.filter(is_banned=True).count()
+    users_active_24h = await User.filter(updated_at__gte=day_ago).count()
+    users_active_7d = await User.filter(updated_at__gte=week_ago).count()
+    users_active_30d = await User.filter(updated_at__gte=month_ago).count()
+
+    groups_total = await Group.filter(is_active=True).count()
+    groups_blocked = await Group.filter(is_blocked=True).count()
+    groups_onboarded = await Group.filter(onboarding_completed=True).count()
+
+    games_total = await Game.all().count()
+    games_finished = await Game.filter(status="finished").count()
+    games_running = await Game.filter(status="running").count()
+    games_cancelled = await Game.filter(status="cancelled").count()
+    games_24h = await Game.filter(finished_at__gte=day_ago).count()
+    games_7d = await Game.filter(finished_at__gte=week_ago).count()
+
+    total_results = await GameResult.all().count()
+    citizen_wins = await GameResult.filter(team="citizens", won=True).count()
+    mafia_wins = await GameResult.filter(team="mafia", won=True).count()
+    singleton_wins = await GameResult.filter(team="singleton", won=True).count()
+
+    def _pct(n: int) -> float:
+        return round(n / total_results * 100, 1) if total_results else 0.0
+
+    return {
+        "generated_at": now.isoformat(),
+        "users": {
+            "total": users_total,
+            "premium": users_premium,
+            "banned": users_banned,
+            "active_24h": users_active_24h,
+            "active_7d": users_active_7d,
+            "active_30d": users_active_30d,
+        },
+        "groups": {
+            "total_active": groups_total,
+            "blocked": groups_blocked,
+            "onboarded": groups_onboarded,
+        },
+        "games": {
+            "total": games_total,
+            "finished": games_finished,
+            "running": games_running,
+            "cancelled": games_cancelled,
+            "last_24h": games_24h,
+            "last_7d": games_7d,
+        },
+        "winrates": {
+            "total_player_games": total_results,
+            "citizen_wins": citizen_wins,
+            "mafia_wins": mafia_wins,
+            "singleton_wins": singleton_wins,
+            "citizen_pct": _pct(citizen_wins),
+            "mafia_pct": _pct(mafia_wins),
+            "singleton_pct": _pct(singleton_wins),
+        },
+    }
+
+
 # === Users ===
 
 
@@ -1302,3 +1387,110 @@ async def admin_update_emoji_config(
         payload={"fields": fields},
     )
     return _admin_emoji_config_dict(cfg)
+
+
+# === Charts (mirrors of /api/sa/charts/* for the shared dashboard) ===
+#
+# The website's unified Dashboard reads from one auth-aware client that
+# dispatches between /api/admin/charts/* (JWT) and /api/sa/charts/*
+# (initData). These four endpoints close the missing-data gap so the
+# website surfaces the same eight panels the WebApp does without the
+# front-end having to maintain two parallel chart shapes.
+
+
+@router.get("/admin/charts/new-users-per-day")
+async def admin_chart_new_users_per_day(
+    admin: AdminAccount = Depends(get_current_admin),
+    days: int = Query(30, ge=1, le=90),
+) -> dict:
+    """New user registrations per day for the last N days (backfilled)."""
+    now = datetime.now(UTC)
+    since = now - timedelta(days=days)
+    rows = await User.filter(created_at__gte=since).values("created_at")
+
+    by_day: dict[str, int] = {}
+    for r in rows:
+        ts = r["created_at"]
+        if ts is None:
+            continue
+        key = ts.date().isoformat()
+        by_day[key] = by_day.get(key, 0) + 1
+
+    series = []
+    for i in range(days):
+        d = (now - timedelta(days=days - 1 - i)).date()
+        key = d.isoformat()
+        series.append({"date": key, "count": by_day.get(key, 0)})
+    return {"series": series}
+
+
+@router.get("/admin/charts/new-groups-per-day")
+async def admin_chart_new_groups_per_day(
+    admin: AdminAccount = Depends(get_current_admin),
+    days: int = Query(30, ge=1, le=90),
+) -> dict:
+    """New groups added per day for the last N days (backfilled)."""
+    now = datetime.now(UTC)
+    since = now - timedelta(days=days)
+    rows = await Group.filter(created_at__gte=since).values("created_at")
+
+    by_day: dict[str, int] = {}
+    for r in rows:
+        ts = r["created_at"]
+        if ts is None:
+            continue
+        key = ts.date().isoformat()
+        by_day[key] = by_day.get(key, 0) + 1
+
+    series = []
+    for i in range(days):
+        d = (now - timedelta(days=days - 1 - i)).date()
+        key = d.isoformat()
+        series.append({"date": key, "count": by_day.get(key, 0)})
+    return {"series": series}
+
+
+@router.get("/admin/charts/games-by-hour")
+async def admin_chart_games_by_hour(
+    admin: AdminAccount = Depends(get_current_admin),
+    days: int = Query(30, ge=1, le=180),
+) -> dict:
+    """Game distribution across 24 hours of the day (UTC)."""
+    now = datetime.now(UTC)
+    since = now - timedelta(days=days)
+    rows = await Game.filter(started_at__gte=since).values("started_at")
+
+    by_hour: list[int] = [0] * 24
+    for r in rows:
+        ts = r["started_at"]
+        if ts is None:
+            continue
+        by_hour[ts.hour] += 1
+    return {
+        "bins": [{"hour": h, "count": by_hour[h]} for h in range(24)],
+        "days": days,
+        "total": sum(by_hour),
+    }
+
+
+@router.get("/admin/charts/games-by-weekday")
+async def admin_chart_games_by_weekday(
+    admin: AdminAccount = Depends(get_current_admin),
+    days: int = Query(30, ge=1, le=180),
+) -> dict:
+    """Game distribution by day of week (0 = Mon, 6 = Sun)."""
+    now = datetime.now(UTC)
+    since = now - timedelta(days=days)
+    rows = await Game.filter(started_at__gte=since).values("started_at")
+
+    by_dow: list[int] = [0] * 7
+    for r in rows:
+        ts = r["started_at"]
+        if ts is None:
+            continue
+        by_dow[ts.weekday()] += 1
+    return {
+        "bins": [{"weekday": i, "count": by_dow[i]} for i in range(7)],
+        "days": days,
+        "total": sum(by_dow),
+    }
