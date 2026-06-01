@@ -166,7 +166,7 @@ async def safe_send(
     except TelegramRetryAfter as e:
         wait = min(float(e.retry_after) + 1.0, MAX_RETRY_AFTER_SECONDS)
         logger.warning(
-            f"safe_send: 429 from Telegram, sleeping {wait:.1f}s " f"(user={target_user_id})"
+            f"safe_send: 429 from Telegram, sleeping {wait:.1f}s (user={target_user_id})"
         )
         if not retry_429:
             return SendResult(ok=False, reason="retry_after", exc=e)

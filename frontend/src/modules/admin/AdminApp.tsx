@@ -21,7 +21,7 @@ import { SandboxListPage } from "./pages/SandboxListPage";
 import { SystemSettingsPage } from "./pages/SystemSettingsPage";
 import { TopPlayersPage } from "../sa/pages/TopPlayersPage";
 import { UserDetailPage } from "./pages/UserDetailPage";
-import { UsersPage } from "./pages/UsersPage";
+import { UsersPage } from "../sa/pages/UsersPage";
 
 export function AdminApp() {
   const token = authStore((s) => s.token);

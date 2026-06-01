@@ -34,6 +34,8 @@ import type {
   SaAuditPage,
   SaGameListItem,
   SaGamesPage,
+  SaUserListItem,
+  SaUsersPage,
   StarsTransactionsPage,
   SystemSettings,
   TopPlayer,
@@ -55,6 +57,8 @@ export type {
   SaAuditPage,
   SaGameListItem,
   SaGamesPage,
+  SaUserListItem,
+  SaUsersPage,
   StarsTransactionsPage,
   SystemSettings,
   TopPlayer,
@@ -268,6 +272,28 @@ export const superAdminApi = {
       await api.get(
         p(`/admin/groups/${groupId}/live`, `/sa/groups/${groupId}/live`),
       )
+    ).data,
+
+  // === Users browser ===
+
+  /** Paginated users list. Backend filters: `search` (substring on
+   *  first_name / username / id), `is_banned`, `is_premium`,
+   *  page / page_size + admin-only sort_by / sort_dir. */
+  users: async (
+    params: {
+      search?: string;
+      is_banned?: boolean;
+      is_premium?: boolean;
+      page?: number;
+      page_size?: number;
+      sort_by?: string;
+      sort_dir?: "asc" | "desc";
+    } = {},
+  ): Promise<SaUsersPage> =>
+    (
+      await api.get(p("/admin/users", "/sa/users"), {
+        params,
+      })
     ).data,
 
   // === Per-user actions (mutations) ===
