@@ -33,10 +33,14 @@ import type {
   RoleStat,
   RoleTeam,
   RoleWinrate,
+  SaAchievement,
   SaAuditEntry,
   SaAuditPage,
   SaGameListItem,
   SaGamesPage,
+  SaTransaction,
+  SaUserDetail,
+  SaUserGame,
   SaUserListItem,
   SaUsersPage,
   StarsTransactionsPage,
@@ -59,10 +63,14 @@ export type {
   RoleStat,
   RoleTeam,
   RoleWinrate,
+  SaAchievement,
   SaAuditEntry,
   SaAuditPage,
   SaGameListItem,
   SaGamesPage,
+  SaTransaction,
+  SaUserDetail,
+  SaUserGame,
   SaUserListItem,
   SaUsersPage,
   StarsTransactionsPage,
@@ -300,6 +308,52 @@ export const superAdminApi = {
       await api.get(p("/admin/users", "/sa/users"), {
         params,
       })
+    ).data,
+
+  // === Per-user detail ===
+
+  user: async (userId: number): Promise<SaUserDetail> =>
+    (
+      await api.get(p(`/admin/users/${userId}`, `/sa/users/${userId}`))
+    ).data,
+
+  userTransactions: async (
+    userId: number,
+    page = 1,
+    pageSize = 50,
+  ): Promise<{ total: number; page: number; items: SaTransaction[] }> =>
+    (
+      await api.get(
+        p(
+          `/admin/users/${userId}/transactions`,
+          `/sa/users/${userId}/transactions`,
+        ),
+        { params: { page, page_size: pageSize } },
+      )
+    ).data,
+
+  userGames: async (
+    userId: number,
+    page = 1,
+    pageSize = 20,
+  ): Promise<{ total: number; page: number; items: SaUserGame[] }> =>
+    (
+      await api.get(
+        p(`/admin/users/${userId}/games`, `/sa/users/${userId}/games`),
+        { params: { page, page_size: pageSize } },
+      )
+    ).data,
+
+  userAchievements: async (
+    userId: number,
+  ): Promise<{ items: SaAchievement[] }> =>
+    (
+      await api.get(
+        p(
+          `/admin/users/${userId}/achievements`,
+          `/sa/users/${userId}/achievements`,
+        ),
+      )
     ).data,
 
   // === Per-user actions (mutations) ===

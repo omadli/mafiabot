@@ -20,7 +20,7 @@ import { SandboxDetailPage } from "./pages/SandboxDetailPage";
 import { SandboxListPage } from "./pages/SandboxListPage";
 import { SystemSettingsPage } from "./pages/SystemSettingsPage";
 import { TopPlayersPage } from "../sa/pages/TopPlayersPage";
-import { UserDetailPage } from "./pages/UserDetailPage";
+import { UserDetailPage } from "../sa/pages/UserDetailPage";
 import { UsersPage } from "../sa/pages/UsersPage";
 
 export function AdminApp() {

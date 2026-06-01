@@ -18,7 +18,7 @@ import { SaGroupDetailPage } from "./pages/sa/SaGroupDetailPage";
 import { SaLiveGamePage } from "./pages/sa/SaLiveGamePage";
 import { SaSystemPage } from "./pages/sa/SaSystemPage";
 import { UsersPage as SaUsersPage } from "../sa/pages/UsersPage";
-import { SaUserDetailPage } from "./pages/sa/SaUserDetailPage";
+import { UserDetailPage as SaUserDetailPage } from "../sa/pages/UserDetailPage";
 import { GamesPage as SaGamesPage } from "../sa/pages/GamesPage";
 import { SaGameReplayPage } from "./pages/sa/SaGameReplayPage";
 import { AuditPage as SaAuditPage } from "../sa/pages/AuditPage";
