@@ -355,7 +355,12 @@ export function LanguageEditor({ settings, onSave }: EditorProps) {
 
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { saApi, type RoleConfig } from "@shared/api/sa";
+// Use the auth-aware client so role/emoji configs work on both
+// /admin/* (JWT) and /webapp/sa/* (initData). Hitting saApi.* from
+// the admin shell would 401 and trigger the 401-interceptor
+// auto-logout — that was the "kicked out" symptom for Settings.
+import { superAdminApi } from "@shared/api/superAdmin";
+import type { RoleConfig } from "@shared/api/sa";
 
 type Override = { custom_id: string; fallback: string };
 
@@ -363,7 +368,7 @@ export function RoleEmojiOverridesEditor({ settings, onSave }: EditorProps) {
   const { t } = useTranslation();
   const { data: configs } = useQuery({
     queryKey: ["sa-role-configs"],
-    queryFn: saApi.roleConfigs,
+    queryFn: superAdminApi.roleConfigs,
     staleTime: 60_000,
   });
 
@@ -532,7 +537,7 @@ export function CustomEmojiOverridesEditor({ settings, onSave }: EditorProps) {
   const { t } = useTranslation();
   const { data: configs } = useQuery({
     queryKey: ["sa-emoji-configs"],
-    queryFn: saApi.emojiConfigs,
+    queryFn: superAdminApi.emojiConfigs,
     staleTime: 60_000,
   });
 

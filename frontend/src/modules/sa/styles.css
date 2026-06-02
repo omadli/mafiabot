@@ -83,3 +83,232 @@
   border-color: transparent;
   color: #fff;
 }
+
+/* ============================================================
+ * Shared utility classes used by the unified SA pages.
+ *
+ * Originally these lived only in modules/webapp/WebAppStyles.css
+ * because the SuperAdmin pages were Mini-App-only. Lifting the
+ * pages into modules/sa/ means both shells render them — so the
+ * styles have to be available in both shells too. The webapp's
+ * own copies remain (duplicate-but-equivalent) so any non-SA
+ * WebApp pages keep working untouched; admin gets them via
+ * SaProvider's `import "./styles.css"`.
+ * ============================================================ */
+
+/* === sa-kpi-grid + KPI cards (dashboard, user detail, etc.) === */
+
+.sa-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0.5rem;
+}
+
+.sa-kpi {
+  background: var(--bg, #1a1a2e);
+  border: 1px solid #2a2a45;
+  border-radius: 10px;
+  padding: 0.6rem;
+  text-align: center;
+}
+
+.sa-kpi-primary {
+  border-color: var(--accent, #3b82f6);
+}
+
+.sa-kpi-danger {
+  border-color: #e74c3c;
+}
+
+.sa-kpi-success {
+  border-color: #4ade80;
+}
+
+.sa-kpi-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--fg, #e0e0e0);
+}
+
+.sa-kpi-label {
+  font-size: 0.7rem;
+  color: var(--muted, #888);
+  margin-top: 0.15rem;
+}
+
+/* === sa-table (compact list table for Mini App + admin fallback) === */
+
+.sa-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.sa-table th,
+.sa-table td {
+  text-align: left;
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid #2a2a45;
+}
+
+.sa-table thead th {
+  color: var(--muted, #888);
+  font-weight: 500;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sa-table tbody tr:hover {
+  background: rgba(127, 90, 240, 0.04);
+}
+
+.sa-table a {
+  color: var(--accent, #3b82f6);
+  text-decoration: none;
+}
+
+/* === sa-chip (pill button used for filters / inline mod actions) === */
+
+.sa-chip {
+  background: var(--bg, #1a1a2e);
+  border: 1px solid #2a2a45;
+  color: var(--fg, #e0e0e0);
+  border-radius: 16px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.sa-chip.active {
+  background: var(--accent, #3b82f6);
+  border-color: var(--accent, #3b82f6);
+  color: white;
+}
+
+.sa-chip:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* === sa-input (compact number/text input) === */
+
+.sa-input {
+  background: var(--bg, #1a1a2e);
+  color: var(--fg, #e0e0e0);
+  border: 1px solid #2a2a45;
+  border-radius: 6px;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+}
+
+/* === sa-config-row (role / emoji config editor rows) === */
+
+.sa-config-row {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #2a2a45;
+}
+
+.sa-config-row-editor {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sa-config-row-langs {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 4px;
+}
+
+/* ============================================================
+ * webapp-* utility classes — used by the SA pages when running on
+ * the Mini App surface AND by some bits the admin shell pulls in
+ * (system settings rows, tabs). Mirrored from WebAppStyles.css so
+ * admin loads them too.
+ * ============================================================ */
+
+.webapp-section {
+  background: var(--card, #1a1a2e);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  border: 1px solid #2a2a45;
+}
+
+.webapp-section h3 {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  color: var(--accent, #3b82f6);
+}
+
+.webapp-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #2a2a45;
+  flex-wrap: wrap;
+}
+
+.webapp-row:last-child {
+  border-bottom: none;
+}
+
+.webapp-row label {
+  font-size: 0.95rem;
+  color: var(--fg, #e0e0e0);
+  flex: 1 1 auto;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.webapp-row .row-hint {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted, #888);
+  margin-top: 0.2rem;
+}
+
+.webapp-input {
+  background: var(--bg, #1a1a2e);
+  border: 1px solid #2a2a45;
+  color: var(--fg, #e0e0e0);
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  width: clamp(64px, 22vw, 96px);
+  text-align: center;
+  flex: 0 0 auto;
+}
+
+.webapp-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.webapp-tab {
+  padding: 0.5rem 0.75rem;
+  background: var(--card, #1a1a2e);
+  border: 1px solid #2a2a45;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  cursor: pointer;
+  color: var(--fg, #e0e0e0);
+}
+
+.webapp-tab.active {
+  background: var(--accent, #3b82f6);
+  border-color: var(--accent, #3b82f6);
+  color: white;
+}
