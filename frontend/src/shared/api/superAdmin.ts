@@ -37,6 +37,7 @@ import type {
   SaAuditEntry,
   SaAuditPage,
   SaGameListItem,
+  SaGameDetail,
   SaGamesPage,
   SaTransaction,
   SaUserDetail,
@@ -67,6 +68,7 @@ export type {
   SaAuditEntry,
   SaAuditPage,
   SaGameListItem,
+  SaGameDetail,
   SaGamesPage,
   SaTransaction,
   SaUserDetail,
@@ -188,6 +190,14 @@ export const superAdminApi = {
       await api.get(p("/admin/games", "/sa/games"), {
         params,
       })
+    ).data,
+
+  /** Single game's full replay data — players, rounds, settings
+   *  snapshot. Backend dehydrates Redis state on game end so this
+   *  is read-only history. */
+  game: async (gameId: string): Promise<SaGameDetail> =>
+    (
+      await api.get(p(`/admin/games/${gameId}`, `/sa/games/${gameId}`))
     ).data,
 
   /** Paginated audit log. Backend filters: `action` (substring),

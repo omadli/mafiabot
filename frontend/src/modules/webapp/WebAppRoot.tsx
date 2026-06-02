@@ -20,7 +20,7 @@ import { SaSystemPage } from "./pages/sa/SaSystemPage";
 import { UsersPage as SaUsersPage } from "../sa/pages/UsersPage";
 import { UserDetailPage as SaUserDetailPage } from "../sa/pages/UserDetailPage";
 import { GamesPage as SaGamesPage } from "../sa/pages/GamesPage";
-import { SaGameReplayPage } from "./pages/sa/SaGameReplayPage";
+import { GameReplayPage as SaGameReplayPage } from "../sa/pages/GameReplayPage";
 import { AuditPage as SaAuditPage } from "../sa/pages/AuditPage";
 
 import "./WebAppStyles.css";

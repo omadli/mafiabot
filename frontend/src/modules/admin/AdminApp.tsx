@@ -6,7 +6,7 @@ import { AdminLayout } from "./components/AdminLayout";
 import { AdminLiveGamePage } from "./pages/AdminLiveGamePage";
 import { AuditPage } from "../sa/pages/AuditPage";
 import { DashboardPage as Dashboard } from "../sa/pages/DashboardPage";
-import { GameReplayPage } from "./pages/GameReplayPage";
+import { GameReplayPage } from "../sa/pages/GameReplayPage";
 import { GamesPage } from "../sa/pages/GamesPage";
 import { EmojiConfigsPage } from "../sa/pages/EmojiConfigsPage";
 import { GroupDetailPage } from "../sa/pages/GroupDetailPage";
