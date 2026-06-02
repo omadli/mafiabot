@@ -18,7 +18,7 @@ import { StarsTransactionsPage } from "../sa/pages/StarsTransactionsPage";
 import { SandboxCreatePage } from "./pages/SandboxCreatePage";
 import { SandboxDetailPage } from "./pages/SandboxDetailPage";
 import { SandboxListPage } from "./pages/SandboxListPage";
-import { SystemSettingsPage } from "./pages/SystemSettingsPage";
+import { SystemSettingsPage } from "../sa/pages/SystemSettingsPage";
 import { TopPlayersPage } from "../sa/pages/TopPlayersPage";
 import { UserDetailPage } from "../sa/pages/UserDetailPage";
 import { UsersPage } from "../sa/pages/UsersPage";
