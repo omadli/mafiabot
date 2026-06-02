@@ -15,7 +15,7 @@ import { EmojiConfigsPage as SaEmojiConfigsPage } from "../sa/pages/EmojiConfigs
 import { TopPlayersPage as SaPlayersPage } from "../sa/pages/TopPlayersPage";
 import { GroupsPage as SaGroupsPage } from "../sa/pages/GroupsPage";
 import { GroupDetailPage as SaGroupDetailPage } from "../sa/pages/GroupDetailPage";
-import { SaLiveGamePage } from "./pages/sa/SaLiveGamePage";
+import { LiveGamePage as SaLiveGamePage } from "../sa/pages/LiveGamePage";
 import { SaSystemPage } from "./pages/sa/SaSystemPage";
 import { UsersPage as SaUsersPage } from "../sa/pages/UsersPage";
 import { UserDetailPage as SaUserDetailPage } from "../sa/pages/UserDetailPage";

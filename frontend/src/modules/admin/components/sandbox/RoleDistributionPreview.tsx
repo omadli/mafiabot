@@ -8,7 +8,7 @@
  */
 import { useTranslation } from "react-i18next";
 
-import { ROLE_EMOJI } from "../../constants/roles";
+import { ROLE_EMOJI } from "@shared/constants/roles";
 
 // Mirror of MAFIA_PRIORITY in distribution.py (must stay in sync).
 const MAFIA_PRIORITY: Array<[string, number]> = [

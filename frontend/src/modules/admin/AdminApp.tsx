@@ -3,7 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { authStore } from "@shared/store/auth";
 
 import { AdminLayout } from "./components/AdminLayout";
-import { AdminLiveGamePage } from "./pages/AdminLiveGamePage";
+import { LiveGamePage as AdminLiveGamePage } from "../sa/pages/LiveGamePage";
 import { AuditPage } from "../sa/pages/AuditPage";
 import { DashboardPage as Dashboard } from "../sa/pages/DashboardPage";
 import { GameReplayPage } from "../sa/pages/GameReplayPage";

@@ -3,7 +3,7 @@
  * desktop, horizontally on mobile.
  */
 
-import { ROLE_EMOJI } from "../../constants/roles";
+import { ROLE_EMOJI } from "@shared/constants/roles";
 
 interface PlayerChipProps {
   userId: number;

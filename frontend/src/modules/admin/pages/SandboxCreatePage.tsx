@@ -10,7 +10,7 @@ import type {
   SandboxTimingPreset,
 } from "@shared/api/sandbox";
 
-import { ROLE_EMOJI } from "../constants/roles";
+import { ROLE_EMOJI } from "@shared/constants/roles";
 import { RoleDistributionPreview } from "../components/sandbox/RoleDistributionPreview";
 import "../components/sandbox/sandbox.css";
 

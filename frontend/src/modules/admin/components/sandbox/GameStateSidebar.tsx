@@ -11,7 +11,7 @@ import type {
   LiveVote,
 } from "@shared/api/sandbox";
 
-import { ROLE_EMOJI } from "../../constants/roles";
+import { ROLE_EMOJI } from "@shared/constants/roles";
 
 interface GameStateSidebarProps {
   state: LiveGameState;

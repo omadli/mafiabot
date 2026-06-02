@@ -23,8 +23,8 @@ import { useQuery } from "@tanstack/react-query";
 import { sandboxApi } from "@shared/api/sandbox";
 import type { LivePlayer } from "@shared/api/sandbox";
 
-import { PHASE_EMOJI } from "../constants/roles";
-import { useCountdown } from "../hooks/useCountdown";
+import { PHASE_EMOJI } from "@shared/constants/roles";
+import { useCountdown } from "../../sa/hooks/useCountdown";
 import { useSandboxGame } from "../hooks/useSandboxGame";
 import { useSandboxTranscript } from "../hooks/useSandboxTranscript";
 import { useSandboxCallback } from "../hooks/useSandboxCallback";
