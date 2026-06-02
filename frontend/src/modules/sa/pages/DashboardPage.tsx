@@ -22,7 +22,7 @@ import { BarChart, HBarChart, LineChart } from "@shared/components/Charts";
 import { superAdminApi } from "@shared/api/superAdmin";
 
 import { useSa } from "../context";
-import { useAdminLive } from "./useAdminLive";
+import { useAdminLive } from "../hooks/useAdminLive";
 
 export function DashboardPage() {
   const { t } = useTranslation();
