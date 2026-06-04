@@ -82,6 +82,28 @@ SHOP_ITEM_ORDER = [
 ]
 
 
+# === Back-navigation (origin-aware) ===
+#
+# Shop / Diamonds / Premium-groups are reachable from BOTH the main menu and
+# the profile screen. A static "back" target would always dump the user on one
+# of them — pressing back after opening Shop from the main menu used to land on
+# Profile, a page they never visited. We carry a 1-char origin token on those
+# three entry callbacks so back returns to where the user actually came from:
+#   :h → opened from main menu  → back to menu:home
+#   :p → opened from profile    → back to inv:back  (default — also covers
+#                                  bare/legacy callbacks from in-flight buttons)
+
+
+def _origin(data: str | None) -> str:
+    """Origin token from callback data — 'h' (main menu) or 'p' (profile, default)."""
+    return "h" if (data or "").endswith(":h") else "p"
+
+
+def _back_cb(src: str) -> str:
+    """Map an origin token to the back-button target callback."""
+    return "menu:home" if src == "h" else "inv:back"
+
+
 # === Build text + keyboard ===
 
 
@@ -163,7 +185,7 @@ async def _build_profile_message(
     # premium opens duration picker (30/365 days).
     rows.append(
         [
-            InlineKeyboardButton(text=_plain("btn-shop"), callback_data="shop:items"),
+            InlineKeyboardButton(text=_plain("btn-shop"), callback_data="shop:items:p"),
             InlineKeyboardButton(text=_plain("btn-buy-premium"), callback_data="shop:premium"),
         ]
     )
@@ -172,7 +194,7 @@ async def _build_profile_message(
     rows.append(
         [
             InlineKeyboardButton(text=_plain("btn-buy-dollars"), callback_data="exchange:open"),
-            InlineKeyboardButton(text=_plain("btn-buy-diamonds"), callback_data="shop:diamonds"),
+            InlineKeyboardButton(text=_plain("btn-buy-diamonds"), callback_data="shop:diamonds:p"),
         ]
     )
 
@@ -180,7 +202,7 @@ async def _build_profile_message(
     rows.append(
         [
             InlineKeyboardButton(
-                text=_plain("btn-premium-groups"), callback_data="premiumgroups:open"
+                text=_plain("btn-premium-groups"), callback_data="premiumgroups:open:p"
             )
         ]
     )
@@ -431,10 +453,11 @@ async def callback_clear_role(
 # === Shop ===
 
 
-@router.callback_query(F.data == "shop:diamonds")
+@router.callback_query(F.data.in_({"shop:diamonds", "shop:diamonds:h", "shop:diamonds:p"}))
 async def callback_shop_diamonds(
     query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
 ) -> None:
+    back_cb = _back_cb(_origin(query.data))
     # Load the live package list — SystemSettings.diamond_packages
     # overrides the hard-coded defaults when SA has tweaked them.
     packages = await payment_service.list_diamond_packages()
@@ -454,7 +477,7 @@ async def callback_shop_diamonds(
                 )
             ]
         )
-    rows.append([InlineKeyboardButton(text=_plain("btn-back"), callback_data="inv:back")])
+    rows.append([InlineKeyboardButton(text=_plain("btn-back"), callback_data=back_cb)])
     if query.message:
         with contextlib.suppress(TelegramBadRequest):
             await query.message.edit_text(  # type: ignore[union-attr]
@@ -466,9 +489,18 @@ async def callback_shop_diamonds(
 
 
 async def _render_shop_items(
-    query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
+    query: CallbackQuery,
+    user: User,
+    _: Translator,
+    _plain: Translator | None = None,
+    src: str = "p",
 ) -> None:
-    """Render the items shop in-place. Refreshes balance from DB."""
+    """Render the items shop in-place. Refreshes balance from DB.
+
+    `src` is the origin token ('h'/'p') used for the back button and carried
+    into the special-role picker. Defaults to 'p' (profile) — that's the right
+    fallback when re-rendered from a buy callback, which carries no origin.
+    """
     refreshed = await User.get(id=user.id)
     user.diamonds = refreshed.diamonds
     user.dollars = refreshed.dollars
@@ -485,7 +517,7 @@ async def _render_shop_items(
         if code == "special_role":
             # Special role: pick the role first, pay on confirm.
             price_label = f"💎 {diamonds}" if diamonds > 0 else f"💵 {dollars}"
-            cb = "shop:special:pick"
+            cb = f"shop:special:pick:{src}"
         elif diamonds > 0:
             price_label = f"💎 {diamonds}"
             cb = f"buy:item:{code}:diamonds"
@@ -496,10 +528,11 @@ async def _render_shop_items(
             continue
         rows.append([InlineKeyboardButton(text=f"{label} — {price_label}", callback_data=cb)])
 
+    back_cb = _back_cb(src)
     if not rows:
-        rows.append([InlineKeyboardButton(text=_plain("shop-no-items"), callback_data="inv:back")])
+        rows.append([InlineKeyboardButton(text=_plain("shop-no-items"), callback_data=back_cb)])
 
-    rows.append([InlineKeyboardButton(text=_plain("btn-back"), callback_data="inv:back")])
+    rows.append([InlineKeyboardButton(text=_plain("btn-back"), callback_data=back_cb)])
     if query.message:
         text = _("shop-items-header", diamonds=refreshed.diamonds, dollars=refreshed.dollars)
         with contextlib.suppress(TelegramBadRequest):
@@ -510,23 +543,24 @@ async def _render_shop_items(
             )
 
 
-@router.callback_query(F.data == "shop:items")
+@router.callback_query(F.data.in_({"shop:items", "shop:items:h", "shop:items:p"}))
 async def callback_shop_items(
     query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
 ) -> None:
     """Items shop — fixed display order, special_role opens a role picker."""
-    await _render_shop_items(query, user, _, _plain)
+    await _render_shop_items(query, user, _, _plain, src=_origin(query.data))
     await query.answer()
 
 
 # === Special-role purchase flow (pick + buy in one step) ===
 
 
-@router.callback_query(F.data == "shop:special:pick")
+@router.callback_query(F.data.startswith("shop:special:pick"))
 async def callback_shop_special_pick(
     query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
 ) -> None:
     """Show the 21-role grid; clicking a role triggers purchase + queue."""
+    src = _origin(query.data)
     inv, _new = await UserInventory.get_or_create(user=user)
     if (inv.settings or {}).get("special_role", {}).get("next_role"):
         await query.answer(_plain("pick-role-already-chosen"), show_alert=True)
@@ -548,7 +582,7 @@ async def callback_shop_special_pick(
             bucket = []
     if bucket:
         rows.append(bucket)
-    rows.append([InlineKeyboardButton(text=_plain("btn-back"), callback_data="shop:items")])
+    rows.append([InlineKeyboardButton(text=_plain("btn-back"), callback_data=f"shop:items:{src}")])
 
     if query.message:
         with contextlib.suppress(TelegramBadRequest):
@@ -856,18 +890,21 @@ async def callback_exchange_r2d(
 # === Premium groups (ads / top list) ===
 
 
-@router.callback_query(F.data == "premiumgroups:open")
+@router.callback_query(
+    F.data.in_({"premiumgroups:open", "premiumgroups:open:h", "premiumgroups:open:p"})
+)
 async def callback_premium_groups(
     query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
 ) -> None:
     """Show top premium groups by total games. Each row links to invite URL if set."""
+    back_cb = _back_cb(_origin(query.data))
     top = await pricing_service.get_premium_groups_top(limit=10)
 
     if not top:
         text = _("premium-groups-empty")
         kb = InlineKeyboardMarkup(
             inline_keyboard=[
-                [InlineKeyboardButton(text=_plain("btn-back"), callback_data="inv:back")],
+                [InlineKeyboardButton(text=_plain("btn-back"), callback_data=back_cb)],
             ]
         )
     else:
@@ -886,7 +923,7 @@ async def callback_premium_groups(
             )
             if g["invite_link"]:
                 rows.append([InlineKeyboardButton(text=f"{idx}. {title}", url=g["invite_link"])])
-        rows.append([InlineKeyboardButton(text=_plain("btn-back"), callback_data="inv:back")])
+        rows.append([InlineKeyboardButton(text=_plain("btn-back"), callback_data=back_cb)])
         text = "\n".join(lines)
         kb = InlineKeyboardMarkup(inline_keyboard=rows)
 

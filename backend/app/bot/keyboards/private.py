@@ -26,13 +26,13 @@ def main_menu_keyboard(_plain: Translator) -> InlineKeyboardMarkup:
             [
                 InlineKeyboardButton(text=_plain("btn-profile"), callback_data="menu:profile"),
                 InlineKeyboardButton(
-                    text=_plain("btn-premium-groups"), callback_data="premiumgroups:open"
+                    text=_plain("btn-premium-groups"), callback_data="premiumgroups:open:h"
                 ),
             ],
             [
-                InlineKeyboardButton(text=_plain("btn-shop"), callback_data="shop:items"),
+                InlineKeyboardButton(text=_plain("btn-shop"), callback_data="shop:items:h"),
                 InlineKeyboardButton(
-                    text=_plain("btn-buy-diamonds"), callback_data="shop:diamonds"
+                    text=_plain("btn-buy-diamonds"), callback_data="shop:diamonds:h"
                 ),
             ],
             [InlineKeyboardButton(text=_plain("btn-add-to-group"), url=add_to_group_url)],
