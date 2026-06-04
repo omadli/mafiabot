@@ -15,6 +15,7 @@ from aiogram.types import (
 )
 from loguru import logger
 
+from app.bot.handlers.group.onboarding import start_onboarding
 from app.bot.handlers.shared.registration import (
     build_registration_keyboard,
     format_registration_text,
@@ -52,7 +53,10 @@ async def cmd_game(
     chat_id = message.chat.id
     group = await Group.get_or_none(id=chat_id).prefetch_related("settings")
     if group is None or not group.onboarding_completed:
-        await message.answer(_("game-onboarding-required"))
+        # Not configured yet → re-send the setup flow (language picker) instead
+        # of a dead "please configure the bot" nag. self-heals groups where the
+        # add-event was never received.
+        await start_onboarding(bot, chat_id, message.chat.title)
         return
 
     # Handle pre-existing Redis state. Three cases worth distinguishing:
@@ -449,7 +453,8 @@ async def cmd_start(
     # Permission check (same logic as /game)
     group = await Group.get_or_none(id=chat_id).prefetch_related("settings")
     if group is None or not group.onboarding_completed:
-        await message.answer(_("game-onboarding-required"))
+        # Not configured yet → re-send the setup flow instead of a dead nag.
+        await start_onboarding(bot, chat_id, message.chat.title)
         return
 
     perms = group.settings.permissions if group.settings else {}  # type: ignore[attr-defined,var-annotated,arg-type]

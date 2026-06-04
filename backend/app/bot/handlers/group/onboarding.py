@@ -1,7 +1,7 @@
 """Onboarding: bot guruhga qo'shilganda til + admin huquqlari sozlash."""
 
 from aiogram import Bot, F, Router
-from aiogram.filters import IS_NOT_MEMBER, MEMBER, ChatMemberUpdatedFilter
+from aiogram.filters import JOIN_TRANSITION, ChatMemberUpdatedFilter
 from aiogram.types import (
     CallbackQuery,
     ChatMemberUpdated,
@@ -28,22 +28,27 @@ from app.services.i18n_service import get_translator
 router = Router(name="group_onboarding")
 
 
-@router.my_chat_member(ChatMemberUpdatedFilter(member_status_changed=IS_NOT_MEMBER >> MEMBER))
-async def bot_added_to_group(event: ChatMemberUpdated, bot: Bot) -> None:
-    """Bot guruhga qo'shildi — onboarding boshlanadi."""
-    if event.chat.type not in ("group", "supergroup"):
-        return
+async def start_onboarding(bot: Bot, chat_id: int, chat_title: str | None) -> None:
+    """Guruh uchun onboarding'ni boshlash — group+settings yaratadi (kerak bo'lsa)
+    va til tanlash xabarini yuboradi.
 
-    # Create group + default settings
+    Ikki joydan chaqiriladi:
+      • bot guruhga qo'shilganda (`my_chat_member` JOIN_TRANSITION)
+      • sozlanmagan guruhda /game yoki /start bosilganda — "botni sozlang" deb
+        quruq matn yuborish o'rniga aynan shu sozlash xabarini qayta ko'rsatamiz.
+
+    Idempotent: mavjud group/settings qayta yaratilmaydi.
+    """
+    # Create group + default settings (idempotent — get_or_create).
     group, _created = await Group.get_or_create(
-        id=event.chat.id,
-        defaults={"title": event.chat.title or "Group"},
+        id=chat_id,
+        defaults={"title": chat_title or "Group"},
     )
-    if not group.title or group.title != event.chat.title:
-        group.title = event.chat.title or group.title
+    if chat_title and group.title != chat_title:
+        group.title = chat_title
         await group.save(update_fields=["title"])
 
-    _settings, _ = await GroupSettings.get_or_create(
+    settings, _ = await GroupSettings.get_or_create(
         group=group,
         defaults={
             "language": "uz",
@@ -59,10 +64,9 @@ async def bot_added_to_group(event: ChatMemberUpdated, bot: Bot) -> None:
         },
     )
 
-    logger.info(f"Bot added to group {event.chat.id} ({event.chat.title})")
-
-    # Step 1: language picker
-    _t = get_translator("uz")  # default for first message
+    # Step 1: language picker — rendered in the group's chosen language if one
+    # exists, otherwise default uz for the very first prompt.
+    _t = get_translator(settings.language or "uz")
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
@@ -73,10 +77,25 @@ async def bot_added_to_group(event: ChatMemberUpdated, bot: Bot) -> None:
         ]
     )
     await bot.send_message(
-        chat_id=event.chat.id,
+        chat_id=chat_id,
         text=_t("onboarding-pick-language"),
         reply_markup=keyboard,
     )
+
+
+@router.my_chat_member(ChatMemberUpdatedFilter(member_status_changed=JOIN_TRANSITION))
+async def bot_added_to_group(event: ChatMemberUpdated, bot: Bot) -> None:
+    """Bot guruhga qo'shildi — onboarding boshlanadi.
+
+    `JOIN_TRANSITION` (IS_NOT_MEMBER >> IS_MEMBER) bot to'g'ridan-to'g'ri admin
+    qilib qo'shilgan holatni ham qamrab oladi (left → administrator), oddiy
+    a'zo qo'shilishini ham. Keyingi member→admin ko'tarilishida qayta ishlamaydi.
+    """
+    if event.chat.type not in ("group", "supergroup"):
+        return
+
+    logger.info(f"Bot added to group {event.chat.id} ({event.chat.title})")
+    await start_onboarding(bot, event.chat.id, event.chat.title)
 
 
 @router.callback_query(F.data.startswith("onboarding:lang:"))
