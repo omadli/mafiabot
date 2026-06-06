@@ -342,6 +342,13 @@ class PhaseManager:
 
             await track_phase_inactivity(bot, state, Phase.VOTING)
 
+            # Persist this round's day votes into the round log BEFORE the
+            # resolution paths below clear `current_votes`. Without this the
+            # stored Game.history (and vote-based stats) would always show
+            # empty votes. Snapshot copy — does not disturb the tally that
+            # `_find_vote_leader` reads next.
+            state.current_round().day_votes = list(state.current_votes.values())
+
             # Find leader (most votes)
             leader_id = cls._find_vote_leader(state)
             if leader_id is None or leader_id == 0:
