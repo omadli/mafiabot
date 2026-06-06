@@ -69,6 +69,14 @@ interface Round {
   day_votes?: Array<{ voter_id: number; target_id: number; weight: number }>;
   hanged?: number | null;
   last_words?: Record<string, string>;
+  extra?: {
+    hanging_confirm?: {
+      target_id?: number;
+      yes?: Record<string, number>;
+      no?: Record<string, number>;
+    };
+    [key: string]: unknown;
+  };
 }
 
 interface History {
@@ -379,6 +387,11 @@ interface RoundCardProps {
 function RoundCard({ round, isAdmin, nameOf, playerName, roleOf }: RoundCardProps) {
   const { t } = useTranslation();
 
+  const hc = round.extra?.hanging_confirm;
+  const yesVoters = Object.entries(hc?.yes ?? {});
+  const noVoters = Object.entries(hc?.no ?? {});
+  const hasConfirm = yesVoters.length > 0 || noVoters.length > 0;
+
   if (isAdmin) {
     return (
       <div className="admin-card" style={{ marginBottom: "1rem" }}>
@@ -431,6 +444,27 @@ function RoundCard({ round, isAdmin, nameOf, playerName, roleOf }: RoundCardProp
                     ? playerName(v.target_id)
                     : t("admin.game_replay_extra.nobody", "(nobody)")}{" "}
                   {v.weight > 1 && `(×${v.weight})`}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+
+        {hasConfirm && (
+          <>
+            <h4 style={{ color: "var(--muted)", margin: "0.5rem 0" }}>
+              ⚖️ {t("admin.live.section_hanging_confirm", "Hanging confirmation")}
+              {hc?.target_id ? <> — {playerName(hc.target_id)}</> : null}
+            </h4>
+            <ul style={{ margin: 0, paddingLeft: "1.5rem", fontSize: "0.9rem" }}>
+              {yesVoters.map(([uid, w]) => (
+                <li key={`y-${uid}`} style={{ color: "#4ade80" }}>
+                  👍 {playerName(parseInt(uid, 10))} {w > 1 && `(×${w})`}
+                </li>
+              ))}
+              {noVoters.map(([uid, w]) => (
+                <li key={`n-${uid}`} style={{ color: "#e74c3c" }}>
+                  👎 {playerName(parseInt(uid, 10))} {w > 1 && `(×${w})`}
                 </li>
               ))}
             </ul>
@@ -520,6 +554,30 @@ function RoundCard({ round, isAdmin, nameOf, playerName, roleOf }: RoundCardProp
                     ? nameOf(v.target_id)
                     : t("admin.live.nobody", "(nobody)")}
                   {v.weight > 1 && ` (×${v.weight})`}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {hasConfirm && (
+          <div>
+            <strong>
+              ⚖️ {t("admin.live.section_hanging_confirm", "Hanging confirmation")}:
+            </strong>
+            {hc?.target_id ? (
+              <span style={{ color: "var(--muted)" }}> {nameOf(hc.target_id)}</span>
+            ) : null}
+            <ul style={{ margin: "4px 0 8px 18px", padding: 0 }}>
+              {yesVoters.map(([uid, w]) => (
+                <li key={`y-${uid}`} style={{ color: "#4ade80" }}>
+                  👍 {nameOf(parseInt(uid, 10))}
+                  {w > 1 ? ` (×${w})` : ""}
+                </li>
+              ))}
+              {noVoters.map(([uid, w]) => (
+                <li key={`n-${uid}`} style={{ color: "#e74c3c" }}>
+                  👎 {nameOf(parseInt(uid, 10))}
+                  {w > 1 ? ` (×${w})` : ""}
                 </li>
               ))}
             </ul>

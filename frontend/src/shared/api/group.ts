@@ -36,6 +36,13 @@ export interface GameHistoryPlayer {
   died_reason?: string | null;
 }
 
+export interface HangingConfirm {
+  target_id?: number;
+  /** Maps voter_id (as string) → vote weight (Mayor = 2). */
+  yes?: Record<string, number>;
+  no?: Record<string, number>;
+}
+
 export interface GameHistoryRound {
   round_num: number;
   night_actions?: Array<{
@@ -48,6 +55,11 @@ export interface GameHistoryRound {
   day_votes?: Array<{ voter_id: number; target_id: number; weight: number }>;
   hanged?: number | null;
   last_words?: Record<string, string>;
+  /** Free-form per-round scratchpad persisted from the engine. */
+  extra?: {
+    hanging_confirm?: HangingConfirm;
+    [key: string]: unknown;
+  };
 }
 
 export interface GameHistory {

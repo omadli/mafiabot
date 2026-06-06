@@ -128,6 +128,11 @@ function RoundCard({ round, nameOf, labelOf, roleNameOf }: RoundCardProps) {
   const lastWords = round.last_words ?? {};
   const hasLastWords = Object.keys(lastWords).length > 0;
 
+  const hc = round.extra?.hanging_confirm;
+  const yesVoters = Object.entries(hc?.yes ?? {});
+  const noVoters = Object.entries(hc?.no ?? {});
+  const hasConfirm = yesVoters.length > 0 || noVoters.length > 0;
+
   return (
     <details className="webapp-section" style={{ marginTop: "0.5rem" }}>
       <summary style={{ cursor: "pointer", color: "var(--accent)", fontWeight: 600 }}>
@@ -175,6 +180,30 @@ function RoundCard({ round, nameOf, labelOf, roleNameOf }: RoundCardProps) {
           </div>
         )}
 
+        {/* Hanging confirmation — who pressed 👍 / 👎 */}
+        {hasConfirm && (
+          <div style={{ marginTop: 4 }}>
+            <strong>⚖️ {t("admin.live.section_hanging_confirm")}:</strong>
+            {hc?.target_id ? (
+              <span style={{ color: "var(--muted)" }}> → {nameOf(hc.target_id)}</span>
+            ) : null}
+            <ul style={{ margin: "4px 0 8px 18px", padding: 0 }}>
+              {yesVoters.map(([uid, w]) => (
+                <li key={`y-${uid}`} style={{ color: "#4ade80" }}>
+                  👍 {nameOf(parseInt(uid, 10))}
+                  {w > 1 ? ` (×${w})` : ""}
+                </li>
+              ))}
+              {noVoters.map(([uid, w]) => (
+                <li key={`n-${uid}`} style={{ color: "#e74c3c" }}>
+                  👎 {nameOf(parseInt(uid, 10))}
+                  {w > 1 ? ` (×${w})` : ""}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* Night deaths */}
         {deaths.length > 0 && (
           <div style={{ color: "#e74c3c" }}>
@@ -215,6 +244,7 @@ function RoundCard({ round, nameOf, labelOf, roleNameOf }: RoundCardProps) {
         {actions.length === 0 &&
           votes.length === 0 &&
           deaths.length === 0 &&
+          !hasConfirm &&
           !round.hanged &&
           !hasLastWords && (
             <div style={{ color: "var(--muted)" }}>
