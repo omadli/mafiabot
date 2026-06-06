@@ -717,6 +717,7 @@
       "games_col_duration": "Длительность",
       "games_col_started": "Начало",
       "games_duration_unit": "мин",
+      "games_view_replay": "Посмотреть полную историю игры",
       "lb_col_rank": "#",
       "lb_col_player": "Игрок",
       "lb_col_elo": "ELO",

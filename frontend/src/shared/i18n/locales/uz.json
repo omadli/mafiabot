@@ -717,6 +717,7 @@
       "games_col_duration": "Davomiyligi",
       "games_col_started": "Boshlandi",
       "games_duration_unit": "daq",
+      "games_view_replay": "To'liq o'yin tarixini ko'rish",
       "lb_col_rank": "#",
       "lb_col_player": "O'yinchi",
       "lb_col_elo": "ELO",

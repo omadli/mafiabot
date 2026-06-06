@@ -11,7 +11,7 @@
  */
 
 import { useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
@@ -408,6 +408,7 @@ function GamesTabAdmin({
   preloaded?: Awaited<ReturnType<typeof superAdminApi.groupGames>>;
 }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const gameBase = useSaPath("/games");
   const { data, isLoading } = useQuery({
     queryKey: ["sa-group-games", gid],
@@ -451,13 +452,24 @@ function GamesTabAdmin({
               <th style={{ textAlign: "right" }}>
                 {t("sa.group_detail.games_col_duration", "Duration")}
               </th>
+              <th aria-hidden style={{ width: 28 }} />
             </tr>
           </thead>
           <tbody>
             {data.items.map((g) => (
-              <tr key={g.id}>
+              <tr
+                key={g.id}
+                className="sa-clickable-row"
+                style={{ cursor: "pointer" }}
+                onClick={() => navigate(`${gameBase}/${g.id}`)}
+                title={t("sa.group_detail.games_view_replay", "View full game history")}
+              >
                 <td style={{ fontFamily: "monospace", fontSize: "0.78rem" }}>
-                  <Link to={`${gameBase}/${g.id}`} style={{ color: "inherit" }}>
+                  <Link
+                    to={`${gameBase}/${g.id}`}
+                    style={{ color: "inherit" }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     {g.id.slice(0, 8)}…
                   </Link>
                 </td>
@@ -479,6 +491,9 @@ function GamesTabAdmin({
                   {g.duration_seconds
                     ? `${Math.round(g.duration_seconds / 60)} ${t("sa.group_detail.games_duration_unit", "min")}`
                     : "—"}
+                </td>
+                <td style={{ textAlign: "right", color: "var(--accent)" }} aria-hidden>
+                  ›
                 </td>
               </tr>
             ))}
@@ -601,6 +616,7 @@ function LeaderboardTabAdmin({ gid }: { gid: number }) {
 
 function GamesTabWebapp({ gid }: { gid: number }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const gameBase = useSaPath("/games");
   const { data, isLoading } = useQuery({
     queryKey: ["sa-group-games", gid],
@@ -628,13 +644,23 @@ function GamesTabWebapp({ gid }: { gid: number }) {
               <th style={{ textAlign: "right" }}>
                 {t("sa.group_detail.games_col_duration", "Duration")}
               </th>
+              <th aria-hidden style={{ width: 20 }} />
             </tr>
           </thead>
           <tbody>
             {data.items.map((g) => (
-              <tr key={g.id}>
+              <tr
+                key={g.id}
+                style={{ cursor: "pointer" }}
+                onClick={() => navigate(`${gameBase}/${g.id}`)}
+                title={t("sa.group_detail.games_view_replay", "View full game history")}
+              >
                 <td style={{ fontFamily: "monospace", fontSize: "0.75rem" }}>
-                  <Link to={`${gameBase}/${g.id}`} style={{ color: "inherit" }}>
+                  <Link
+                    to={`${gameBase}/${g.id}`}
+                    style={{ color: "inherit" }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     {g.id.slice(0, 8)}…
                   </Link>
                 </td>
@@ -652,6 +678,9 @@ function GamesTabWebapp({ gid }: { gid: number }) {
                   {g.duration_seconds
                     ? `${Math.round(g.duration_seconds / 60)} ${t("sa.group_detail.games_duration_unit", "min")}`
                     : "—"}
+                </td>
+                <td style={{ textAlign: "right", color: "var(--accent)" }} aria-hidden>
+                  ›
                 </td>
               </tr>
             ))}

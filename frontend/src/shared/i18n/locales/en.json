@@ -717,6 +717,7 @@
       "games_col_duration": "Duration",
       "games_col_started": "Started",
       "games_duration_unit": "min",
+      "games_view_replay": "View full game history",
       "lb_col_rank": "#",
       "lb_col_player": "Player",
       "lb_col_elo": "ELO",
