@@ -47,9 +47,9 @@ def test_above_max_raises():
 def test_table_covers_4_through_30():
     for n in range(4, 31):
         assert n in DEFAULT_DISTRIBUTION, f"Missing distribution for N={n}"
-        assert (
-            len(DEFAULT_DISTRIBUTION[n]) == n
-        ), f"N={n} roster has {len(DEFAULT_DISTRIBUTION[n])} roles"
+        assert len(DEFAULT_DISTRIBUTION[n]) == n, (
+            f"N={n} roster has {len(DEFAULT_DISTRIBUTION[n])} roles"
+        )
 
 
 def test_role_count_matches_n_for_every_size():

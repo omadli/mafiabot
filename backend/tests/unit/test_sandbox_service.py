@@ -35,9 +35,9 @@ def test_timing_preset_keys_match_default():
     from app.db.models.group import DEFAULT_TIMINGS
 
     for preset_name, preset in _TIMING_PRESETS.items():
-        assert (
-            preset.keys() == DEFAULT_TIMINGS.keys()
-        ), f"preset {preset_name} keys diverged from DEFAULT_TIMINGS"
+        assert preset.keys() == DEFAULT_TIMINGS.keys(), (
+            f"preset {preset_name} keys diverged from DEFAULT_TIMINGS"
+        )
 
 
 def test_fast_preset_is_faster_than_normal():

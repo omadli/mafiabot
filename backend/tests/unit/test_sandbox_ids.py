@@ -143,9 +143,9 @@ def test_consecutive_player_ids_are_distinct_in_js_doubles():
         # Round-trip through Python's float (same precision as JS Number).
         as_double = float(uid)
         # 1. The cast itself must be exact.
-        assert (
-            int(as_double) == uid
-        ), f"player {player_idx} id {uid} not exactly representable as float"
+        assert int(as_double) == uid, (
+            f"player {player_idx} id {uid} not exactly representable as float"
+        )
         # 2. No two players may collide on the same double.
         assert as_double not in seen_as_double, f"player {player_idx} aliases {uid} as double"
         seen_as_double.add(as_double)

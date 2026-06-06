@@ -163,9 +163,9 @@ def test_fake_document_does_not_conceal_citizens_team_roles():
 
         outcome = ActionResolver().resolve(state)
         assert len(outcome.detective_results) == 1
-        assert (
-            outcome.detective_results[0].revealed_role == role
-        ), f"{role} should not be concealed by fake_document"
+        assert outcome.detective_results[0].revealed_role == role, (
+            f"{role} should not be concealed by fake_document"
+        )
         assert all(s.item != "fake_document" for s in outcome.shield_saves)
 
 
@@ -200,9 +200,9 @@ def test_fake_document_conceals_singleton_threats():
 
         outcome = ActionResolver().resolve(state)
         assert len(outcome.detective_results) == 1
-        assert (
-            outcome.detective_results[0].revealed_role == "citizen"
-        ), f"{role} should be concealed by fake_document"
+        assert outcome.detective_results[0].revealed_role == "citizen", (
+            f"{role} should be concealed by fake_document"
+        )
         fake_saves = [s for s in outcome.shield_saves if s.item == "fake_document"]
         assert len(fake_saves) == 1
 
