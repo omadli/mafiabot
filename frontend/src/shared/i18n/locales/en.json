@@ -1146,7 +1146,38 @@
       "duration_minutes": "{{m}} min",
       "players_count": "{{n}} players",
       "alive_count": "{{n}} alive",
-      "started_at_label": "Started"
+      "started_at_label": "Started",
+      "detail": {
+        "back": "← Game history",
+        "winner": "Winner",
+        "duration": "Duration",
+        "players": "Players",
+        "rounds": "Rounds",
+        "section_players": "Players",
+        "round_label": "Round",
+        "round_short": "R",
+        "actions": "Night actions",
+        "votes": "Votes",
+        "deaths": "Deaths",
+        "nobody": "Nobody",
+        "hanged": "Hanged",
+        "last_words": "Last words",
+        "alive": "alive",
+        "no_rounds": "No detailed data saved for this game",
+        "round_empty": "Nothing happened this round",
+        "death_reason": {
+          "killed_mafia": "Killed by mafia",
+          "killed_detective": "Killed by detective",
+          "killed_killer": "Killed by ninja",
+          "killed_maniac": "Killed by maniac",
+          "killed_bori": "Killed by werewolf",
+          "killed_afsungar": "Killed by kamikaze",
+          "killed_gazabkor": "Killed by arsonist",
+          "voted_out": "Voted out",
+          "left": "Left the game",
+          "afk_kicked": "Kicked for AFK"
+        }
+      }
     },
     "ux": {
       "retry": "🔄 Retry",

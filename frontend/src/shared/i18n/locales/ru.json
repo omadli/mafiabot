@@ -1146,7 +1146,38 @@
       "duration_minutes": "{{m}} мин",
       "players_count": "{{n}} игроков",
       "alive_count": "{{n}} в живых",
-      "started_at_label": "Начало"
+      "started_at_label": "Начало",
+      "detail": {
+        "back": "← История игр",
+        "winner": "Победитель",
+        "duration": "Длительность",
+        "players": "Игроки",
+        "rounds": "Раунды",
+        "section_players": "Игроки",
+        "round_label": "Раунд",
+        "round_short": "Р",
+        "actions": "Ночные действия",
+        "votes": "Голоса",
+        "deaths": "Погибшие",
+        "nobody": "Никто",
+        "hanged": "Казнён",
+        "last_words": "Последние слова",
+        "alive": "жив",
+        "no_rounds": "Подробности этой игры не сохранены",
+        "round_empty": "В этом раунде событий не было",
+        "death_reason": {
+          "killed_mafia": "Убит мафией",
+          "killed_detective": "Убит комиссаром",
+          "killed_killer": "Убит ниндзя",
+          "killed_maniac": "Убит маньяком",
+          "killed_bori": "Убит оборотнем",
+          "killed_afsungar": "Убит камикадзе",
+          "killed_gazabkor": "Убит поджигателем",
+          "voted_out": "Казнён голосованием",
+          "left": "Покинул игру",
+          "afk_kicked": "Исключён за AFK"
+        }
+      }
     },
     "ux": {
       "retry": "🔄 Повторить",

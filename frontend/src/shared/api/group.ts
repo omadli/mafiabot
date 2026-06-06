@@ -23,6 +23,53 @@ export interface GroupHistoryItem {
   bounty_per_winner: number | null;
 }
 
+export interface GameHistoryPlayer {
+  user_id: number;
+  username?: string | null;
+  first_name: string;
+  role: string;
+  team: string;
+  alive: boolean;
+  join_order?: number;
+  died_at_round?: number | null;
+  died_at_phase?: string | null;
+  died_reason?: string | null;
+}
+
+export interface GameHistoryRound {
+  round_num: number;
+  night_actions?: Array<{
+    role: string;
+    actor_id: number;
+    action_type: string;
+    target_id: number | null;
+  }>;
+  night_deaths?: number[];
+  day_votes?: Array<{ voter_id: number; target_id: number; weight: number }>;
+  hanged?: number | null;
+  last_words?: Record<string, string>;
+}
+
+export interface GameHistory {
+  players?: GameHistoryPlayer[];
+  rounds?: GameHistoryRound[];
+  winner_team?: string | null;
+  winner_user_ids?: number[];
+}
+
+export interface GroupHistoryDetail {
+  id: string;
+  group_id: number;
+  status: string | null;
+  winner_team: "citizens" | "mafia" | "singleton" | null;
+  started_at: string | null;
+  finished_at: string | null;
+  duration_seconds: number | null;
+  bounty_per_winner: number | null;
+  bounty_pool: number | null;
+  history: GameHistory | null;
+}
+
 export interface GroupLeaderboardItem {
   rank: number;
   user_id: number;
@@ -64,6 +111,10 @@ export const groupApi = {
     pageSize = 20,
   ): Promise<{ items: GroupHistoryItem[]; page: number; page_size: number; total: number }> =>
     (await api.get(`/group/${groupId}/history`, { params: { page, page_size: pageSize } })).data,
+
+  // === Single-game replay (full per-round breakdown) ===
+  gameDetail: async (groupId: number, gameId: string): Promise<GroupHistoryDetail> =>
+    (await api.get(`/group/${groupId}/history/${gameId}`)).data,
 
   // === Messages templates ===
   listMessages: async (

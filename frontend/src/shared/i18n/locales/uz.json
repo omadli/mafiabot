@@ -1146,7 +1146,38 @@
       "duration_minutes": "{{m}} daq",
       "players_count": "{{n}} o'yinchi",
       "alive_count": "{{n}} tirik",
-      "started_at_label": "Boshlangan"
+      "started_at_label": "Boshlangan",
+      "detail": {
+        "back": "← O'yinlar tarixi",
+        "winner": "G'olib",
+        "duration": "Davomiyligi",
+        "players": "O'yinchilar",
+        "rounds": "Raundlar",
+        "section_players": "O'yinchilar",
+        "round_label": "Raund",
+        "round_short": "R",
+        "actions": "Tungi tanlovlar",
+        "votes": "Ovozlar",
+        "deaths": "O'lganlar",
+        "nobody": "Hech kim",
+        "hanged": "Osilgan",
+        "last_words": "So'nggi so'zlar",
+        "alive": "tirik",
+        "no_rounds": "Bu o'yin uchun batafsil ma'lumot saqlanmagan",
+        "round_empty": "Bu raundda hodisa qayd etilmadi",
+        "death_reason": {
+          "killed_mafia": "Mafiya o'ldirgan",
+          "killed_detective": "Komissar o'ldirgan",
+          "killed_killer": "Ninza o'ldirgan",
+          "killed_maniac": "Qotil o'ldirgan",
+          "killed_bori": "Bo'ri o'ldirgan",
+          "killed_afsungar": "Afsungar o'ldirgan",
+          "killed_gazabkor": "G'azabkor o'ldirgan",
+          "voted_out": "Ovoz bilan osilgan",
+          "left": "O'yinni tark etgan",
+          "afk_kicked": "AFK uchun chiqarilgan"
+        }
+      }
     },
     "ux": {
       "retry": "🔄 Qayta urinish",

@@ -6,7 +6,7 @@
  */
 
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
@@ -79,7 +79,12 @@ export function HistoryPage() {
         <>
           <div className="webapp-section" style={{ padding: 0 }}>
             {data.items.map((g: GroupHistoryItem) => (
-              <div key={g.id} className="webapp-history-row">
+              <Link
+                key={g.id}
+                to={`/webapp/history/${gid}/${g.id}`}
+                className="webapp-history-row"
+                style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}
+              >
                 <div className="webapp-history-row-main">
                   <span className="webapp-history-badge">
                     {WINNER_BADGE[g.winner_team ?? ""] ?? "❔"} {winnerLabel(g.winner_team, t)}
@@ -95,8 +100,11 @@ export function HistoryPage() {
                   {g.bounty_per_winner != null && g.bounty_per_winner > 0 && (
                     <span className="webapp-history-bounty">💎 {g.bounty_per_winner}</span>
                   )}
+                  <span className="webapp-history-chevron" aria-hidden style={{ marginLeft: "auto" }}>
+                    ›
+                  </span>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
 

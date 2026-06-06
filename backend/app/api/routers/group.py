@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, Header, HTTPException
 from loguru import logger
 from pydantic import BaseModel, Field
@@ -333,3 +335,44 @@ async def group_history(
             }
         )
     return {"items": items, "page": page, "page_size": page_size, "total": total}
+
+
+@router.get("/group/{group_id}/history/{game_id}")
+async def group_history_detail(
+    group_id: int,
+    game_id: UUID,
+    auth: WebAppAuthData = Depends(require_group_admin),
+) -> dict:
+    """Full replay of one finished game in this group.
+
+    Returns the raw `Game.history` JSON (players with roles, per-round night
+    actions / deaths / votes / hanged / last words) plus summary metadata.
+    Scoped to the group so an admin can only read their own group's games;
+    shape mirrors the SA `/sa/games/{id}` replay endpoint so the WebApp can
+    reuse the same renderer.
+    """
+    if auth.chat_id != group_id:
+        raise HTTPException(status_code=403, detail="Chat ID mismatch")
+
+    from app.db.models import Game
+
+    game = await Game.get_or_none(id=game_id, group_id=group_id)
+    if game is None:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    duration_sec: int | None = None
+    if game.started_at and game.finished_at:
+        duration_sec = int((game.finished_at - game.started_at).total_seconds())
+
+    return {
+        "id": str(game.id),
+        "group_id": group_id,
+        "status": game.status.value if game.status else None,
+        "winner_team": game.winner_team.value if game.winner_team else None,
+        "started_at": game.started_at.isoformat() if game.started_at else None,
+        "finished_at": game.finished_at.isoformat() if game.finished_at else None,
+        "duration_seconds": duration_sec,
+        "bounty_per_winner": game.bounty_per_winner,
+        "bounty_pool": game.bounty_pool,
+        "history": game.history,
+    }

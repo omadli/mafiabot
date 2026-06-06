@@ -4,6 +4,7 @@ import WebApp from "@twa-dev/sdk";
 
 import { GroupSettingsPage } from "./pages/GroupSettingsPage";
 import { HistoryPage } from "./pages/HistoryPage";
+import { HistoryDetailPage } from "./pages/HistoryDetailPage";
 import { LeaderboardPage } from "./pages/LeaderboardPage";
 import { WebAppHome } from "./pages/WebAppHome";
 import { SaLayout } from "./pages/sa/SaLayout";
@@ -51,6 +52,7 @@ export function WebAppRoot() {
         <Route path="settings/:groupId" element={<GroupSettingsPage />} />
         <Route path="leaderboard/:groupId" element={<LeaderboardPage />} />
         <Route path="history/:groupId" element={<HistoryPage />} />
+        <Route path="history/:groupId/:gameId" element={<HistoryDetailPage />} />
 
         {/* SuperAdmin section — requires Telegram-ID auth (initData) */}
         <Route path="sa" element={<SaLayout />}>
