@@ -293,7 +293,10 @@ def _build_roles_kb(
         )
         row: list[InlineKeyboardButton] = []
         for code in codes:
-            emoji_name = _(f"role-{code}")  # "🛡 Citizen" etc.
+            # `_plain` (not `_`): button text is rendered as plain text by
+            # Telegram, so a custom-emoji role label must be unwrapped to its
+            # Unicode fallback — otherwise raw `<tg-emoji>` HTML leaks here.
+            emoji_name = (_plain or _)(f"role-{code}")  # "🛡 Tinch aholi" etc.
             enabled = roles_state.get(code, False)
             label = f"{_toggle_label(enabled)} {emoji_name}"
             row.append(
@@ -343,7 +346,9 @@ async def cb_role_toggle(
     roles[code] = new_state
     await save_settings_fields(s, roles=roles)
 
-    emoji_name = _(f"role-{code}")
+    # Callback-answer text is plain too — use `_plain` so the toast shows the
+    # Unicode fallback rather than raw `<tg-emoji>` markup.
+    emoji_name = (_plain or _)(f"role-{code}")
     await query.answer(f"{emoji_name}: {_toggle_label(new_state)}")
     await _edit(query, _("settings-roles-prompt"), _build_roles_kb(s, gid, _, _plain))
 
@@ -506,7 +511,7 @@ def _build_silence_kb(
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-@router.callback_query(F.data.regexp(r"^settings:silence:\d+$"))
+@router.callback_query(F.data.regexp(r"^settings:silence:-?\d+$"))
 async def cb_silence(
     query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
 ) -> None:
@@ -590,7 +595,7 @@ def _build_gameplay_kb(
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-@router.callback_query(F.data.regexp(r"^settings:gameplay:\d+$"))
+@router.callback_query(F.data.regexp(r"^settings:gameplay:-?\d+$"))
 async def cb_gameplay(
     query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
 ) -> None:
@@ -679,7 +684,7 @@ def _build_lang_kb(
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-@router.callback_query(F.data.regexp(r"^settings:lang:\d+$"))
+@router.callback_query(F.data.regexp(r"^settings:lang:-?\d+$"))
 async def cb_lang(
     query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
 ) -> None:
@@ -770,7 +775,7 @@ def _build_display_kb(
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-@router.callback_query(F.data.regexp(r"^settings:display:\d+$"))
+@router.callback_query(F.data.regexp(r"^settings:display:-?\d+$"))
 async def cb_display(
     query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
 ) -> None:
@@ -849,7 +854,7 @@ def _build_permissions_kb(
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-@router.callback_query(F.data.regexp(r"^settings:permissions:\d+$"))
+@router.callback_query(F.data.regexp(r"^settings:permissions:-?\d+$"))
 async def cb_permissions(
     query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
 ) -> None:
@@ -963,7 +968,7 @@ def _build_afk_kb(
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-@router.callback_query(F.data.regexp(r"^settings:afk:\d+$"))
+@router.callback_query(F.data.regexp(r"^settings:afk:-?\d+$"))
 async def cb_afk(
     query: CallbackQuery, user: User, _: Translator, _plain: Translator | None = None
 ) -> None:
