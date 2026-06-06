@@ -60,7 +60,35 @@ export function SandboxCreatePage() {
   const [seed, setSeed] = useState<string>("");
   const [startNow, setStartNow] = useState(true);
   const [roles, setRoles] = useState<Record<string, boolean>>(DEFAULT_ROLES);
+  // null → use the default distribution algorithm; otherwise an exact
+  // length-N roster dealt out verbatim (mirrors the group role_distribution
+  // override). Kept in sync with nPlayers so it's always a valid length.
+  const [customRoster, setCustomRoster] = useState<string[] | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const changeNPlayers = (n: number) => {
+    setNPlayers(n);
+    setCustomRoster((prev) => {
+      if (prev === null) return null;
+      const next = prev.slice(0, n);
+      while (next.length < n) next.push("citizen");
+      return next;
+    });
+  };
+
+  const enableRoster = () => {
+    const seed = ["don", "detective"];
+    while (seed.length < nPlayers) seed.push("citizen");
+    setCustomRoster(seed);
+  };
+
+  const updateRosterSlot = (index: number, role: string) =>
+    setCustomRoster((prev) => {
+      if (prev === null) return prev;
+      const copy = [...prev];
+      copy[index] = role;
+      return copy;
+    });
 
   const createMutation = useMutation({
     mutationFn: sandboxApi.create,
@@ -83,6 +111,10 @@ export function SandboxCreatePage() {
       language,
       seed: seed.trim() ? parseInt(seed, 10) : undefined,
       roles_enabled: roles,
+      role_distribution:
+        customRoster && customRoster.length === nPlayers
+          ? { [String(nPlayers)]: customRoster }
+          : undefined,
       start_immediately: startNow,
     });
   };
@@ -121,7 +153,7 @@ export function SandboxCreatePage() {
                 min={4}
                 max={30}
                 value={nPlayers}
-                onChange={(e) => setNPlayers(parseInt(e.target.value, 10))}
+                onChange={(e) => changeNPlayers(parseInt(e.target.value, 10))}
                 style={{ width: "100%" }}
               />
             </label>
@@ -247,6 +279,56 @@ export function SandboxCreatePage() {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* --- Role distribution override (this N) --- */}
+        <div className="admin-card">
+          <h3 style={{ marginTop: 0 }}>
+            {t("admin.sandbox.create.distribution")} ({nPlayers})
+          </h3>
+          {customRoster === null ? (
+            <>
+              <p className="sb-form-hint" style={{ marginTop: 0 }}>
+                {t("admin.sandbox.create.distribution_using_algorithm")}
+              </p>
+              <button type="button" className="admin-btn" onClick={enableRoster}>
+                {t("admin.sandbox.create.distribution_override")}
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="sb-form-hint" style={{ marginTop: 0 }}>
+                {t("admin.sandbox.create.distribution_slots_hint", { n: nPlayers })}
+              </p>
+              <div className="sb-roles-grid">
+                {customRoster.map((roleCode, idx) => (
+                  <label key={idx} className="sb-form-label" style={{ margin: 0 }}>
+                    #{idx + 1}
+                    <select
+                      value={roleCode}
+                      onChange={(e) => updateRosterSlot(idx, e.target.value)}
+                      className="admin-input"
+                      style={{ marginLeft: "0.5rem", width: "auto" }}
+                    >
+                      {ROLE_CODES.map((code) => (
+                        <option key={code} value={code}>
+                          {ROLE_EMOJI[code]} {code}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="admin-btn"
+                style={{ marginTop: "0.75rem" }}
+                onClick={() => setCustomRoster(null)}
+              >
+                {t("admin.sandbox.create.distribution_reset")}
+              </button>
+            </>
+          )}
         </div>
 
         {/* --- Submit row --- */}

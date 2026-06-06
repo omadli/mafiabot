@@ -96,6 +96,18 @@ def test_settings_snapshot_roles_enabled_override_merges():
     assert snap["roles"]["don"] is True
 
 
+def test_settings_snapshot_carries_role_distribution_override():
+    roster = ["don", "detective", "doctor", "citizen", "citizen", "mafia", "hooker", "mayor"]
+    config = SandboxCreateConfig(n_players=8, role_distribution={"8": roster})
+    snap = _settings_snapshot(config)
+    assert snap["role_distribution"] == {"8": roster}
+
+
+def test_settings_snapshot_role_distribution_defaults_empty():
+    snap = _settings_snapshot(SandboxCreateConfig(n_players=8))
+    assert snap["role_distribution"] == {}
+
+
 def test_settings_snapshot_carries_mafia_ratio():
     config = SandboxCreateConfig(n_players=8, mafia_ratio="high")
     snap = _settings_snapshot(config)

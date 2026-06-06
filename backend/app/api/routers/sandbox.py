@@ -56,6 +56,7 @@ class SandboxCreateRequest(BaseModel):
     auto_play_mode: SandboxAutoPlayMode = SandboxAutoPlayMode.PAUSED
     timing_preset: SandboxTimingPreset = SandboxTimingPreset.FAST
     roles_enabled: dict[str, bool] | None = None
+    role_distribution: dict[str, list[str]] | None = None
     timings: dict[str, int] | None = None
     custom_names: list[str] = Field(default_factory=list)
     seed: int | None = None
@@ -159,6 +160,7 @@ async def create_sandbox_game(
         auto_play_mode=payload.auto_play_mode,
         timing_preset=payload.timing_preset,
         roles_enabled=payload.roles_enabled,
+        role_distribution=payload.role_distribution,
         timings=payload.timings,
         custom_names=payload.custom_names,
         seed=payload.seed,

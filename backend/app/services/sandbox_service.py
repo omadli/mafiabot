@@ -131,6 +131,10 @@ class SandboxCreateConfig:
     timing_preset: SandboxTimingPreset = SandboxTimingPreset.FAST
     # Optional role-enabled overrides; merged on top of DEFAULT_ROLES_ENABLED.
     roles_enabled: dict[str, bool] | None = None
+    # Optional per-N role-distribution override. Keys are player-count strings
+    # ("8"), values are exact role rosters of that length. Matches the group
+    # `role_distribution` setting and the engine `override` path.
+    role_distribution: dict[str, list[str]] | None = None
     # Optional explicit timings override (otherwise derived from preset).
     timings: dict[str, int] | None = None
     seed: int | None = None  # reserved for deterministic role distribution
@@ -157,8 +161,9 @@ def _settings_snapshot(config: SandboxCreateConfig) -> dict:
         "afk": dict(DEFAULT_AFK),
         "messages": {},
         "roles": roles,
-        # No role_distribution override — let `distribute_roles` decide
-        # based on enabled roles + count. Admin can plumb one in later.
+        # Per-N role roster override. Empty/absent → `distribute_roles` falls
+        # back to the default table + enabled filter (see start_game).
+        "role_distribution": dict(config.role_distribution or {}),
     }
 
 
@@ -1011,6 +1016,7 @@ async def restart_sandbox(sandbox_id: UUID) -> SandboxSession:
         auto_play_mode=SandboxAutoPlayMode(old.auto_play_mode),
         timing_preset=SandboxTimingPreset(old.timing_preset),
         roles_enabled=dict(old.settings_snapshot.get("roles", {})),
+        role_distribution=dict(old.settings_snapshot.get("role_distribution", {})),
         timings=dict(old.settings_snapshot.get("timings", {})),
         custom_names=[u.get("first_name") for u in (old.fake_users_snapshot or [])],
     )

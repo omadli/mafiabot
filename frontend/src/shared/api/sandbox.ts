@@ -45,6 +45,8 @@ export interface SandboxCreateRequest {
   auto_play_mode?: SandboxAutoPlayMode;
   timing_preset?: SandboxTimingPreset;
   roles_enabled?: Record<string, boolean>;
+  /** Per-N exact role rosters, e.g. { "8": ["don", "detective", ...] }. */
+  role_distribution?: Record<string, string[]>;
   timings?: Record<string, number>;
   custom_names?: string[];
   seed?: number;
