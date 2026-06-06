@@ -417,8 +417,13 @@ async def cmd_start(
             logger.debug(f"/start get_chat_member failed: {e}")
 
         is_creator = state.creator_user_id == user.id
+        # Admins and the registration creator can always launch. Beyond them,
+        # the group's `who_can_start` permission governs: only "all" opens the
+        # launch to any member (the default "registrar" / "admins" / "none" are
+        # already covered by the is_creator / is_admin checks above).
+        who_can_start = state.settings.get("permissions", {}).get("who_can_start", "registrar")
 
-        if is_admin or is_creator:
+        if is_admin or is_creator or who_can_start == "all":
             # Launch the game now
             min_players = state.settings.get("gameplay", {}).get("min_players", 4)
             if len(state.players) < min_players:

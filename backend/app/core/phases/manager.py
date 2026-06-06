@@ -45,6 +45,18 @@ class PhaseManager:
             cls._locks[group_id] = lock
         return lock
 
+    @staticmethod
+    def _deadline_elapsed(state: GameState, now: int) -> bool:
+        """Whether the current phase deadline has actually passed.
+
+        `phase_ends_at is None` means an indefinite phase — registration after
+        `/extend` — which never elapses on its own (only a manual `/start`
+        moves it on). A future timestamp hasn't elapsed yet. Only a concrete
+        timestamp at or before `now` counts as elapsed and licenses an
+        automatic phase advance.
+        """
+        return state.phase_ends_at is not None and state.phase_ends_at - now <= 0
+
     @classmethod
     def start_for(
         cls,
@@ -83,10 +95,10 @@ class PhaseManager:
                 if state is None or state.phase in (Phase.FINISHED, Phase.CANCELLED):
                     break
 
-                # Snapshot the phase we are sleeping for so we can detect
-                # an external transition (e.g. admin /start moved WAITING →
-                # NIGHT while we were asleep on the OLD registration deadline).
-                sleep_phase = state.phase
+                # Snapshot the deadline we are about to sleep on. After waking
+                # we re-read state and re-validate against the CURRENT deadline,
+                # which may have changed under us mid-sleep (e.g. /extend cleared
+                # it, or an external transition set a fresh one).
                 sleep_deadline = state.phase_ends_at
 
                 # Sleep until phase ends.
@@ -113,18 +125,17 @@ class PhaseManager:
                 if state is None or state.phase in (Phase.FINISHED, Phase.CANCELLED):
                     break
 
-                # Detect mid-sleep external transition: phase changed under us
-                # (e.g. admin /start → start_game() flipped WAITING → NIGHT and
-                # reset phase_ends_at to a future time). If the new phase still
-                # has time remaining, do NOT advance — loop and sleep again on
-                # the fresh deadline. Without this guard, the manager wakes at
-                # the OLD deadline and immediately fires NIGHT → DAY, robbing
-                # players of their night-action window.
-                if (
-                    state.phase != sleep_phase
-                    and state.phase_ends_at is not None
-                    and state.phase_ends_at - int(time.time()) > 0
-                ):
+                # Re-validate the deadline after waking. While we slept on the
+                # OLD deadline the state may have changed under us:
+                #   * /extend cleared it (phase_ends_at=None → indefinite
+                #     registration) — the game must NOT auto-start; it waits for
+                #     a manual /start.
+                #   * an external transition (admin /start → NIGHT, etc.) set a
+                #     fresh future deadline — advancing now would rob players of
+                #     that phase's window.
+                # Only advance when the CURRENT deadline is a concrete timestamp
+                # that has actually elapsed; otherwise loop and re-sleep on it.
+                if not cls._deadline_elapsed(state, int(time.time())):
                     continue
 
                 new_phase = await cls.tick_once(bot, group_id, on_phase_change, force=True)
