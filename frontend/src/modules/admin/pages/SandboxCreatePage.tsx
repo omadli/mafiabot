@@ -10,33 +10,14 @@ import type {
   SandboxTimingPreset,
 } from "@shared/api/sandbox";
 
-import { ROLE_EMOJI } from "@shared/constants/roles";
+import { ROLE_CODES, ROLE_EMOJI } from "@shared/constants/roles";
 import { RoleDistributionPreview } from "../components/sandbox/RoleDistributionPreview";
 import "../components/sandbox/sandbox.css";
 
-const DEFAULT_ROLES: Record<string, boolean> = {
-  citizen: true,
-  detective: true,
-  sergeant: true,
-  mayor: true,
-  doctor: true,
-  hooker: true,
-  hobo: true,
-  lucky: true,
-  suicide: false,
-  kamikaze: false,
-  don: true,
-  mafia: true,
-  lawyer: true,
-  journalist: false,
-  killer: false,
-  maniac: false,
-  werewolf: false,
-  mage: false,
-  arsonist: false,
-  crook: false,
-  snitch: false,
-};
+// All roles enabled by default — mirrors backend DEFAULT_ROLES_ENABLED.
+const DEFAULT_ROLES: Record<string, boolean> = Object.fromEntries(
+  ROLE_CODES.map((code) => [code, true]),
+);
 
 const ROLE_GROUPS: Array<{ labelKey: string; keys: string[] }> = [
   {

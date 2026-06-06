@@ -178,6 +178,12 @@ DEFAULT_ATMOSPHERE_MEDIA: dict = {
     "game_end_singleton_win": None,
 }
 
+# All roles enabled by default. The enabled-map only ever substitutes a
+# role OUT of the default distribution (disabled → citizen/mafia); it never
+# adds one. So "all True" simply lets `DEFAULT_DISTRIBUTION` deal out every
+# role it specifies per player count. Admins can still disable individual
+# roles per group via /settings. Full-game completion with every role
+# enabled is guarded by tests/integration/test_all_roles_complete.py.
 DEFAULT_ROLES_ENABLED = {
     # Civilians (10)
     "citizen": True,
@@ -188,19 +194,19 @@ DEFAULT_ROLES_ENABLED = {
     "hooker": True,
     "hobo": True,
     "lucky": True,
-    "suicide": False,  # disabled by default (special)
-    "kamikaze": False,
+    "suicide": True,
+    "kamikaze": True,
     # Mafia (5)
     "don": True,
     "mafia": True,
     "lawyer": True,
-    "journalist": False,
-    "killer": False,
+    "journalist": True,
+    "killer": True,
     # Singletons (6)
-    "maniac": False,
-    "werewolf": False,
-    "mage": False,
-    "arsonist": False,
-    "crook": False,
-    "snitch": False,
+    "maniac": True,
+    "werewolf": True,
+    "mage": True,
+    "arsonist": True,
+    "crook": True,
+    "snitch": True,
 }
